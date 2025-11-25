@@ -1012,12 +1012,15 @@ def download(
     from tqdm import tqdm
     from urllib.request import urlretrieve
 
+    # TODO
+    """
     # If the url is offline
     if not ping(url):
 
         # Raise connection error
         raise ConnectionRefusedError(url)
-
+    """
+    
     # If show_progress is True
     if show_progress:
 
