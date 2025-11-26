@@ -15,6 +15,47 @@ def Args() -> list:
 
     return auto_convert(argv[1:])
 
+class ParsedArgs:
+
+    def __init__(self,
+        name: str = 'Program Name',
+        desc: str = 'What the program does',
+        epilog: str = 'Text at the bottom of help'
+    ):
+        from argparse import ArgumentParser
+        
+        self.__parser = ArgumentParser(
+            prog = name,
+            description = desc,
+            epilog = epilog
+        )
+
+    def __id(self, name:str):
+        from .text import hex
+
+        return '_'+hex.encode(name)
+
+    def parse(self,
+        name: str,
+        default = None,
+        desc: str = None
+    ):
+
+        self.__parser.add_argument(
+            '--'+name,
+            default = default,
+            help = desc,
+            dest = self.__id(name)
+        )
+
+    def __getitem__(self,
+        key: str
+    ):
+        args = self.__parser.parse_args()
+        dest = self.__id(key)
+        
+        return getattr(args, dest)
+
 def var(
     title: str,
     default = '',
