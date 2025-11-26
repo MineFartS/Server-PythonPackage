@@ -35,7 +35,7 @@ class ParsedArgs:
 
         return '_'+hex.encode(name)
 
-    def parse(self,
+    def Arg(self,
         name: str,
         default = None,
         desc: str = None
@@ -46,6 +46,17 @@ class ParsedArgs:
             default = default,
             help = desc,
             dest = self.__id(name)
+        )
+
+    def Flag(self,
+        name: str,
+        desc: str = None
+    ):
+        self.__parser.add_argument(
+            '--'+name,
+            help = desc,
+            dest = self.__id(name),
+            action = 'store_true'
         )
 
     def __getitem__(self,
@@ -210,17 +221,27 @@ class run:
         from .text import hex
         from .pc import cls, terminal
 
+        self.stdout = ''
+
         cls_cmd = hex.encode('*** Clear Terminal ***')
 
         for line in self.__process.stdout:
             
             if cls_cmd in line:
-                cls()
+
+                #
+                self.stdout = ''
+                
+                #
+                if not self.__hide:
+                    cls()
 
             elif len(line) > 0:
 
-                self.__output += line
+                #
+                self.stdout += line
 
+                #
                 if not self.__hide:
                     terminal.write(line, 'out')
 
@@ -230,9 +251,11 @@ class run:
         """
         from .pc import terminal
 
+        self.stderr = ''
+
         for line in self.__process.stderr:
 
-            self.__output += line
+            self.stderr += line
 
             terminal.write(line, 'err')
 
@@ -250,15 +273,14 @@ class run:
             stdout = PIPE,
             stderr = PIPE,
             text = True,
-            bufsize = 1
+            bufsize = 1,
+            errors = 'ignore'
         )
+
+        self.wait = self.__process.wait
 
         self.__task = Task(self.__process.pid)
         self.__stopwatch = Stopwatch().start()
-
-        self.__output = ''
-
-        self.wait = self.__process.wait
 
         thread(self.__stdout)
         thread(self.__stderr)
@@ -303,11 +325,13 @@ class run:
         from . import json
         from .text import hex
 
+        output = self.stdout.encode().strip()
+
         if format == 'json':
-            return json.loads(self.__output.strip())
+            return json.loads(output)
         
         elif format == 'hex':
-            return hex.decode(self.__output.strip())
+            return hex.decode(output)
         
         else:
-            return self.__output.strip()
+            return output
