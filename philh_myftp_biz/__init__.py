@@ -51,10 +51,14 @@ class ParsedArgs:
     def __getitem__(self,
         key: str
     ):
-        args = self.__parser.parse_args()
-        dest = self.__id(key)
+        from .text import auto_convert
+
+        obj = self.__parser.parse_args()
+        name = self.__id(key)
         
-        return getattr(args, dest)
+        value = getattr(obj, name)
+
+        return auto_convert(value)
 
 def var(
     title: str,
