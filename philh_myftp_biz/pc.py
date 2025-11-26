@@ -350,10 +350,21 @@ class Path:
     def seg(self, i:int=-1) -> str:
         """
         Returns segment of path split by '/'
+        (Ignores last slash on paths)
 
-        Ex: Path('C:/example/test.log').seg(-1) -> 'test.log'
+        EXAMPLES:
+        
+            Path('C:/example/test.log').seg(-1) -> 'test.log'
+
+            Path('C:/example/').seg(-1) -> 'example'
         """
-        return self.path.split('/') [i]
+        
+        if self.path[-1] == '/':
+            path = self.path[:-1]
+        else:
+            path = self.path
+        
+        return path.split('/') [i]
 
     def copy(
         self,
@@ -606,44 +617,6 @@ def cls() -> None:
         system('cls')
     else:
         system('clear')
-
-class power:
-    """
-    Computer Power Controls
-    """
-
-    def restart(t:int=30) -> None:
-        """
-        Restart the computer after {t} seconds
-        """
-        from . import run
-
-        run(
-            args = ['shutdown', '/r', '/t', t],
-            wait = True
-        )
-
-    def shutdown(t:int=30) -> None:
-        """
-        Shutdown the computer after {t} seconds
-        """
-        from . import run
-        
-        run(
-            args = ['shutdown', '/s', '/t', t],
-            wait = True
-        )
-
-    def abort() -> None:
-        """
-        Abort any pending shutdowns/restarts
-        """
-        from . import run
-        
-        run(
-            args = ['shutdown', '/a'],
-            wait = True
-        )
 
 def print(
     *args,
