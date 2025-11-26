@@ -24,10 +24,17 @@ class ParsedArgs:
     ):
         from argparse import ArgumentParser
         
+        #
         self.__parser = ArgumentParser(
             prog = name,
             description = desc,
             epilog = epilog
+        )
+
+        #
+        self.Flag(
+            name = 'verbose',
+            desc = 'Advanced Debugging'
         )
 
     def __id(self, name:str):
