@@ -105,6 +105,17 @@ class Path:
 
         # ==================================
 
+    def chext(self, ext:str):
+        """
+        Returns an Path object with the same path, except with a different extension
+        """
+        if '.' in self.seg():
+            path = self.path[:self.path.rfind('.')]
+        else:
+            raise TypeError("Path does not have an existing extension")
+        
+        return Path(path+'.'+ext)
+
     def ctime(self):
         from os import path
         from .time import from_stamp
@@ -786,6 +797,8 @@ class _visibility:
         from win32api import SetFileAttributes
         from pywintypes import error
 
+        self.path.set_access.full()
+
         attrs = GetFileAttributes(str(self.path))
 
         try:
@@ -801,6 +814,8 @@ class _visibility:
         from win32file import GetFileAttributes
         from win32api import SetFileAttributes
         from pywintypes import error
+
+        self.path.set_access.full()
 
         attrs = GetFileAttributes(str(self.path))
 
