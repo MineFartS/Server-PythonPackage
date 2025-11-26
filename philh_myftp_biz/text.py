@@ -215,3 +215,15 @@ def rm_emojis(
         string = text.encode('utf-8').decode()
     )
 
+def similarity(
+    a: str,
+    b: str
+) -> float:
+    """
+    Get the percentage of how similar two strings are
+
+    Ex: similarity('hi', 'hi') -> 1.0
+    """
+    from difflib import SequenceMatcher
+
+    return SequenceMatcher(None, a, b).ratio()
