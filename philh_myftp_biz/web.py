@@ -816,7 +816,7 @@ class Driver:
         from subprocess import CREATE_NO_WINDOW
         
         self.__via_with = False
-        self.__debug_enabled = debug
+        self.debug = debug
 
         service = FirefoxService()
         service.creation_flags = CREATE_NO_WINDOW
@@ -864,7 +864,7 @@ class Driver:
         """
         from .json import dumps
         
-        if self.__debug_enabled:
+        if self.debug:
             print()
             print(title, dumps(data))
 
