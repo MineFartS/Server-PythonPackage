@@ -1,0 +1,43 @@
+name: Daily Pre-release
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs daily at midnight UTC
+
+jobs:
+  create-prerelease:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create releases and tags
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get current date for pre-release tag
+        id: date
+        run: echo "::set-output name=today::$(date +'%Y.%m.%d')"
+
+      - name: Determine next pre-release version
+        id: version
+        # This step assumes a simple incrementing pre-release version based on date.
+        # For more complex versioning (e.g., semantic versioning with build numbers),
+        # you might need a dedicated action or script to calculate the next version.
+        run: |
+          # Example: vYYYY.MM.DD-daily.1
+          # You might want to fetch the last daily pre-release and increment a counter.
+          # For simplicity here, we'll just use the date.
+          echo "::set-output name=prerelease_tag::v${{ steps.date.outputs.today }}-daily"
+
+      - name: Create or update pre-release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.prerelease_tag }}
+          name: Daily Build - ${{ steps.date.outputs.today }}
+          body: |
+            Daily pre-release build from ${{ steps.date.outputs.today }}.
+            Includes all changes up to this point.
+          prerelease: true
+          # Optionally, upload assets if needed, e.g.:
+          # files: |
+          #   ./build/*.zip
