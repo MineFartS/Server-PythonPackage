@@ -213,6 +213,12 @@ class Magnet:
     
     def exists(self):
         return self.__qbit.exists(self)
+    
+    def __str__(self):
+        from .classOBJ import location
+        from .text import abbreviate
+
+        return f'<Magnet "{abbreviate(15, self.title)}" @{location(self)}>'
 
 def get(
     url: str,
