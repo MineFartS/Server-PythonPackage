@@ -863,6 +863,7 @@ class Driver:
         self.__session = Firefox(options, service)
 
         # Set Timeouts
+        self.__timeout = timeout
         self.__session.set_page_load_timeout(timeout)
         self.__session.set_script_timeout(timeout)
         self.__session.implicitly_wait(timeout)
@@ -968,22 +969,27 @@ class Driver:
 
         Waits for page to fully load
         """
+        from urllib3.exceptions import ReadTimeoutError
+        from .time import Stopwatch
 
-        if not ping(url):
-            raise ConnectionRefusedError(url)
+        sw = Stopwatch()
+        sw.start()
         
-        # Open the url
-        self.__session.get(url)
-
         # Print Debug Messsage
         self.__debug(
             title = "Opening", 
             data = {'url':url}
         )
+        
+        # Open the url
+        while sw.elapsed() < self.__timeout:
+            try:
+                self.__session.get(url)
+                return
+            except ReadTimeoutError:
+                pass
 
-        # Wait until page is loaded
-        while self.run("return document.readyState") != "complete":
-            pass
+        raise TimeoutError()
 
     def close(self) -> None:
         """
@@ -1045,17 +1051,8 @@ def download(
     """
     Download file to disk
     """
-    from tqdm import tqdm
     from urllib.request import urlretrieve
-
-    # TODO
-    """
-    # If the url is offline
-    if not ping(url):
-
-        # Raise connection error
-        raise ConnectionRefusedError(url)
-    """
+    from tqdm import tqdm
     
     # If show_progress is True
     if show_progress:
