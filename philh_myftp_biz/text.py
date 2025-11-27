@@ -230,13 +230,14 @@ def similarity(
 
 def abbreviate(
     num: int,
-    string: str,
-    end: str = '...'
+    string: str
 ):
     
-    fstring = string[:num]
+    # Copy the string
+    string = str(string)
 
-    if len(fstring) < len(string):
-        fstring += end
+    if len(string) > num:
+        return string[:num] + '...'
+    else:
+        return string
     
-    return fstring
