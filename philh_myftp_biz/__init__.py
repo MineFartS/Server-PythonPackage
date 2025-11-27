@@ -23,13 +23,14 @@ class ParsedArgs:
         desc: str = 'What the program does',
         epilog: str = 'Text at the bottom of help'
     ):
-        from argparse import ArgumentParser
+        from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
         
         #
         self.__parser = ArgumentParser(
             prog = name,
             description = desc,
-            epilog = epilog
+            epilog = epilog,
+            formatter_class = ArgumentDefaultsHelpFormatter
         )
 
         self.__handlers: dict[str, Callable[[str], Any]] = {}
@@ -37,6 +38,7 @@ class ParsedArgs:
         #
         self.Flag(
             name = 'verbose',
+            letter = 'v',
             desc = 'Advanced Debugging'
         )
 
@@ -61,11 +63,17 @@ class ParsedArgs:
 
     def Flag(self,
         name: str,
+        letter: str = None,
         desc: str = None
     ):
         
+        flags = ['--'+name]
+
+        if letter:
+            flags.insert(0, '-'+letter)
+        
         self.__parser.add_argument(
-            '--'+name,
+            *flags,
             help = desc,
             dest = name,
             action = 'store_true'
