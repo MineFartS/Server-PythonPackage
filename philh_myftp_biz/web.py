@@ -476,9 +476,15 @@ class api:
             host: str,
             username: str,
             password: str,
-            port: int = 8080
+            port: int = 8080,
+            debug: bool = False
         ):
             from qbittorrentapi import Client
+
+            self.debug = debug
+
+            self.__host = host
+            self.__port = port
 
             self.__rclient = Client(
                 host = host,
@@ -488,10 +494,24 @@ class api:
                 VERIFY_WEBUI_CERTIFICATE = False
             )
 
+        def __debug(self,
+            title: str,
+            data: dict = {}
+        ) -> None:
+            """
+            Print a message if debugging is enabled
+            """
+            from .json import dumps
+            
+            if self.debug:
+                print()
+                print(title, dumps(data))
+
         def _client(self) -> 'Client':
             """
-            Wait for server connection, then return qbittorrentapi.Client
+            Wait for server connection, then returns qbittorrentapi.Client
             """
+            from qbittorrentapi import LoginFailed, Forbidden403Error
 
             while True:
 
@@ -499,8 +519,15 @@ class api:
                     self.__rclient.auth_log_in()
                     return self.__rclient
                 
-                except:
-                    pass
+                except LoginFailed, Forbidden403Error:
+
+                    self.__debug(
+                        title = 'Retrying',
+                        data = {
+                            'host': self.__host,
+                            'port': self.__port
+                        }
+                    )
 
         def _get(self, magnet:Magnet):
             for t in self._client().torrents_info():
@@ -559,18 +586,19 @@ class api:
             
             """
 
-            while True:
-                        
-                t = self._get(magnet)
-                        
-                #
-                if len(t.files) > 0:
+            t = self._get(magnet)
 
-                    for f in t.files:
+            t.setForceStart(True)
 
-                        yield self.File(t, f)
+            #
+            while len(t.files) == 0:
+                pass
 
-                    return
+            t.setForceStart(False)
+
+            for f in t.files:
+
+                yield self.File(t, f)
 
         def stop(self,
             magnet: Magnet,
@@ -857,8 +885,8 @@ class Driver:
     
     def __debug(self,
         title: str,
-        data: dict ={}
-        ) -> None:
+        data: dict = {}
+    ) -> None:
         """
         Print a message if debugging is enabled
         """
