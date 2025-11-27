@@ -2,6 +2,7 @@ from typing import Generator, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .pc import Path
+    from .__init__ import run
 
 def output(data) -> None:
     """
@@ -125,7 +126,10 @@ class Module:
                 path = WFpath
             )]
 
-    def run(self, *args, hide:bool=False) -> 'None | Process':
+    def run(self,
+        *args,
+        hide: bool = False
+    ) -> 'None | Process':
         """
         Execute a new Process and wait for it to finish
         """
@@ -140,7 +144,10 @@ class Module:
         else:
             raise ModuleDisabledError(self.dir.path)
 
-    def start(self, *args, hide:bool=False) -> 'None | Process':
+    def start(self,
+        *args,
+        hide: bool = False
+    ) -> 'None | Process':
         """
         Execute a new Process simultaneously with the current execution
         """
@@ -155,7 +162,9 @@ class Module:
         else:
             raise ModuleDisabledError(self.dir.path)
 
-    def file(self, *name:str) -> 'Path':
+    def file(self,
+        *name: str
+    ) -> 'Path':
         """
         Find a file by it's name
 
@@ -183,12 +192,18 @@ class Module:
 
         raise FileNotFoundError(dir.path + parts[-1] + '.*')
 
-    def install(self, hide:bool=False) -> None:
+    def install(self,
+        hide: bool = False
+    ) -> None:
         """
-        Install and Upgrade all python packages
+        Automatically install all dependencies
         """
         from .__init__ import run
 
+        # Initialize a git repo
+        self.git('init', hide=hide)
+
+        # Upgrade all python packages
         for pkg in self.packages:
             run(
                 args = ['pip', 'install', '--upgrade', pkg],
@@ -205,6 +220,19 @@ class Module:
 
     def __str__(self):
         return self.dir.path
+
+    def git(self,
+        *args,
+        hide: bool = False
+    ) -> 'run':
+        from .__init__ import run
+
+        return run(
+            args = ['git', *args],
+            wait = True,
+            dir = self.dir,
+            hide = hide
+        )
 
 class Process:
     """
