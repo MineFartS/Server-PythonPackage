@@ -513,7 +513,7 @@ class api:
             """
             Wait for server connection, then returns qbittorrentapi.Client
             """
-            from qbittorrentapi import LoginFailed, Forbidden403Error
+            from qbittorrentapi.exceptions import LoginFailed, Forbidden403Error, APIConnectionError
 
             while True:
 
@@ -521,7 +521,7 @@ class api:
                     self.__rclient.auth_log_in()
                     return self.__rclient
                 
-                except LoginFailed, Forbidden403Error:
+                except LoginFailed, Forbidden403Error, APIConnectionError:
 
                     self.__debug(
                         title = 'Retrying',
