@@ -702,14 +702,22 @@ class api:
         'https://thepiratebay.org/'
         """
         
-        def __init__(self):
+        def __init__(self,
+            driver: Driver = None,
+            qbit: 'api.qBitTorrent' = None
+        ):
             self.__url = "https://thepiratebay.org/search.php?q={}&video=on"
 
+            self.__qbit = qbit
+            
+            if driver:
+                self.__driver = driver
+            else:
+                self.__driver = Driver()
+
         def search(self,
-            *queries: str,
-            driver: 'Driver' = None,
-            qbit: 'api.qBitTorrent' = None
-        ) -> Generator[Magnet]:
+            query: str
+        ) -> None | Generator[Magnet]:
             """
             Search thePirateBay for magnets
 
@@ -717,57 +725,44 @@ class api:
             for magnet in thePirateBay.search('term1', 'term2'):
                 magnet
             """
-            from urllib3.exceptions import ReadTimeoutError
             from .db import size
 
-            # Initialize new driver if not given
-            if not driver:
-                driver = Driver()
+            # Remove all "." & "'" from query
+            query = query.replace('.', '').replace("'", '')
 
-            # Iter through queries
-            for query in queries:
+            # Open the search in a url
+            self.__driver.open(self.__url.format(query))
 
-                # Remove all "." & "'" from query
-                query = query.replace('.', '').replace("'", '')
+            # Set driver var 'lines' to a list of lines
+            self.__driver.run("window.lines = document.getElementsByClassName('list-entry')")
 
-                # Open the search in a url
+            # Iter from 0 to # of lines
+            for x in range(0, self.__driver.run('return lines.length')):
+
+                # 
+                start = f"return lines[{x}].children"
+
                 try:
-                    driver.open(
-                        url = self.__url.format(query)
-                    )
-                except ReadTimeoutError:
-                    continue
 
-                # Set driver var 'lines' to a list of lines
-                driver.run("window.lines = document.getElementsByClassName('list-entry')")
+                    # Yield a magnet instance
+                    yield Magnet(
+                    
+                        title = self.__driver.run(start+"[1].children[0].text"),
 
-                # Iter from 0 to # of lines
-                for x in range(0, driver.run('return lines.length')):
+                        seeders = int(self.__driver.run(start+"[5].textContent")),
 
-                    # 
-                    start = f"return lines[{x}]"
+                        leechers = int(self.__driver.run(start+"[6].textContent")),
 
-                    try:
-
-                        # Yield a magnet instance
-                        yield Magnet(
+                        url = self.__driver.run(start+"[3].children[0].href"),
                         
-                            title = driver.run(start+".children[1].children[0].text"),
+                        size = size.to_bytes(self.__driver.run(start+"[4].textContent")),
 
-                            seeders = int(driver.run(start+".children[5].textContent")),
+                        qbit = self.__qbit
 
-                            leechers = int(driver.run(start+".children[6].textContent")),
+                    )
 
-                            url = driver.run(start+".children[3].children[0].href"),
-                            
-                            size = size.to_bytes(driver.run(start+".children[4].textContent")),
-
-                            qbit = qbit
-
-                        )
-
-                    except KeyError:
-                        pass
+                except KeyError:
+                    pass
 
 class Soup:
     """
@@ -834,12 +829,14 @@ class Driver:
     Wrapper for FireFox Selenium Session
     """
     from selenium.webdriver.remote.webelement import WebElement
-            
+    from sys import maxsize
+
     def __init__(
         self,
         headless: bool = True,
         debug: bool = False,
-        cookies: (list[dict] | None) = None
+        cookies: (list[dict] | None) = None,
+        timeout: int = 1800 # 5 hours
     ):
         from selenium.webdriver import FirefoxService, FirefoxOptions, Firefox
         from selenium.common.exceptions import InvalidCookieDomainException
@@ -856,10 +853,19 @@ class Driver:
         if headless:
             options.add_argument("--headless")
 
+        # Print debug message
+        self.__debug('Starting Session', {
+            'headless': headless,
+            'timeout': timeout
+        })
+
         # Start Chrome Session with options
         self.__session = Firefox(options, service)
 
-        self.__session.set_page_load_timeout(99999)
+        # Set Timeouts
+        self.__session.set_page_load_timeout(timeout)
+        self.__session.set_script_timeout(timeout)
+        self.__session.implicitly_wait(timeout)
 
         if cookies:
             for cookie in cookies:
