@@ -42,31 +42,32 @@ class Stopwatch:
     """
 
     def __init__(self):
-        from time import perf_counter
-
         self.start_time = None
         self.end_time = None
         self.running = False
-        self.now = perf_counter
 
-    def elapsed(self) -> int:
+    def elapsed(self) -> None | int:
         """
         Get the # of seconds between now or the stop time, and the start time
         """
+        from time import perf_counter
 
-        if self.running:
-            elapsed = self.now() - self.start_time
-        else:
-            elapsed = self.end_time - self.start_time
+        if self.start_time != None:
 
-        return elapsed
+            if self.running:
+                elapsed = perf_counter() - self.start_time
+            else:
+                elapsed = self.end_time - self.start_time
+
+            return elapsed
 
     def start(self) -> Self:
         """
         Start the stopwatch at 0
         """
-        
-        self.start_time = self.now()
+        from time import perf_counter
+
+        self.start_time = perf_counter()
         self.end_time = None
         self.running = True
 
@@ -76,8 +77,9 @@ class Stopwatch:
         """
         Stop the stopwatch
         """
+        from time import perf_counter
 
-        self.end_time = self.now()
+        self.end_time = perf_counter()
         self.running = False
         
         return self
