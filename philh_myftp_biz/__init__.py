@@ -1,4 +1,4 @@
-from typing import Literal, TYPE_CHECKING, Any
+from typing import Literal, TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from .file import PKL
@@ -16,6 +16,7 @@ def Args() -> list:
     return auto_convert(argv[1:])
 
 class ParsedArgs:
+    from .text import auto_convert
 
     def __init__(self,
         name: str = 'Program Name',
@@ -31,52 +32,58 @@ class ParsedArgs:
             epilog = epilog
         )
 
+        self.__handlers: dict[str, Callable[[str], Any]] = {}
+
         #
         self.Flag(
             name = 'verbose',
             desc = 'Advanced Debugging'
         )
 
-    def __id(self, name:str):
-        from .text import hex
-
-        return '_'+hex.encode(name)
-
     def Arg(self,
         name: str,
         default = None,
-        desc: str = None
+        desc: str = None,
+        handler: None | Callable[[str], Any] = auto_convert
     ):
 
         self.__parser.add_argument(
             '--'+name,
             default = default,
             help = desc,
-            dest = self.__id(name)
+            dest = name,
         )
+
+        if handler:
+            self.__handlers[name] = handler
+        else:
+            self.__handlers[name] = lambda x: x
 
     def Flag(self,
         name: str,
         desc: str = None
     ):
+        
         self.__parser.add_argument(
             '--'+name,
             help = desc,
-            dest = self.__id(name),
+            dest = name,
             action = 'store_true'
         )
+
+        self.__handlers[name] = lambda x: x
 
     def __getitem__(self,
         key: str
     ):
-        from .text import auto_convert
 
         obj = self.__parser.parse_args()
-        name = self.__id(key)
         
-        value = getattr(obj, name)
+        handler = self.__handlers[key]
+        
+        value = getattr(obj, key)
 
-        return auto_convert(value)
+        return handler(value)
 
 def var(
     title: str,
