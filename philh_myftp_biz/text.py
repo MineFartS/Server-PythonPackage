@@ -227,3 +227,16 @@ def similarity(
     from difflib import SequenceMatcher
 
     return SequenceMatcher(None, a, b).ratio()
+
+def abbreviate(
+    num: int,
+    string: str,
+    end: str = '...'
+):
+    
+    fstring = string[:num]
+
+    if len(fstring) < len(string):
+        fstring += end
+    
+    return fstring
