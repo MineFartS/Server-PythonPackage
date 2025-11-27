@@ -440,7 +440,7 @@ class api:
                 return self.__torrent.files[self.__id]
 
             def start(self,
-                priority: Literal['Low', 'Med', 'High'] = 'Med'
+                prioritize: bool = False
             ):
                 """
                 Start downloading the file
@@ -448,11 +448,7 @@ class api:
 
                 self.__torrent.file_priority(
                     file_ids = self.__id,
-                    priority = {
-                        'Low': 1,
-                        'Med': 2,
-                        'High': 3
-                    } [priority]
+                    priority = (7 if prioritize else 1)
                 )
 
             def stop(self):
