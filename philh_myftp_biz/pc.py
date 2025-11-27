@@ -545,6 +545,7 @@ class terminal:
         Get the # of columns in the terminal
         """
         from shutil import get_terminal_size
+
         return get_terminal_size().columns
 
     def write(
@@ -565,19 +566,25 @@ class terminal:
         if flush:
             stream.flush()
 
-    def del_last_line() -> None:
+    def del_last_line(
+        num: int = 1
+    ) -> None:
         """
         Clear the previous line in the terminal
         """
-        spaces = (' ' * terminal.width())
-        print("\033[A{}\033[A".format(spaces), end='')
+        
+        print(
+            "\033[A{}\033[A\n".format(' ' * terminal.width()),
+            end = ''
+        )
 
     def is_elevated() -> bool:
         """
         Check if the current execution has Administrator Access
         """
+        from ctypes import windll
+
         try:
-            from ctypes import windll
             return windll.shell32.IsUserAnAdmin()
         except:
             return False
@@ -600,6 +607,7 @@ class terminal:
         Ex: dash(50) -> |-------------             |
 
         """
+        
         print(terminal.width() * (p//100) * '-')
 
 def cls() -> None:
