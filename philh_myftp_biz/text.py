@@ -226,7 +226,7 @@ def similarity(
     """
     from difflib import SequenceMatcher
 
-    return SequenceMatcher(None, a, b).ratio()
+    return SequenceMatcher(None, str(a), str(b)).ratio()
 
 def abbreviate(
     num: int,
