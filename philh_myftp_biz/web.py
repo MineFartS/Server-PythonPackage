@@ -218,7 +218,7 @@ class Magnet:
         from .classOBJ import location
         from .text import abbreviate
 
-        return f'<Magnet "{abbreviate(15, self.title)}" @{location(self)}>'
+        return f'<Magnet "{abbreviate(30, self.title)}" @{location(self)}>'
 
 def get(
     url: str,
@@ -438,6 +438,8 @@ class api:
                 self.path = Path(f'{torrent.save_path}/{file.name}')
                 self.size: float = file.size
 
+                self.title: str = file.name
+
                 self.__id: str = file.id
 
                 self.__torrent = torrent
@@ -473,6 +475,12 @@ class api:
                 """
 
                 return (self._file().progress == 1)
+
+            def __str__(self):
+                from .classOBJ import location
+                from .text import abbreviate
+
+                return f'<File "{abbreviate(30, self.title)}" @{location(self)}>'
 
         def __init__(self,
             host: str,
@@ -893,9 +901,9 @@ class Driver:
 
         # Set Timeouts
         self.__timeout = timeout
-        self.__session.set_page_load_timeout(timeout)
+        #self.__session.set_page_load_timeout(timeout)
         self.__session.set_script_timeout(timeout)
-        self.__session.implicitly_wait(timeout)
+        #self.__session.implicitly_wait(timeout)
 
         if cookies:
             for cookie in cookies:
@@ -912,6 +920,8 @@ class Driver:
 
         self.run = self.__session.execute_script
         """Run JavaScript Code on the Current Page"""
+
+        self.__tab = self.__session.window_handles[0]
 
     def __enter__(self):
         self.__via_with = True
@@ -1003,6 +1013,8 @@ class Driver:
 
         sw = Stopwatch()
         sw.start()
+
+        self.__session.switch_to.window(self.__tab)
         
         # Print Debug Messsage
         self.__debug(
@@ -1031,7 +1043,7 @@ class Driver:
 
         try:
             # Exit Session
-            self.__session.close()
+            self.__session.quit()
         except InvalidSessionIdException:
             pass
 
