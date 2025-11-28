@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Self, Callable, Generic, TypeVar, Iterator
+from typing import TYPE_CHECKING, Self, Generator, Callable, Generic, TypeVar, Iterator
 from json import load, loads, dump, dumps
 
 if TYPE_CHECKING:
@@ -49,6 +49,9 @@ class Dict[V]:
         else:
 
             raise InvalidDictError(path(table))
+
+    def items(self) -> Generator[list[str, V]]:
+        return self.read().items()
 
     def save(self, data:dict[str, V]) -> None:
         """Save Data"""
