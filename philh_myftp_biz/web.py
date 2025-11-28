@@ -225,14 +225,23 @@ def get(
     params: dict = {},
     headers: dict = {},
     stream: bool = None,
-    cookies = None
+    cookies = None,
+    debug: bool = False
 ) -> 'Response':
     """
     Wrapper for requests.get
     """
-    from requests import get as __get
     from requests.exceptions import ConnectionError
+    from requests import get
     from .pc import warn
+    from urllib.parse import urlencode
+
+    if debug:
+
+        if len(params) > 1:
+            print('Opening:', f'{url}?{urlencode(params)}')
+        else:
+            print('Opening:', url)
 
     headers['User-Agent'] = 'Mozilla/5.0'
     headers['Accept-Language'] = 'en-US,en;q=0.5'
@@ -240,7 +249,7 @@ def get(
     # Iter until interrupted
     while True:
         try:
-            return __get(
+            return get(
                 url = url,
                 params = params,
                 headers = headers,
@@ -248,7 +257,8 @@ def get(
                 cookies = cookies
             )
         except ConnectionError as e:
-            warn(e)
+            if debug:
+                warn(e)
 
 class api:
     """
@@ -262,9 +272,13 @@ class api:
         'https://www.omdbapi.com/{url}'
         """
 
-        def __init__(self):
+        def __init__(self,
+            debug: bool = False
+        ):
             self.__url = 'https://www.omdbapi.com/'
             self.__apikey = 'dc888719'
+
+            self.debug = debug
 
         class Item:
 
@@ -289,11 +303,12 @@ class api:
 
             r: dict[str, str] = get(
                 url = self.__url,
+                debug = self.debug,
                 params = {
                     't': title,
                     'y': year,
                     'apikey': self.__apikey
-                }
+                }                
             ).json()
 
             if bool(r['Response']) and (r['Type'] == 'movie'):
@@ -313,6 +328,7 @@ class api:
 
             r: dict[str, str] = get(
                 url = self.__url,
+                debug = self.debug,
                 params = {
                     't': title,
                     'y': year,
@@ -328,6 +344,7 @@ class api:
 
                     r_: dict[str, str] = get(
                         url = self.__url,
+                        debug = self.debug,
                         params = {
                             't': title,
                             'y': year,
@@ -358,6 +375,7 @@ class api:
             
             r:  list[dict[str, str]] = get(
                 url = self.__url,
+                debug = self.debug,
                 params = {
                     's': query,
                     'apikey': self.__apikey
@@ -430,19 +448,28 @@ class api:
             """
 
             def __init__(self,
+                qbit: 'api.qBitTorrent',
                 torrent: 'TorrentDictionary',
                 file: 'TorrentFile'
             ):
                 from .pc import Path
 
                 self.path = Path(f'{torrent.save_path}/{file.name}')
+                """Download Path"""
+                
                 self.size: float = file.size
+                """File Size"""
 
-                self.title: str = file.name
+                self.title: str = file.name[file.name.find('/')+1:]
+                """File Name"""
 
                 self.__id: str = file.id
+                """File ID"""
 
                 self.__torrent = torrent
+                """Torrent"""
+
+                self._debug = qbit._debug
 
             def _file(self) -> 'TorrentFile':
                 return self.__torrent.files[self.__id]
@@ -454,6 +481,8 @@ class api:
                 Start downloading the file
                 """
 
+                self._debug('Downloading File', [prioritize, str(self)])
+
                 self.__torrent.file_priority(
                     file_ids = self.__id,
                     priority = (7 if prioritize else 1)
@@ -463,6 +492,8 @@ class api:
                 """
                 Stop downloading the file
                 """
+
+                self._debug('Stopping File', str(self))
                                 
                 self.__torrent.file_priority(
                     file_ids = self.__id,
@@ -508,7 +539,7 @@ class api:
                 VERIFY_WEBUI_CERTIFICATE = False
             )
 
-        def __debug(self,
+        def _debug(self,
             title: str,
             data: dict = {}
         ) -> None:
@@ -535,7 +566,7 @@ class api:
                 
                 except LoginFailed, Forbidden403Error, APIConnectionError:
 
-                    self.__debug(
+                    self._debug(
                         title = 'Retrying',
                         data = {
                             'host': self.__host,
@@ -578,6 +609,8 @@ class api:
             Restart Downloading a Magnet
             """
 
+            self._debug('Restarting', str(magnet))
+
             self.stop(magnet)
             self.start(magnet)
 
@@ -612,7 +645,7 @@ class api:
 
             for f in t.files:
 
-                yield self.File(t, f)
+                yield self.File(self, t, f)
 
         def stop(self,
             magnet: Magnet,
@@ -623,6 +656,8 @@ class api:
             """
             t = self._get(magnet)
 
+            self._debug('Stopping', str(magnet))
+
             t.delete(rm_files)
 
             return
@@ -631,6 +666,9 @@ class api:
             """
             Remove all Magnets from the download queue
             """
+
+            self._debug('Clearing Download Queue')
+
             for t in self._client().torrents_info():
                 t.delete(rm_files)
 
@@ -641,7 +679,8 @@ class api:
             Automatically Sort the Download Queue
             """
             from .array import sort, priority
-            from qbittorrentapi import TorrentDictionary
+            
+            self._debug('Sorting Download Queue')
 
             if func is None:
                 func = lambda t: priority(
@@ -718,9 +757,12 @@ class api:
             driver: Driver = None,
             qbit: 'api.qBitTorrent' = None
         ):
+            
             self.__url = "https://thepiratebay.org/search.php?q={}&video=on"
+            """fString for searching tpb"""
 
             self.__qbit = qbit
+            """qBitTorrent Session"""
             
             if driver:
                 self.__driver = driver
@@ -751,24 +793,30 @@ class api:
             # Iter from 0 to # of lines
             for x in range(0, self.__driver.run('return lines.length')):
 
-                # 
+                # Start of following commands
                 start = f"return lines[{x}].children"
 
                 try:
 
                     # Yield a magnet instance
                     yield Magnet(
-                    
+
+                        # Raw Tttle
                         title = self.__driver.run(start+"[1].children[0].text"),
 
+                        # Num of Seeders
                         seeders = int(self.__driver.run(start+"[5].textContent")),
 
+                        # Num of leechers
                         leechers = int(self.__driver.run(start+"[6].textContent")),
 
+                        # Magnet URL
                         url = self.__driver.run(start+"[3].children[0].href"),
                         
+                        # Download Size
                         size = size.to_bytes(self.__driver.run(start+"[4].textContent")),
 
+                        # qBitTorrent Session
                         qbit = self.__qbit
 
                     )
@@ -843,17 +891,12 @@ class Driver:
     from selenium.webdriver.remote.webelement import WebElement
     from sys import maxsize
 
-    __extensions = {
-        'adblock': 'https://addons.mozilla.org/firefox/downloads/file/4619486/adguard_adblocker-5.2.113.0.xpi'
-    }
-
     def __init__(
         self,
         headless: bool = True,
         debug: bool = False,
         cookies: (list[dict] | None) = None,
-        timeout: int = 1800, # 5 hours
-        extensions: list[Literal['adblock']] = []
+        extensions: list[str] = []
     ):
         from selenium.webdriver import FirefoxService, FirefoxOptions, Firefox
         from selenium.common.exceptions import InvalidCookieDomainException
@@ -873,55 +916,50 @@ class Driver:
 
         # Print debug message
         self.__debug('Starting Session', {
-            'headless': headless,
-            'timeout': timeout
+            'headless': headless
         })
 
         # Start Chrome Session with options
-        self.__session = Firefox(options, service)
+        self._drvr = Firefox(options, service)
 
-        #
-        for name in extensions:
+        # Iter through all given extension urls
+        for url in extensions:
             
-            #
-            xpifile = temp(name, 'xpi')
+            # Temporary path for '.xpi' file
+            xpifile = temp('firefox-extension', 'xpi')
             
-            #
+            # Download the '.xpi' file
             download(
-                url = self.__extensions[name],
+                url = url,
                 path = xpifile,
                 show_progress = debug
             )
 
-            #
-            self.__session.install_addon(
+            # Install the addon from the file
+            self._drvr.install_addon(
                 path = str(xpifile),
                 temporary = True
             )
 
-        # Set Timeouts
-        self.__timeout = timeout
-        #self.__session.set_page_load_timeout(timeout)
-        self.__session.set_script_timeout(timeout)
-        #self.__session.implicitly_wait(timeout)
-
+        # If any cookies are given
         if cookies:
+
+            # Iter through cookies
             for cookie in cookies:
                 try:
-                    self.__session.add_cookie(cookie)
+                    # Add cookie to the webdriver session
+                    self._drvr.add_cookie(cookie)
                 except InvalidCookieDomainException:
                     pass
 
-        self.current_url = self.__session.current_url
+        self.current_url = self._drvr.current_url
         """URL of the Current Page"""
 
-        self.reload = self.__session.refresh
+        self.reload = self._drvr.refresh
         """Reload the Current Page"""
 
-        self.run = self.__session.execute_script
+        self.run = self._drvr.execute_script
         """Run JavaScript Code on the Current Page"""
-
-        self.__tab = self.__session.window_handles[0]
 
     def __enter__(self):
         self.__via_with = True
@@ -992,13 +1030,13 @@ class Driver:
 
             while True:
 
-                elements = self.__session.find_elements(_by, name)
+                elements = self._drvr.find_elements(_by, name)
 
                 if len(elements) > 0:
                     return elements
 
         else:
-            return self.__session.find_elements(_by, name)
+            return self._drvr.find_elements(_by, name)
 
     def open(self,
         url: str
@@ -1008,29 +1046,29 @@ class Driver:
 
         Waits for page to fully load
         """
+        from selenium.common.exceptions import WebDriverException
         from urllib3.exceptions import ReadTimeoutError
-        from .time import Stopwatch
 
-        sw = Stopwatch()
-        sw.start()
-
-        self.__session.switch_to.window(self.__tab)
-        
         # Print Debug Messsage
         self.__debug(
             title = "Opening", 
             data = {'url':url}
         )
         
+        # Switch to the first tab
+        self._drvr.switch_to.window(self._drvr.window_handles[0])
+
         # Open the url
-        while sw.elapsed() < self.__timeout:
+        while True:
             try:
-                self.__session.get(url)
-                return
-            except ReadTimeoutError:
+                self._drvr.get(url)
+                break
+            except ReadTimeoutError, WebDriverException:
                 pass
 
-        raise TimeoutError()
+        # Wait until page is loaded
+        while self.run("return document.readyState") != "complete":
+            pass
 
     def close(self) -> None:
         """
@@ -1043,7 +1081,7 @@ class Driver:
 
         try:
             # Exit Session
-            self.__session.quit()
+            self._drvr.quit()
         except InvalidSessionIdException:
             pass
 
@@ -1052,7 +1090,7 @@ class Driver:
         Get a soup of the current page
         """
         return Soup(
-            self.__session.page_source
+            self._drvr.page_source
         )
 
 def static(url) -> Soup:
