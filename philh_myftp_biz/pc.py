@@ -1015,13 +1015,21 @@ class ProgressBar:
         self.stop = self.__tqdm.close
         self.step = self.__tqdm.update
 
+        self.__paused = False
+
         thread(self.__refresh)
 
     def finished(self) -> bool:
         return (self.__tqdm.n == self.__tqdm.total)
     
     def running(self):
-        return not (self.finished() or self.__tqdm.disable)
+        return not (self.finished() or self.__tqdm.disable or self.__paused)
+    
+    def pause(self):
+        self.__paused = True
+
+    def resume(self):
+        self.__paused = False
 
     def __refresh(self):
         from .time import sleep
@@ -1029,6 +1037,8 @@ class ProgressBar:
         while self.running():
 
             sleep(.3)
+
+            if not self.__paused:
             
-            self.__tqdm.refresh()
+                self.__tqdm.refresh()
         
