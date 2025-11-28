@@ -482,6 +482,10 @@ class api:
             debug: bool = False
         ):
             from qbittorrentapi import Client
+            from .classOBJ import path
+
+            if not isinstance(host, str):
+                raise TypeError(f"host must be 'str', not '{path(host)}'")
 
             self.debug = debug
 
