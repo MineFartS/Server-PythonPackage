@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Self, Generator, Callable, Generic, TypeVar, I
 from json import load, loads, dump, dumps
 
 if TYPE_CHECKING:
-    from .file import JSON, PKL
+    from .file import JSON, PKL, YAML, TOML, INI
     from .pc import _var
 
 def valid(value:str):
@@ -28,13 +28,13 @@ class Dict[V]:
     """
 
     def __init__(self,
-        table: 'dict[str, V] | Self[str, V] | JSON | _var | PKL' = {}
+        table: 'dict[str, V] | Self[str, V] | JSON | _var | PKL | YAML | TOML | INI' = {}
     ):
-        from .file import JSON, PKL, temp
+        from .file import JSON, PKL, YAML, TOML, INI, temp
         from .classOBJ import path
         from .pc import _var
 
-        if isinstance(table, (JSON, _var, PKL)):
+        if isinstance(table, (JSON, _var, PKL, YAML, TOML, INI)):
             self.var = table
 
         elif isinstance(table, Dict):
