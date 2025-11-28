@@ -835,16 +835,22 @@ class Driver:
     from selenium.webdriver.remote.webelement import WebElement
     from sys import maxsize
 
+    __extensions = {
+        'adblock': 'https://addons.mozilla.org/firefox/downloads/file/4619486/adguard_adblocker-5.2.113.0.xpi'
+    }
+
     def __init__(
         self,
         headless: bool = True,
         debug: bool = False,
         cookies: (list[dict] | None) = None,
-        timeout: int = 1800 # 5 hours
+        timeout: int = 1800, # 5 hours
+        extensions: list[Literal['adblock']] = []
     ):
         from selenium.webdriver import FirefoxService, FirefoxOptions, Firefox
         from selenium.common.exceptions import InvalidCookieDomainException
         from subprocess import CREATE_NO_WINDOW
+        from .file import temp
         
         self.__via_with = False
         self.debug = debug
@@ -865,6 +871,25 @@ class Driver:
 
         # Start Chrome Session with options
         self.__session = Firefox(options, service)
+
+        #
+        for name in extensions:
+            
+            #
+            xpifile = temp(name, 'xpi')
+            
+            #
+            download(
+                url = self.__extensions[name],
+                path = xpifile,
+                show_progress = debug
+            )
+
+            #
+            self.__session.install_addon(
+                path = str(xpifile),
+                temporary = True
+            )
 
         # Set Timeouts
         self.__timeout = timeout
