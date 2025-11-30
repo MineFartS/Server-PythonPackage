@@ -786,8 +786,7 @@ class api:
 
             # Open the search in a url
             self.__driver.open(
-                url = self.__url.format(query),
-                state = 'interactive'
+                url = self.__url.format(query)
             )
 
             # Set driver var 'lines' to a list of lines
@@ -899,7 +898,8 @@ class Driver:
         debug: bool = False,
         cookies: (list[dict] | None) = None,
         extensions: list[str] = [],
-        timeout: int = 3600 # 1 hour
+        timeout: int = 3600, # 1 hour
+        fast_load: bool = False
     ):
         from selenium.webdriver import FirefoxService, FirefoxOptions, Firefox
         from selenium.common.exceptions import InvalidCookieDomainException
@@ -914,12 +914,18 @@ class Driver:
 
         options = FirefoxOptions()
         options.add_argument("--disable-search-engine-choice-screen")
+
+        if fast_load:
+            options.page_load_strategy = 'eager'
+
         if headless:
             options.add_argument("--headless")
 
         # Print debug message
         self.__debug('Starting Session', {
-            'headless': headless
+            'headless': headless,
+            'fast_load': fast_load,
+            'timeout': timeout
         })
 
         # Start Chrome Session with options
@@ -929,7 +935,7 @@ class Driver:
         self._drvr.command_executor.set_timeout(timeout)
         self._drvr.set_page_load_timeout(timeout)
         self._drvr.set_script_timeout(timeout)
-        self._drvr.implicitly_wait(timeout)
+        #self._drvr.implicitly_wait(timeout)
 
         # Iter through all given extension urls
         for url in extensions:
@@ -1106,9 +1112,16 @@ class Driver:
         if current != target:
             self._drvr.switch_to.window(current)
 
+    def html(self):
+        from selenium.common.exceptions import WebDriverException
+
+        try:
+            return self._drvr.page_source
+        except WebDriverException:
+            return None
+
     def open(self,
-        url: str,
-        state: Literal['interactive', 'complete'] = 'complete'
+        url: str
     ) -> None:
         """
         Open a url
@@ -1122,14 +1135,11 @@ class Driver:
             data = {'url':url}
         )
 
+        # Focus on the first tab
         self._drvr.switch_to.window(self._drvr.window_handles[0])
 
         # Open the url
         self._drvr.get(url)
-
-        # Wait until page is loaded
-        while self.run("return document.readyState") not in [state, 'complete']:
-            pass
 
     def close(self) -> None:
         """
