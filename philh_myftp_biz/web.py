@@ -935,7 +935,6 @@ class Driver:
         self._drvr.command_executor.set_timeout(timeout)
         self._drvr.set_page_load_timeout(timeout)
         self._drvr.set_script_timeout(timeout)
-        #self._drvr.implicitly_wait(timeout)
 
         # Iter through all given extension urls
         for url in extensions:
