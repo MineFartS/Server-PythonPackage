@@ -111,16 +111,20 @@ class List[V]:
     ) -> Self[V]:
         
         data = self.read()
+
+        data.sort(key=func)
         
-        return List(sorted(
-            iterable = data,
-            key = func
-        ))
+        return List(data)
 
     def sort(self,
         func: Callable[[V], Any] = lambda x: x
     ) -> None:
-        self.save( self.sorted(func) )
+        
+        data = self.read()
+
+        data.sort(key=func)
+
+        self.save(data)
 
     def max(self,
         func: Callable[[V], Any] = lambda x: x
@@ -141,7 +145,26 @@ class List[V]:
     def filter(self,
         func: Callable[[V], Any] = lambda x: x
     ) -> None:
-        self.save( self.filtered(func) )
+        self.save(list(filter(
+            function = func,
+            iterable = self.read()
+        )))
+
+    def reversed(self):
+
+        data = self.read()
+
+        data.reverse()
+
+        return List(data)
+    
+    def reverse(self):
+
+        data = self.read()
+
+        data.reverse()
+
+        self.save(data)
 
     def random(self) -> None | V:
         from random import choice
@@ -152,7 +175,13 @@ class List[V]:
             return choice(data)
 
     def shuffle(self) -> None:
-        self.save(self.shuffled())
+        from random import shuffle
+
+        data = self.read()
+
+        shuffle(data)
+        
+        self.save(data)
     
     def shuffled(self) -> Self[V]:
         from random import shuffle
@@ -164,9 +193,19 @@ class List[V]:
         return List(data)
 
     def __str__(self) -> str:
-        from json import dumps
+        from .json import dumps
 
         return dumps(self.read(), indent=2)
+    
+    def value_in_common(self,
+        array: list | List
+    ) -> bool:
+        
+        for v in self.read():
+            if v in array:
+                return True
+        
+        return False
 
 def stringify(array:list) -> list[str]:
 
@@ -196,9 +235,6 @@ def auto_convert(array:list):
 
     return array
 
-def generate(generator):
-    return [x for x in generator]
-
 def priority(
     _1: int,
     _2: int,
@@ -217,77 +253,3 @@ def priority(
         p *= -1
 
     return p
-
-class random:
-
-    def sample[T](
-        array: list[T],
-        n: int = 1
-    ):
-        from random import sample
-
-        if len(array) == 0:
-            return None
-        elif n > len(array):
-            n = len(array)
-
-        return sample(array, n)
-
-    def choice[T](
-        array: list[T]    
-    ):
-        from random import choice
-
-        if len(array) > 0:
-            return choice(array)
-
-def filter[T](
-    array: list[T],
-    func: Callable[[T], bool] = lambda x: x
-):
-    from builtins import filter
-
-    return list(filter(func, array))
-
-def sort[T](
-    array: list[T],
-    func: Callable[[T], int|float] = lambda x: x
-):
-    return sorted(array, key=func)
-
-def max[T](
-    array: list[T],
-    func: Callable[[T], int|float] = lambda x: x
-):
-    if len(array) > 0:
-        return sort(
-            array = array,
-            func = func
-        )[0]
-
-def rm_duplicates[T](
-    array: list[T]
-):
-    array1 = array.copy()
-    array2 = []
-
-    for x, value in enumerate(array1):
-        
-        if value in array2:
-            del array1[x]
-        
-        else:
-            array2 += [value]
-
-    return array1
-
-def value_in_common(
-    array1: list,
-    array2: list
-) -> bool:
-    
-    for v in array1:
-        if v in array2:
-            return True
-    
-    return False
