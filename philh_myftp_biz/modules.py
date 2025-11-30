@@ -68,7 +68,12 @@ def Scanner() -> Generator['Module']:
             pass
 
 class ModuleDisabledError(Exception):
-    pass
+    def __init__(self, module:'Module'):
+        super().__init__(module.dir.path)
+
+class ModuleLockedError(Exception):
+    def __init__(self, module:'Module'):
+        super().__init__(module.dir.path)
 
 class Module:
     """
@@ -115,6 +120,8 @@ class Module:
 
         config = YAML(configFile).read()
 
+        self.lock = Lock(self)
+
         self.enabled = config['enabled']
 
         self.packages: list[str] = config['packages']
@@ -133,16 +140,20 @@ class Module:
         """
         Execute a new Process and wait for it to finish
         """
-        if self.enabled:
+        if not self.enabled:
+            raise ModuleDisabledError(self)
+        
+        elif self.lock.locked():
+            raise ModuleLockedError(self)
+        
+        else:
             return Process(
                 module = self,
                 args = list(args),
                 hide = hide,
                 wait = True
             )
-        
-        else:
-            raise ModuleDisabledError(self.dir.path)
+            
 
     def start(self,
         *args,
@@ -151,16 +162,19 @@ class Module:
         """
         Execute a new Process simultaneously with the current execution
         """
-        if self.enabled:
+        if not self.enabled:
+            raise ModuleDisabledError(self)
+        
+        elif self.lock.locked():
+            raise ModuleLockedError(self)
+        
+        else:
             return Process(
                 module = self,
                 args = list(args),
                 hide = hide,
                 wait = False
             )
-        
-        else:
-            raise ModuleDisabledError(self.dir.path)
 
     def file(self,
         *name: str
@@ -297,3 +311,21 @@ class WatchFile:
         """Check if the file has been modified"""
         
         return (self.__mtime.read() != self.path.mtime.get().unix)
+
+class Lock:
+
+    def __init__(self,
+        module: Module
+    ):
+        self.__lockfile = module.dir.child('/__lock__.ig')
+        
+    def lock(self) -> None:
+        self.__lockfile.open('w')
+        self.__lockfile.visibility.hide()
+
+    def unlock(self) -> None:
+        if self.__lockfile.exists():
+            self.__lockfile.delete()
+
+    def locked(self) -> bool:
+        return self.__lockfile.exists()
