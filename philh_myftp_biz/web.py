@@ -232,16 +232,15 @@ def get(
     Wrapper for requests.get
     """
     from requests.exceptions import ConnectionError
+    from urllib.parse import urlencode
     from requests import get
     from .pc import warn
-    from urllib.parse import urlencode
 
     if debug:
-
         if len(params) > 1:
-            print('Opening:', f'{url}?{urlencode(params)}')
+            print('Requesting:', f'{url}?{urlencode(params)}')
         else:
-            print('Opening:', url)
+            print('Requesting:', url)
 
     headers['User-Agent'] = 'Mozilla/5.0'
     headers['Accept-Language'] = 'en-US,en;q=0.5'
@@ -754,11 +753,12 @@ class api:
         """
         
         def __init__(self,
+            url: str = "https://thepiratebay.org/search.php?q={}&video=on",
             driver: Driver = None,
             qbit: 'api.qBitTorrent' = None
         ):
             
-            self.__url = "https://thepiratebay.org/search.php?q={}&video=on"
+            self.__url = url
             """fString for searching tpb"""
 
             self.__qbit = qbit
@@ -785,7 +785,10 @@ class api:
             query = query.replace('.', '').replace("'", '')
 
             # Open the search in a url
-            self.__driver.open(self.__url.format(query))
+            self.__driver.open(
+                url = self.__url.format(query),
+                state = 'interactive'
+            )
 
             # Set driver var 'lines' to a list of lines
             self.__driver.run("window.lines = document.getElementsByClassName('list-entry')")
@@ -889,14 +892,14 @@ class Driver:
     Wrapper for FireFox Selenium Session
     """
     from selenium.webdriver.remote.webelement import WebElement
-    from sys import maxsize
 
     def __init__(
         self,
         headless: bool = True,
         debug: bool = False,
         cookies: (list[dict] | None) = None,
-        extensions: list[str] = []
+        extensions: list[str] = [],
+        timeout: int = 3600 # 1 hour
     ):
         from selenium.webdriver import FirefoxService, FirefoxOptions, Firefox
         from selenium.common.exceptions import InvalidCookieDomainException
@@ -907,10 +910,10 @@ class Driver:
         self.debug = debug
 
         service = FirefoxService()
-        service.creation_flags = CREATE_NO_WINDOW
+        service.creation_flags = CREATE_NO_WINDOW # Suppress Console Output
 
         options = FirefoxOptions()
-        options.add_argument("--disable-search-engine-choice-screen")        
+        options.add_argument("--disable-search-engine-choice-screen")
         if headless:
             options.add_argument("--headless")
 
@@ -921,6 +924,12 @@ class Driver:
 
         # Start Chrome Session with options
         self._drvr = Firefox(options, service)
+
+        # Set Timeouts
+        self._drvr.command_executor.set_timeout(timeout)
+        self._drvr.set_page_load_timeout(timeout)
+        self._drvr.set_script_timeout(timeout)
+        self._drvr.implicitly_wait(timeout)
 
         # Iter through all given extension urls
         for url in extensions:
@@ -960,6 +969,46 @@ class Driver:
 
         self.run = self._drvr.execute_script
         """Run JavaScript Code on the Current Page"""
+
+        self.clear_cookies = self._drvr.delete_all_cookies
+        """Clear All Session Cookies"""
+
+    def clear_cache(self):
+        # TODO (Untested)
+        from selenium.webdriver.support import expected_conditions as EC
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.common.by import By
+
+        # Save current window handle
+        current = str(self._drvr.current_window_handle)
+
+        # Open new tab
+        self._drvr.switch_to.new_window('tab')
+
+        # Navigate to Firefox's preferences page for privacy
+        self._drvr.get("about:preferences#privacy")
+
+        # Wait for the "Clear Data..." button to be clickable, then click it
+        WebDriverWait(self._drvr, 60).until(
+            EC.element_to_be_clickable((
+                By.XPATH,
+                "//button[contains(., 'Clear Data...')]"
+            ))
+        ).click()
+    
+        # Click the "Clear" button within the dialog
+        WebDriverWait(self._drvr, 60).until(
+            EC.element_to_be_clickable((
+                By.XPATH,
+                "//button[contains(., 'Clear') and @data-l10n-id='clear-data-dialog-clear-button']"
+            ))
+        ).click()
+
+        # Close the settings page
+        self._drvr.close()
+
+        # Return to the previous tab
+        self._drvr.switch_to.window(current)
 
     def __enter__(self):
         self.__via_with = True
@@ -1038,36 +1087,48 @@ class Driver:
         else:
             return self._drvr.find_elements(_by, name)
 
+    def open_tab(self, x:int):
+        
+        handle = self._drvr.window_handles[x]
+
+        self._drvr.switch_to.window(handle)
+
+    def close_tab(self, x:int):
+
+        current = str(self._drvr.current_window_handle)
+
+        target = str(self._drvr.window_handles[x])
+
+        self._drvr.switch_to.window(target)
+
+        self._drvr.close()
+
+        if current != target:
+            self._drvr.switch_to.window(current)
+
     def open(self,
-        url: str
+        url: str,
+        state: Literal['interactive', 'complete'] = 'complete'
     ) -> None:
         """
         Open a url
 
         Waits for page to fully load
         """
-        from selenium.common.exceptions import WebDriverException
-        from urllib3.exceptions import ReadTimeoutError
 
         # Print Debug Messsage
         self.__debug(
             title = "Opening", 
             data = {'url':url}
         )
-        
-        # Switch to the first tab
+
         self._drvr.switch_to.window(self._drvr.window_handles[0])
 
         # Open the url
-        while True:
-            try:
-                self._drvr.get(url)
-                break
-            except ReadTimeoutError, WebDriverException:
-                pass
+        self._drvr.get(url)
 
         # Wait until page is loaded
-        while self.run("return document.readyState") != "complete":
+        while self.run("return document.readyState") not in [state, 'complete']:
             pass
 
     def close(self) -> None:
