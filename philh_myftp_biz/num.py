@@ -14,9 +14,13 @@ def shuffle_range(min:int, max:int):
     """
     Get a range of numbers, but shuffled
     """
-    from .array import random
+    from .array import List
 
-    return random.shuffle(list(range(min, max+1)))
+    ordered = List(range(min, max+1))
+
+    ordered.shuffle()
+
+    return ordered
 
 class valid:
     """

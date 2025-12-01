@@ -15,7 +15,7 @@ class List[V]:
     """
 
     def __init__(self,
-        array: 'list[V] | tuple[V] | Self[V] | filter[V] | JSON | _var | PKL' = []
+        array: 'list[V] | tuple[V] | Self[V] | filter[V] | JSON | _var | PKL | range' = []
     ):
         from .file import JSON, PKL, temp
         from builtins import filter
@@ -28,7 +28,7 @@ class List[V]:
         elif isinstance(array, List):
             self.var = array.var
 
-        elif isinstance(array, (list, tuple, filter)):
+        elif isinstance(array, (list, tuple, filter, range)):
             self.var = PKL(
                 temp('array', 'pkl')
             )

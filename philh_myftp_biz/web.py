@@ -677,7 +677,7 @@ class api:
             """
             Automatically Sort the Download Queue
             """
-            from .array import sort, priority
+            from .array import List, priority
             
             self._debug('Sorting Download Queue')
 
@@ -688,13 +688,12 @@ class api:
                 )
 
             #
-            torrents = self._client().torrents_info()
+            torrents: List[TorrentDictionary] = self._client().torrents_info()
 
-            # Get sorted list of torrents
-            items: list[TorrentDictionary] = sort(torrents, func)
+            torrents.sort(func)
 
             # Loop through all items
-            for t in items:
+            for t in torrents:
 
                 # Move to the top of the queue
                 t.top_priority()
