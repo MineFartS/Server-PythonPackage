@@ -112,8 +112,8 @@ class List[V]:
         
         data = self.read()
 
-        data.sort(key=func)
-        
+        data = sorted(data, key=func)
+
         return List(data)
 
     def sort(self,
@@ -122,7 +122,7 @@ class List[V]:
         
         data = self.read()
 
-        data.sort(key=func)
+        data = sorted(data, key=func)
 
         self.save(data)
 
