@@ -688,9 +688,10 @@ class api:
                 )
 
             #
-            torrents: List[TorrentDictionary] = self._client().torrents_info()
-
-            torrents.sort(func)
+            torrents: list[TorrentDictionary] = sorted(
+                self._client().torrents_info(),
+                key = func
+            )
 
             # Loop through all items
             for t in torrents:
