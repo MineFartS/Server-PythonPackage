@@ -706,9 +706,10 @@ class api:
             Check if a magnet is finished downloading
             """
             
-            s = self._get(magnet).state_enum
+            t = self._get(magnet)
             
-            return (s.is_uploading or s.is_complete)
+            if t:
+                return (t.state_enum.is_uploading or t.state_enum.is_complete)
 
         def errored(self,
             magnet: Magnet
@@ -718,7 +719,9 @@ class api:
             """
 
             t = self._get(magnet)
-            return t.state_enum.is_errored
+
+            if t:
+                return t.state_enum.is_errored
 
         def downloading(self,
             magnet: Magnet
