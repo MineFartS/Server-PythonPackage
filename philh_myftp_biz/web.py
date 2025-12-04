@@ -781,7 +781,7 @@ class api:
             Search thePirateBay for magnets
 
             EXAMPLE:
-            for magnet in thePirateBay.search('term1', 'term2'):
+            for magnet in thePirateBay.search('term'):
                 magnet
             """
             from .db import size
@@ -830,6 +830,98 @@ class api:
 
                 except KeyError:
                     pass
+
+    class _1337x:
+        """
+        1337x
+
+        'https://1337x.to/'
+        """
+        
+        # TODO Bypass Captcha via cookies
+
+        def __init__(self,
+            url: str = "https://1337x.to/search/{}/1/",
+            driver: Driver = None,
+            qbit: 'api.qBitTorrent' = None
+        ):
+            
+            self.__url = url
+            """fString for searching 1337x"""
+
+            self.__qbit = qbit
+            """qBitTorrent Session"""
+            
+            if driver:
+                self.__driver = driver
+            else:
+                self.__driver = Driver()
+
+        def search(self,
+            query: str
+        ) -> None | Generator[Magnet]:
+            """
+            Search 1337x for magnets
+
+            EXAMPLE:
+            for magnet in _1337x.search('term'):
+                magnet
+            """
+            from .db import size
+
+            # Remove all "." & "'" from query
+            query = query.replace('.', '').replace("'", '')
+
+            # Open the search in a url
+            self.__driver.open(
+                url = self.__url.format(query)
+            )
+
+            #
+            self.__driver.run("let tr = Array.from(document.getElementsByTagName('tr')).slice(1)")
+
+            items: list[list[list[str] | str]] = [] # [[lines, URL], ...]
+
+            #
+            for x in range(0, self.__driver.run('return tr.length')):
+
+                #
+                textContent: str = self.__driver.run(f'return tr[{x}].textContent')
+
+                #
+                lines: list[str] = textContent.split('\n')[1:5]
+
+                #
+                innerHTML: str = self.__driver.run(f"return tr[{x}].innerHTML")
+                
+                #
+                URL = innerHTML.split('</a><a href=')[1].split('"')[1]
+
+                #
+                items.append([lines, URL])
+
+                
+            for lines, URL in items:
+
+                self.__driver.open('https://1337x.to' + URL)
+
+                yield Magnet(
+
+                    title = lines[0].strip(),
+
+                    seeders = int(lines[1]),
+
+                    leechers = int(lines[2]),
+
+                    size = size.to_bytes(lines[4][:lines[4].find('B')+1]),
+
+                    url = self.__driver.element(
+                        'xpath', '/html/body/main/div/div/div/div[2]/div[1]/ul[1]/li[1]/a'
+                    )[0].get_attribute('href'),
+
+                    qbit = self.__qbit
+
+                )
 
 class Soup:
     """
@@ -982,6 +1074,9 @@ class Driver:
 
         self.clear_cookies = self._drvr.delete_all_cookies
         """Clear All Session Cookies"""
+
+    def read_var(self, name:str):
+        return self.run(f'return {name}')
 
     def clear_cache(self):
         # TODO (Untested)
