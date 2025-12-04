@@ -517,7 +517,8 @@ class api:
             username: str,
             password: str,
             port: int = 8080,
-            debug: bool = False
+            debug: bool = False,
+            timeout: int = 3600 # 1 hour
         ):
             from qbittorrentapi import Client
             from .classOBJ import path
@@ -535,7 +536,8 @@ class api:
                 port = port,
                 username = username,
                 password = password,
-                VERIFY_WEBUI_CERTIFICATE = False
+                VERIFY_WEBUI_CERTIFICATE = False,
+                REQUESTS_ARGS = {'timeout': (timeout, timeout)}
             )
 
         def _debug(self,
