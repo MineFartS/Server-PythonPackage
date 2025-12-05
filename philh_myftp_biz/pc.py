@@ -1002,7 +1002,9 @@ class ProgressBar:
 
     __bar_format = "{n_fmt}/{total_fmt} | {bar} | {elapsed}"
 
-    def __init__(self, total:int):
+    def __init__(self,
+        total: int = 0
+    ):
         from .__init__ import thread
         from tqdm import tqdm
 
@@ -1015,13 +1017,27 @@ class ProgressBar:
         self.stop = self.__tqdm.close
         self.step = self.__tqdm.update
 
+        self.total = self.__tqdm.total
+
         thread(self.__refresh)
 
     def finished(self) -> bool:
-        return (self.__tqdm.n == self.__tqdm.total)
-    
+
+        if self.__tqdm.total == 0:
+            return False
+        else:
+            return (self.__tqdm.n == self.__tqdm.total)
+
     def running(self):
         return not (self.finished() or self.__tqdm.disable)
+    
+    def set_total(self, total:int):
+        self.__tqdm.total = total
+
+    def step_total(self,
+        n: float = 1
+    ):
+        self.__tqdm.total += n
     
     def __refresh(self):
         from .time import sleep
