@@ -120,24 +120,31 @@ def var(
             default = default
         )
 
-def thread(func,
-    *args,
-    **kwargs
-) -> 'Thread':
+class thread:
     """
     Quickly Start a Thread
     """
-    from threading import Thread
 
-    p = Thread(
-        target = func,
-        kwargs = kwargs,
-        args = args
-    )
+    def __init__(self,
+        func: Callable,
+        *args,
+        **kwargs
+    ) -> 'Thread':
+        from threading import Thread
 
-    p.start()
-    
-    return p
+        #
+        self._t = Thread(
+            target = func,
+            kwargs = kwargs,
+            args = args
+        )
+
+        #
+        self._t.start()
+
+        self.wait = self._t.join
+
+        self.running = self._t.is_alive
 
 class run:
     """
