@@ -1,10 +1,10 @@
 from typing import Literal, TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
+    from threading import Thread
     from .file import PKL
     from .db import Ring
     from .pc import Path
-    from threading import Thread
 
 def Args() -> list:
     """
@@ -16,7 +16,6 @@ def Args() -> list:
     return auto_convert(argv[1:])
 
 class ParsedArgs:
-    from .text import auto_convert
 
     def __init__(self,
         name: str = 'Program Name',
@@ -44,10 +43,12 @@ class ParsedArgs:
 
     def Arg(self,
         name: str,
-        default = None,
+        default: str = 'null',
         desc: str = None,
-        handler: None | Callable[[str], Any] = auto_convert
+        handler: Callable[[str], Any] = str
     ):
+        
+        self.__handlers[name] = handler
 
         self.__parser.add_argument(
             '--'+name,
@@ -55,11 +56,6 @@ class ParsedArgs:
             help = desc,
             dest = name,
         )
-
-        if handler:
-            self.__handlers[name] = handler
-        else:
-            self.__handlers[name] = lambda x: x
 
     def Flag(self,
         name: str,
@@ -79,7 +75,7 @@ class ParsedArgs:
             action = 'store_true'
         )
 
-        self.__handlers[name] = lambda x: x
+        self.__handlers[name] = bool
 
     def __getitem__(self,
         key: str
@@ -96,25 +92,28 @@ class ParsedArgs:
 def var(
     title: str,
     default = '',
-    type: Literal['temp', 'keyring'] = 'temp'
+    type: Literal['temp', 'ring'] = 'temp'
     ) -> 'PKL | Ring':
     """
     Quick Local Variable Builder
 
-    pkl -> philh_myftp_biz.file.PKL
-    ring -> philh_myftp_biz.db.Ring
+    temp -> .file.PKL()
+    ring -> .db.Key()
     """
     from .file import temp, PKL
     from .db import Ring
 
     if type == 'temp':
+
         return PKL(
             path = temp('var', 'pkl', title),
             default = default
         )
 
     elif type == 'keyring':
+        
         ring = Ring('__variables__')
+        
         return ring.Key(
             name = title,
             default = default
@@ -157,11 +156,10 @@ class run:
         terminal: Literal['cmd', 'ps', 'psfile', 'py', 'pym', 'vbs'] | None = 'cmd',
         dir: 'Path' = None,
         hide: bool = False,
-        cores: int = 4,
-        timeout: int | None = None,
-        autostart: bool = True
+        cores: int = 4, # TODO Remove from scripts, them remove from here
+        timeout: int | None = None
     ):
-        from .array import List, stringify
+        from .array import stringify
         from .pc import Path, cwd
         from sys import executable
 
@@ -169,8 +167,6 @@ class run:
 
         self.__wait = wait
         self.__hide = hide
-        self.__file = Path(args[0])
-        self.__cores = List([0, 1, 2, 3]).shuffled()[:cores]
         self.__timeout = timeout
 
         if dir:
@@ -195,7 +191,7 @@ class run:
                 'vbs' : 'vbs'
             }
 
-            ext = self.__file.ext()
+            ext = Path(args[0]).ext()
 
             if ext:
                 terminal = exts[ext]
@@ -223,12 +219,12 @@ class run:
 
         # =====================================
 
-        if autostart:
-            self.start()
+        # Start the process
+        self.start()
 
-    def __background(self) -> None:
+    def __monitor(self) -> None:
         """
-        Background Tasks
+        Monitor the Process' status
         """
         from .time import sleep
 
@@ -237,11 +233,10 @@ class run:
             sleep(.1)
 
             if self.finished() or self.timed_out():
+                
                 self.stop()
+                
                 return
-            
-            else:
-                self.__task.cores(*self.__cores)
 
     def __stdout(self) -> None:
         """
@@ -296,6 +291,7 @@ class run:
         from .time import Stopwatch
         from .pc import Task
        
+        #
         self.__process = Popen(
             args = self.__args,
             cwd = self.__dir.path,
@@ -309,12 +305,22 @@ class run:
         self.wait = self.__process.wait
 
         self.__task = Task(self.__process.pid)
-        self.__stopwatch = Stopwatch().start()
+        """Process Task"""
 
+        self.__stopwatch = Stopwatch()
+        """Process Runtime"""
+        self.__stopwatch.start()
+
+        # Start Output Manager
         thread(self.__stdout)
-        thread(self.__stderr)
-        thread(self.__background)
 
+        # Start Error Manager
+        thread(self.__stderr)
+
+        # Start Status Monitor
+        thread(self.__monitor)
+
+        # Wait for process to complete if required
         if self.__wait:
             self.wait()
 
@@ -335,14 +341,22 @@ class run:
         """
         Check if the Subprocess timed out
         """
+
+        # If a timeout value was given
         if self.__timeout:
+
+            # Return whether the runtime exceeds the timeout
             return (self.__stopwatch.elapsed() >= self.__timeout)
 
     def stop(self) -> None:
         """
         Stop the Subprocess
         """
+
+        # Kill the process and its children
         self.__task.stop()
+
+        # Pause the runtime stopwatch
         self.__stopwatch.stop()
 
     def output(self,
