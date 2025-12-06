@@ -299,7 +299,8 @@ class run:
 
             self.stderr += line
 
-            terminal.write(line, 'err')
+            if not self.__hide:
+                terminal.write(line, 'err')
 
     def start(self) -> None:
         """
