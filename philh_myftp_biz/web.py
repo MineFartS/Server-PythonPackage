@@ -562,7 +562,7 @@ class api:
             while True:
 
                 try:
-                    self.__rclient.auth_log_in()
+                    self.__rclient.torrents_info()
                     return self.__rclient
                 
                 except LoginFailed, Forbidden403Error, APIConnectionError:
