@@ -1227,6 +1227,7 @@ class Driver:
 
         Waits for page to fully load
         """
+        from selenium.common.exceptions import WebDriverException
 
         # Print Debug Messsage
         self.__debug(
@@ -1238,7 +1239,12 @@ class Driver:
         self._drvr.switch_to.window(self._drvr.window_handles[0])
 
         # Open the url
-        self._drvr.get(url)
+        while True:
+            try:
+                self._drvr.get(url)
+                return
+            except WebDriverException:
+                pass
 
     def close(self) -> None:
         """
