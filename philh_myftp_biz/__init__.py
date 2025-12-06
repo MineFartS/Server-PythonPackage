@@ -22,17 +22,18 @@ class ParsedArgs:
         desc: str = 'What the program does',
         epilog: str = 'Text at the bottom of help'
     ):
-        from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+        from argparse import ArgumentParser
         
         #
         self.__parser = ArgumentParser(
             prog = name,
             description = desc,
-            epilog = epilog,
-            formatter_class = ArgumentDefaultsHelpFormatter
+            epilog = epilog
         )
 
         self.__handlers: dict[str, Callable[[str], Any]] = {}
+
+        self.__defaults: dict[str, Any] = {}
 
         #
         self.Flag(
@@ -43,16 +44,21 @@ class ParsedArgs:
 
     def Arg(self,
         name: str,
-        default: str = 'null',
+        default: str = None,
         desc: str = None,
-        handler: Callable[[str], Any] = str
+        handler: None | Callable[[str], Any] = None
     ):
         
-        self.__handlers[name] = handler
+        if handler:
+            self.__handlers[name] = handler
+        else:
+            self.__handlers[name] = lambda x: x
+
+        self.__defaults[name] = default
 
         self.__parser.add_argument(
             '--'+name,
-            default = default,
+            default = -1,
             help = desc,
             dest = name,
         )
@@ -60,7 +66,8 @@ class ParsedArgs:
     def Flag(self,
         name: str,
         letter: str = None,
-        desc: str = None
+        desc: str = None,
+        invert: bool = False
     ):
         
         flags = ['--'+name]
@@ -75,20 +82,31 @@ class ParsedArgs:
             action = 'store_true'
         )
 
-        self.__handlers[name] = bool
+        if invert:
+            self.__handlers[name] = lambda x: not x
+            self.__defaults[name] = True
+        else:
+            self.__handlers[name] = lambda x: x
+            self.__defaults[name] = False
 
     def __getitem__(self,
         key: str
     ):
 
-        obj = self.__parser.parse_args()
+        parsed = self.__parser.parse_args()
         
         handler = self.__handlers[key]
         
-        value = getattr(obj, key)
+        value = getattr(parsed, key)
 
-        return handler(value)
+        if value == -1:
 
+            return self.__defaults[key]
+        
+        else:
+
+            return handler(value)            
+        
 def var(
     title: str,
     default = '',
