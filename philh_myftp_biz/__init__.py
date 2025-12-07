@@ -93,7 +93,7 @@ class ParsedArgs:
         key: str
     ):
 
-        parsed = self.__parser.parse_args()
+        parsed, _ = self.__parser.parse_known_args()
         
         handler = self.__handlers[key]
         
