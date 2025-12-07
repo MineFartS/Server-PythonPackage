@@ -299,8 +299,9 @@ class api:
             """
             Get details of a movie
             """
+            from .json import Dict
 
-            r: dict[str, str] = get(
+            response = get(
                 url = self.__url,
                 debug = self.debug,
                 params = {
@@ -308,14 +309,19 @@ class api:
                     'y': year,
                     'apikey': self.__apikey
                 }                
-            ).json()
+            )
 
-            if bool(r['Response']) and (r['Type'] == 'movie'):
-                return self.Item(
-                    Type = 'movie',
-                    Title = r['Title'],
-                    Year = int(r['Year'])
-                )
+            r: Dict[str] = Dict(response.json())
+
+            if bool(r['Response']):
+                
+                if r['Type'] == 'movie':
+
+                    return self.Item(
+                        Type = 'movie',
+                        Title = r['Title'],
+                        Year = int(r['Year'])
+                    )
 
         def show(self,
             title: str,
@@ -324,8 +330,9 @@ class api:
             """
             Get details of a show
             """
+            from .json import Dict
 
-            r: dict[str, str] = get(
+            response = get(
                 url = self.__url,
                 debug = self.debug,
                 params = {
@@ -333,37 +340,41 @@ class api:
                     'y': year,
                     'apikey': self.__apikey
                 }
-            ).json()
+            )
 
-            if bool(r['Response']) and (r['Type'] == 'series'):
+            r: Dict[str] = Dict(response.json())
 
-                Seasons: dict[str, int] = {}
+            if bool(r['Response']):
+                    
+                if r['Type'] == 'series':
 
-                for season in range(1, int(r['totalSeasons'])+1):
+                    Seasons: dict[str, int] = {}
 
-                    r_: dict[str, str] = get(
-                        url = self.__url,
-                        debug = self.debug,
-                        params = {
-                            't': title,
-                            'y': year,
-                            'Season': season,
-                            'apikey': self.__apikey
-                        }
-                    ).json()
+                    for season in range(1, int(r['totalSeasons'])+1):
 
-                    x = str(season).zfill(2)
-                    Seasons[x] = []
+                        r_: dict[str, str] = get(
+                            url = self.__url,
+                            debug = self.debug,
+                            params = {
+                                't': title,
+                                'y': year,
+                                'Season': season,
+                                'apikey': self.__apikey
+                            }
+                        ).json()
 
-                    for e in r_['Episodes']:
-                        Seasons[x] += [str(e['Episode']).zfill(2)]
+                        x = str(season).zfill(2)
+                        Seasons[x] = []
 
-                return self.Item(
-                    Type = 'show', 
-                    Title = r['Title'],
-                    Year = int(r['Year'].split(r'–')[0]),
-                    Seasons = Seasons
-                )
+                        for e in r_['Episodes']:
+                            Seasons[x] += [str(e['Episode']).zfill(2)]
+
+                    return self.Item(
+                        Type = 'show', 
+                        Title = r['Title'],
+                        Year = int(r['Year'].split(r'–')[0]),
+                        Seasons = Seasons
+                    )
 
         def search(self,
             query: str
