@@ -288,7 +288,7 @@ class TXT:
         Read data from the txt file
         """
         try:
-            self.path.read()
+            self.path.open('r').read()
         except:
             return self.__default
     
@@ -296,7 +296,7 @@ class TXT:
         """
         Save data to the txt file
         """
-        self.path.write(data)
+        self.path.open('w').write(str(data))
 
 class ZIP:
     """
