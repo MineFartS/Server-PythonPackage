@@ -998,6 +998,10 @@ class Task:
         
         return len(processes) > 0
 
+    def PIDs(self) -> Generator[int]:
+        for p in self.__scanner():
+            yield p.pid
+
 class ProgressBar:
 
     __bar_format = "{n_fmt}/{total_fmt} | {bar} | {elapsed}"
