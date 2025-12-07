@@ -160,6 +160,20 @@ class Module:
             )
         else:
             raise ModuleDisabledError(self)
+        
+    def cap(self,
+        *args
+    ):
+        """
+        Execute a new Process and capture the output as JSON
+        """
+
+        p = self.run(
+            *args,
+            hide = True
+        )
+
+        return p.output('json')
 
     def file(self,
         *name: str
