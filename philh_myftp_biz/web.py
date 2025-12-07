@@ -636,17 +636,19 @@ class api:
 
             t = self._get(magnet)
 
-            t.setForceStart(True)
+            if t:
 
-            #
-            while len(t.files) == 0:
-                pass
+                t.setForceStart(True)
 
-            t.setForceStart(False)
+                #
+                while len(t.files) == 0:
+                    pass
 
-            for f in t.files:
+                t.setForceStart(False)
 
-                yield self.File(self, t, f)
+                for f in t.files:
+
+                    yield self.File(self, t, f)
 
         def stop(self,
             magnet: Magnet,
