@@ -310,3 +310,43 @@ class WatchFile:
         """Check if the file has been modified"""
         
         return (self.__mtime.read() != self.path.mtime.get().unix)
+
+class Service:
+    """
+    """
+
+    def __init__(self,
+        module: Module,
+        path: str
+    ):
+        
+        self.__mod = module
+        
+        if path.endswith('/'):
+            self.__path = path
+        else:
+            self.__path = path+'/'
+
+    def Start(self,
+        force: bool = True
+    ):
+        """
+        Start the Service
+        
+        Will do nothing if already running unless force is True
+        """
+        if force or (not self.Running()):
+            self.__mod.run(self.__path+'Start')
+
+
+    def Running(self) -> bool:
+        """
+        Service is running
+        """
+        return self.__mod.cap(self.__path+'Running')
+    
+    def Stop(self) -> None:
+        """
+        Stop the Service
+        """
+        self.__mod.run(self.__path+'Stop')
