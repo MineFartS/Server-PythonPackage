@@ -329,3 +329,15 @@ class Lock:
 
     def locked(self) -> bool:
         return self.__lockfile.exists()
+
+class Service:
+    """
+    """
+
+    def __init__(self,
+        module: Module,
+        name: str
+    ):
+        
+        self.module = module
+        self.name = name.lower()
