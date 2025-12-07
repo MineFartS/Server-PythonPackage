@@ -317,7 +317,8 @@ class Service:
 
     def __init__(self,
         module: Module,
-        path: str
+        path: str,
+        *args
     ):
         
         self.__mod = module
@@ -326,6 +327,8 @@ class Service:
             self.__path = path
         else:
             self.__path = path+'/'
+
+        self.__args = args
 
     def Start(self,
         force: bool = True
@@ -336,8 +339,10 @@ class Service:
         Will do nothing if already running unless force is True
         """
         if force or (not self.Running()):
-            self.__mod.run(self.__path+'Start')
-
+            self.__mod.run(
+                self.__path+'Start', *self.__args,
+                hide = True
+            )
 
     def Running(self) -> bool:
         """
@@ -349,4 +354,7 @@ class Service:
         """
         Stop the Service
         """
-        self.__mod.run(self.__path+'Stop')
+        self.__mod.run(
+            self.__path+'Stop', *self.__args,
+            hide = True
+        )
