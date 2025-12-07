@@ -1025,6 +1025,7 @@ class Driver:
         if fast_load:
             options.page_load_strategy = 'eager'
 
+        self.__headless = headless
         if headless:
             options.add_argument("--headless")
 
@@ -1245,8 +1246,9 @@ class Driver:
             data = {'url':url}
         )
 
-        # Focus on the first tab
-        self._drvr.switch_to.window(self._drvr.window_handles[0])
+        if not self.__headless:
+            # Focus on the first tab
+            self._drvr.switch_to.window(self._drvr.window_handles[0])
 
         # Open the url
         while True:
