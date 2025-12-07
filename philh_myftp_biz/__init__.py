@@ -325,6 +325,7 @@ class run:
 
         self.__task = Task(self.__process.pid)
         """Process Task"""
+        self.PIDs = self.__task.PIDs
 
         self.__stopwatch = Stopwatch()
         """Process Runtime"""
