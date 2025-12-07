@@ -473,6 +473,9 @@ class api:
             def _file(self) -> 'TorrentFile':
                 return self.__torrent.files[self.__id]
 
+            def progress(self) -> float:
+                return self._file().progress
+
             def start(self,
                 prioritize: bool = False
             ):
@@ -490,21 +493,27 @@ class api:
             def stop(self):
                 """
                 Stop downloading the file
+
+                Ignores error if the magnet is not found
                 """
+                from qbittorrentapi.exceptions import NotFound404Error
 
                 self._debug('Stopping File', str(self))
                                 
-                self.__torrent.file_priority(
-                    file_ids = self.__id,
-                    priority = 0
-                )
+                try:
+                    self.__torrent.file_priority(
+                        file_ids = self.__id,
+                        priority = 0
+                    )
+                except NotFound404Error:
+                    pass
 
             def finished(self) -> bool:
                 """
                 Check if the file is finished downloading
                 """
 
-                return (self._file().progress == 1)
+                return (self.progress() == 1)
 
             def __str__(self):
                 from .classOBJ import location
