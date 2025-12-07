@@ -997,7 +997,6 @@ class Driver:
         debug: bool = False,
         cookies: (list[dict] | None) = None,
         extensions: list[str] = [],
-        timeout: int = 3600, # 1 hour
         fast_load: bool = False
     ):
         from selenium.webdriver import FirefoxService, FirefoxOptions, Firefox
@@ -1023,17 +1022,16 @@ class Driver:
         # Print debug message
         self.__debug('Starting Session', {
             'headless': headless,
-            'fast_load': fast_load,
-            'timeout': timeout
+            'fast_load': fast_load
         })
 
         # Start Chrome Session with options
         self._drvr = Firefox(options, service)
 
         # Set Timeouts
-        self._drvr.command_executor.set_timeout(timeout)
-        self._drvr.set_page_load_timeout(timeout)
-        self._drvr.set_script_timeout(timeout)
+        self._drvr.command_executor.set_timeout(300)
+        self._drvr.set_page_load_timeout(300)
+        self._drvr.set_script_timeout(300)
 
         # Iter through all given extension urls
         for url in extensions:
@@ -1230,6 +1228,7 @@ class Driver:
         Waits for page to fully load
         """
         from selenium.common.exceptions import WebDriverException
+        from urllib3.exceptions import ReadTimeoutError
 
         # Print Debug Messsage
         self.__debug(
@@ -1245,7 +1244,7 @@ class Driver:
             try:
                 self._drvr.get(url)
                 return
-            except WebDriverException:
+            except WebDriverException, ReadTimeoutError:
                 pass
 
     def close(self) -> None:
