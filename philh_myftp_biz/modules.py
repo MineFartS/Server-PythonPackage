@@ -199,7 +199,7 @@ class Module:
         # Upgrade all python packages
         for pkg in self.packages:
             run(
-                args = ['pip', 'install', '--upgrade', pkg],
+                args = ['pip', 'install', pkg],
                 wait = True,
                 terminal = 'pym',
                 hide = hide
