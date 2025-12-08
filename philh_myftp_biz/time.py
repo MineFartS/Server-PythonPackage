@@ -9,20 +9,25 @@ def sleep(
 
     If show is True, then '#/# seconds' will print to the console each second
     """
-    from time import sleep as __sleep
+    from .pc import ProgressBar
+    from time import sleep
 
     # If show is True
     if show:
-    
-        print('Waiting ...')
+
+        pbar = ProgressBar(s)
     
         # loop once for each second
-        for x in range(1, s+1):
-            print('{}/{} seconds'.format(x, s))
-            __sleep(1)
+        for _ in range(s):
+
+            sleep(1)
+
+            pbar.step()
+
+        pbar.stop()
 
     else:
-        __sleep(s)
+        sleep(s)
     
     return True
 
