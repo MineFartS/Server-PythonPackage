@@ -99,51 +99,78 @@ class Module:
 
         self.watch_files = [WatchFile(self, p) for p in config['watch_files']]
 
-    def run(self,
-        *args,
-        hide: bool = False
-    ) -> 'None | Process':
+    def run(self, *args) -> 'run':
         """
         Execute a new Process and wait for it to finish
         """
-        if self.enabled:
-            return Process(
-                module = self,
-                args = list(args),
-                hide = hide,
-                wait = True
-            )
-        else:
-            raise ModuleDisabledError(self)
+        return self.__process(
+            args = list(args),
+            hide = False,
+            wait = True
+        )
+    
+    def runH(self, *args) -> 'run':
+        """
+        Execute a new hidden Process and wait for it to finish
+        """
+        return self.__process(
+            args = list(args),
+            hide = True,
+            wait = True
+        )
 
-    def start(self,
-        *args,
-        hide: bool = False
-    ) -> 'None | Process':
+    def start(self, *args) -> 'run':
         """
         Execute a new Process simultaneously with the current execution
         """
+        return self.__process(
+            args = list(args),
+            hide = False,
+            wait = False
+        )
+    
+    def startH(self, *args) -> 'run':
+        """
+        Execute a new hidden Process simultaneously with the current execution
+        """
+        return self.__process(
+            args = list(args),
+            hide = True,
+            wait = False
+        )
+    
+    def __process(self,
+        args: list[str],
+        hide: bool,
+        wait: bool
+    ) -> 'run':
+        from .__init__ import run
+
         if self.enabled:
-            return Process(
-                module = self,
-                args = list(args),
+
+            #
+            args[0] = self.file(args[0]).path
+
+            #
+            return run(
+                args = args,
+                wait = wait,
                 hide = hide,
-                wait = False
+                terminal = 'ext'
             )
-        else:
-            raise ModuleDisabledError(self)
         
+        else:
+
+            raise ModuleDisabledError(self)
+
     def cap(self,
         *args
     ):
         """
-        Execute a new Process and capture the output as JSON
+        Execute a new hidden Process and capture the output as JSON
         """
 
-        p = self.run(
-            *args,
-            hide = True
-        )
+        p = self.runH(*args)
 
         return p.output('json')
 
@@ -192,7 +219,7 @@ class Module:
         # Upgrade all python packages
         for pkg in self.packages:
             run(
-                args = ['pip', 'install', '--upgrade', *split(pkg)],
+                args = ['pip', 'install', *split(pkg)],
                 wait = True,
                 terminal = 'pym',
                 hide = hide
@@ -219,37 +246,6 @@ class Module:
             dir = self.dir,
             hide = hide
         )
-
-class Process:
-    """
-    Wrapper for Subprocesses started by a Module
-    """
-
-    def __init__(self,
-        module: Module,
-        args: list[str],
-        hide: bool,
-        wait: bool
-    ):
-        from .__init__ import run
-
-        #
-        args[0] = module.file(args[0]).path
-
-        #
-        self.__p = run(
-            args = args,
-            wait = wait,
-            hide = hide,
-            terminal = 'ext',
-            cores = 3
-        )
-
-        self.start    = self.__p.start
-        self.stop     = self.__p.stop
-        self.restart  = self.__p.restart
-        self.finished = self.__p.finished
-        self.output   = self.__p.output
 
 class WatchFile:
     """
@@ -321,9 +317,8 @@ class Service:
         Will do nothing if already running unless force is True
         """
         if force or (not self.Running()):
-            self.__mod.run(
-                self.__path+'Start', *self.__args,
-                hide = True
+            self.__mod.runH(
+                self.__path+'Start', *self.__args
             )
 
     def Running(self) -> bool:
@@ -336,7 +331,6 @@ class Service:
         """
         Stop the Service
         """
-        self.__mod.run(
-            self.__path+'Stop', *self.__args,
-            hide = True
+        self.__mod.runH(
+            self.__path+'Stop', *self.__args
         )
