@@ -4,26 +4,6 @@ if TYPE_CHECKING:
     from .pc import Path
     from .__init__ import run
 
-def output(data) -> None:
-    """
-    Print the data to the terminal as hexidecimal, then exit
-    """
-    from .text import hex
-    from .pc import cls
-
-    cls()
-    print(';' + hex.encode(data) + ';')
-    exit()
-
-def input() -> list:
-    """
-    Decode Command Line Arguements
-    """
-    from .__init__ import Args
-    from .text import hex
-
-    return hex.decode(Args()[0])
-
 def when_modified(*modules:'Module') -> Generator['WatchFile']:
     """
     Wait for any Watch File to be modified
@@ -258,16 +238,12 @@ class Process:
         hide: bool,
         wait: bool
     ):
-        from .text import hex
         from .__init__ import run
 
-        file = module.file(args[0])
-        args[0] = file.path
+        #
+        args[0] = module.file(args[0]).path
 
-        self.__isPY = (file.ext() == 'py')
-        if self.__isPY:
-            args = [args[0], hex.encode(args[1:])]
-
+        #
         self.__p = run(
             args = args,
             wait = wait,
@@ -313,6 +289,19 @@ class WatchFile:
 
 class Service:
     """
+    Wrapper for Module Service
+
+    EXAMPLE:
+    
+    mod = Module('E:/module/')
+    path = '/service/'
+
+    serv = Service(mod, path)
+
+    'E:/module/service/*'
+        - Running.* (Outputs 'true' or 'false' whether the service is running)
+        - Start.* (Starts the service)
+        - Stop.* (Stops the service)
     """
 
     def __init__(self,
