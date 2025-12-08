@@ -79,13 +79,10 @@ class Module:
     def __init__(self,
         module: 'str | Path'
     ):
-        from .pc import Path
         from .file import YAML
+        from .pc import Path
 
         self.dir = Path(module)
-
-        if self.dir.isfile():
-            raise ModuleNotFoundError(self.dir.path)
 
         configFile = self.dir.child('/module.yaml')
 
@@ -96,16 +93,11 @@ class Module:
 
         config = YAML(configFile).read()
 
-        self.enabled = config['enabled']
+        self.enabled: bool = config['enabled']
 
         self.packages: list[str] = config['packages']
 
-        self.watch_files: list[WatchFile] = []
-        for WFpath in config['watch_files']:
-            self.watch_files += [WatchFile(
-                module = self,
-                path = WFpath
-            )]
+        self.watch_files = [WatchFile(self, p) for p in config['watch_files']]
 
     def run(self,
         *args,
@@ -192,6 +184,7 @@ class Module:
         Automatically install all dependencies
         """
         from .__init__ import run
+        from shlex import split
 
         # Initialize a git repo
         self.git('init', hide=hide)
@@ -199,7 +192,7 @@ class Module:
         # Upgrade all python packages
         for pkg in self.packages:
             run(
-                args = ['pip', 'install', pkg],
+                args = ['pip', 'install', '--upgrade', *split(pkg)],
                 wait = True,
                 terminal = 'pym',
                 hide = hide
