@@ -1,12 +1,18 @@
-name: Daily Pre-release
+name: Nightly Build
 
 on:
+
+  workflow_dispatch:
+
   schedule:
     - cron: '0 5 * * *' # Runs daily at midnight EST
 
 jobs:
+  
   create-prerelease:
+  
     runs-on: ubuntu-latest
+  
     permissions:
       contents: write
 
