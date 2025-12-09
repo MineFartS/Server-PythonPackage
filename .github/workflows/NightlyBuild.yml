@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: '0 5 * * *' # Runs daily at midnight EST
+    - cron: '0 3 * * *' # Runs daily at 22:00 EST
 
 jobs:
   
@@ -23,7 +23,9 @@ jobs:
 
       - name: Get Current Date
         id: date
-        run: echo "::set-output name=iso::$(date +'%Y.%m.%d')"
+        run: |
+          export TZ='America/New_York' # Set timezone to EST
+          echo "ISO=$(date +'%Y.%m.%d')" >> $GITHUB_ENV 
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -42,7 +44,7 @@ jobs:
           with open('pyproject.toml', 'r') as f:
               data = load(f)
               
-          data['project']['version'] = 'v${{ steps.date.outputs.iso }}'
+          data['project']['version'] = 'v${{ env.ISO }}'
           
           with open('pyproject.toml', 'w') as f:
               dump(data, f)
@@ -54,8 +56,8 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.date.outputs.iso }}
-          name: ${{ steps.date.outputs.iso }}
+          tag_name: v${{ env.ISO }}
+          name: ${{ env.ISO }}
           body: |
             Automatic Nightly Build
           prerelease: false
