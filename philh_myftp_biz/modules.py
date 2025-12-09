@@ -325,7 +325,12 @@ class Service:
         """
         Service is running
         """
-        return self.__mod.cap(self.__path+'Running')
+        from json.decoder import JSONDecodeError
+
+        try:
+            return self.__mod.cap(self.__path+'Running')
+        except JSONDecodeError:
+            return False
     
     def Stop(self) -> None:
         """
