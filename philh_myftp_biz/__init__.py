@@ -149,14 +149,17 @@ class thread:
     ) -> 'Thread':
         from threading import Thread
 
-        #
+        # Create new thread
         self._t = Thread(
             target = func,
             kwargs = kwargs,
             args = args
         )
 
-        #
+        # Close when main execution ends
+        self._t.daemon = True
+
+        # start the thread
         self._t.start()
 
         self.wait = self._t.join
@@ -174,8 +177,8 @@ class run:
         terminal: Literal['cmd', 'ps', 'psfile', 'py', 'pym', 'vbs'] | None = 'cmd',
         dir: 'Path' = None,
         hide: bool = False,
-        cores: int = 4, # TODO Remove from scripts, them remove from here
-        timeout: int | None = None
+        timeout: int | None = None,
+        venv: Path = None
     ):
         from .array import stringify
         from .pc import Path, cwd
@@ -197,7 +200,10 @@ class run:
         if isinstance(args, (tuple, list)):
             args = stringify(args)
         else:
-            args = [args]
+            args = [str(args)]
+
+        if venv:
+            executable = str(venv.child('/Scripts/python.exe'))
 
         if terminal == 'ext':
 
