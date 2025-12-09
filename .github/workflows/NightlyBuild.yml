@@ -30,10 +30,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.*'
 
       - name: Install dependencies
-        run: pip install toml
+        run: |
+          pip install toml poetry
+          poetry install --no-root
 
       - name: Update version in pyproject.toml
         run: |
@@ -62,3 +64,11 @@ jobs:
             Automatic Nightly Build
           prerelease: false
           draft: false
+
+      - name: Build package
+        run: poetry build
+
+      - name: Publish package to PyPI
+        run: poetry publish --username __token__ --password ${{ secrets.PYPI_API_TOKEN }}
+
+        
