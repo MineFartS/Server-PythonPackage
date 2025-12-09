@@ -1,0 +1,62 @@
+name: Nightly Build
+
+on:
+
+  workflow_dispatch:
+
+  schedule:
+    - cron: '0 5 * * *' # Runs daily at midnight EST
+
+jobs:
+  
+  main:
+  
+    runs-on: ubuntu-latest
+  
+    permissions:
+      contents: write
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get Current Date
+        id: date
+        run: echo "::set-output name=iso::$(date +'%Y.%m.%d')"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install toml
+
+      - name: Update version in pyproject.toml
+        run: |
+          python -c "
+          
+          from toml import load, dump
+          
+          with open('pyproject.toml', 'r') as f:
+              data = load(f)
+              
+          data['project']['version'] = 'v${{ steps.date.outputs.iso }}'
+          
+          with open('pyproject.toml', 'w') as f:
+              dump(data, f)
+              
+          "
+      - name: Save Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.date.outputs.iso }}
+          name: ${{ steps.date.outputs.iso }}
+          body: |
+            Automatic Nightly Build
+          prerelease: false
+          draft: false

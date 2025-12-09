@@ -1,34 +1,9 @@
-
 [project]
 name = "philh_myftp_biz"
-version = "0.0.9"
+version = "v2025.12.09"
 requires-python = ">=3.13"
-
-dependencies = [
-  "dill",
-  "selenium",
-  "lxml",
-  "paramiko",
-  "bs4",
-  "qbittorrent-api",
-  "send2trash",
-  "inputimeout",
-  "pyyaml",
-  "configobj",
-  "browser_cookie3",
-  "elevate",
-  "tqdm",
-  "tomli_w",
-  "toml",
-  "psutil",
-  "keyring",
-  "ping3",
-  'QuickSocketPY',
-  "mimetype"
-]
+dependencies = [ "dill", "selenium", "lxml", "paramiko", "bs4", "qbittorrent-api", "send2trash", "inputimeout", "pyyaml", "configobj", "browser_cookie3", "elevate", "tqdm", "tomli_w", "toml", "psutil", "keyring", "ping3", "QuickSocketPY", "mimetype",]
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = [ "poetry-core>=2.0.0,<3.0.0",]
 build-backend = "poetry.core.masonry.api"
-
-
