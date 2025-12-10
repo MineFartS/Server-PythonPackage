@@ -219,7 +219,7 @@ class Module:
         # Upgrade all python packages
         for pkg in self.packages:
             run(
-                args = ['pip', 'install', *split(pkg)],
+                args = ['pip', 'install', '--user', '--upgrade', *split(pkg)],
                 wait = True,
                 terminal = 'pym',
                 hide = hide
