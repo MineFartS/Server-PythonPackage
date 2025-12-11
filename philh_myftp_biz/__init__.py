@@ -279,6 +279,9 @@ class run:
 
                 #
                 self.stdout = ''
+
+                #
+                self.stdcomb = ''
                 
                 #
                 if not self.__hide:
@@ -288,6 +291,8 @@ class run:
 
                 #
                 self.stdout += line
+
+                self.stdcomb += line
 
                 #
                 if not self.__hide:
@@ -304,6 +309,8 @@ class run:
         for line in self.__process.stderr:
 
             self.stderr += line
+
+            self.stdcomb += line
 
             if not self.__hide:
                 terminal.write(line, 'err')
@@ -337,6 +344,8 @@ class run:
         """Process Runtime"""
         self.__stopwatch.start()
 
+        self.stdcomb = ''
+
         # Start Output Manager
         thread(self.__stdout)
 
@@ -355,6 +364,12 @@ class run:
         Check if the subprocess is finished
         """
         return (not self.__task.exists())
+    
+    def running(self) -> bool:
+        """
+        Check if the subprocess is still running
+        """
+        return self.__task.exists()
 
     def restart(self) -> None:
         """
@@ -386,7 +401,8 @@ class run:
         self.__stopwatch.stop()
 
     def output(self,
-        format: Literal['json', 'hex'] = None
+        format: Literal['json', 'hex'] = None,
+        stream: Literal['out', 'err', 'comb'] = 'comb'
     ) -> 'str | dict | list | bool | Any':
         """
         Read the output from the Subprocess
@@ -394,7 +410,9 @@ class run:
         from . import json
         from .text import hex
 
-        output = self.stdout.encode().strip()
+        stream: str = getattr(self, 'std'+stream)
+
+        output = stream.encode().strip()
 
         if format == 'json':
             return json.loads(output)
