@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Generator
+from typing import TYPE_CHECKING, Generator, Callable, Any
 
 if TYPE_CHECKING:
     from .pc import Path
@@ -30,6 +30,25 @@ def temp(
         id = random(50)
 
     return dir.child(f'{name}-{id}.{ext}')
+
+class _Template:
+
+    def __init__(self,
+        path: 'Path',
+        default = ''
+    ):
+        self._default = default
+        self._path    = path
+
+    read = Callable[[], Any]
+    """
+    Read data from the file
+    """
+    
+    save = Callable[[Any], None]
+    """
+    Save data to the file
+    """
 
 class XML:
     """
@@ -69,35 +88,24 @@ class XML:
 
         self.path.write(d)
 
-class PKL:
+class PKL(_Template):
     """
     .PKL File
     """
 
-    def __init__(self, path, default=None):
-        from .pc import Path
-        self.path = Path(path)
-        self.default = default
-
     def read(self):
-        """
-        Read the data from the file
-        """
         from dill import load
         
         try:
-            with self.path.open('rb') as f:
+            with self._path.open('rb') as f:
                 return load(f)
         except:
-            return self.default
+            return self._default
 
     def save(self, value) -> None:
-        """
-        Save data to the file
-        """
         from dill import dump
         
-        with self.path.open('wb') as f:
+        with self._path.open('wb') as f:
             dump(value, f)
 
 class VHDX:
@@ -163,140 +171,102 @@ class VHDX:
         # Delete the mounting directory
         self.MNT.delete()
 
-class JSON:
+class JSON(_Template):
     """
     .JSON File
     """
 
-    def __init__(self,
-        path: 'Path',
-        default = {}
-    ):
-        from .pc import Path
-
-        self.path = Path(path)
-        self.__default = default
-    
     def read(self):
-        """
-        Read the contents of the json file
-        """
         from json import load
-        from .text import hex
 
         try:
-            return load(self.path.open())
+            return load(self._path.open())
         except:
-            return self.__default
+            return self._default
 
     def save(self, data):
-        """
-        Save data to the json file
-        """
         from json import dump
-        from .text import hex
 
         dump(
             obj = data,
-            fp = self.path.open('w'),
+            fp = self._path.open('w'),
             indent = 3
         )
 
-class INI:
+class INI(_Template):
     """
     .INI/.PROPERTIES File
     """
-
-    def __init__(self, path:'Path', default=''):
-        from .pc import Path
-
-        self.path = Path(path)
-        self.__default = default
     
-    def __obj(self):
-        from configobj import ConfigObj
-
-        return ConfigObj(self.path.path)
-
     def read(self):
+        from configobj import ConfigObj
+        
         try:
-            return self.__obj().dict()
+            obj = ConfigObj(str(self._path))
+            return obj.dict()
         except:
-            return self.__default
+            return self._default
     
     def save(self, data):
+        from configobj import ConfigObj
 
-        config = self.__obj()
+        obj = ConfigObj(str(self._path))
 
         for name in data:
-            config[name] = data[name]
+            obj[name] = data[name]
 
-        config.write()
+        obj.write()
 
-class YAML:
+class YAML(_Template):
     """
     .YML/.YAML File
     """
     
-    def __init__(self, path, default={}):
-        from .pc import Path
-        
-        self.path = Path(path)
-        self.__default = default
-    
     def read(self):
-        """
-        Read the yaml file
-        """
         from yaml import safe_load
 
         try:
 
-            with self.path.open() as f:
+            with self._path.open() as f:
                 data = safe_load(f)
 
-            if data is None:
-                return self.__default
-            else:
+            if data:
                 return data
+            else:
+                return self._default
 
         except:
-            return self.__default
+            return self._default
     
     def save(self, data):
-        """
-        Save data to the yaml file
-        """
         from yaml import dump
 
-        with self.path.open('w') as file:
-            dump(data, file, default_flow_style=False, sort_keys=False)
+        dump(
+            data = data, 
+            stream = self._path.open('w'),
+            default_flow_style = False,
+            sort_keys = False
+        )
 
-class TXT:
+class TXT(_Template):
     """
     .TXT File
     """
-
-    def __init__(self, path, default=''):
-        from .pc import Path
-        
-        self.path = Path(path)
-        self.__default = default
     
     def read(self):
         """
         Read data from the txt file
         """
         try:
-            self.path.open('r').read()
+            return self._path.open('r').read()
         except:
-            return self.__default
+            return self._default
     
-    def save(self, data) -> None:
+    def save(self, data):
         """
         Save data to the txt file
         """
-        self.path.open('w').write(str(data))
+        self._path.open('w').write(str(data))
 
 class ZIP:
     """
@@ -305,7 +275,6 @@ class ZIP:
 
     def __init__(self, zipfile:'Path'):
         from zipfile import ZipFile
-        from .pc import Path
 
         self.zipfile = zipfile
         self.__zip = ZipFile(str(zipfile))
@@ -364,66 +333,42 @@ class ZIP:
         else:
             self.__zip.extractall(str(dst))
 
-class CSV:
+class CSV(_Template):
     """
     .CSV File
     """
 
-    def __init__(self, path, default=''):
-        from .pc import Path
-        
-        self.path = Path(path)
-        self.__default = default
-
     def read(self):
-        """
-        Read data from the csv file
-        """
         from csv import reader
 
         try:
-            with self.path.open() as csvfile:
+            with self._path.open() as csvfile:
                 return reader(csvfile)
         except:
-            return self.__default
+            return self._default
 
     def save(self, data) -> None:
-        """
-        Save data to the csv file
-        """
         from csv import writer
 
-        with self.path.open('w') as csvfile:
+        with self._path.open('w') as csvfile:
             writer(csvfile).writerows(data)
 
-class TOML:
+class TOML(_Template):
     """
     .TOML File
     """
 
-    def __init__(self, path, default=''):
-        from .pc import Path
-        
-        self.path = Path(path)
-        self.__default = default
-
     def read(self):
-        """
-        Read data from the toml file
-        """
         from toml import load
 
         try:
-            with self.path.open() as f:
+            with self._path.open() as f:
                 return load(f)
         except:
-            return self.__default
+            return self._default
         
     def save(self, data) -> None:
-        """
-        Save data to the toml file
-        """
         from tomli_w import dump
 
-        with self.path.open('wb') as f:
+        with self._path.open('wb') as f:
             dump(data, f, indent=2)

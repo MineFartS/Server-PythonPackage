@@ -1,7 +1,7 @@
 from typing import Callable, Self, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from .file import JSON, PKL
+    from .file import JSON, PKL, TXT
     from .pc import _var
 
 class InvalidArrayError(Exception):
@@ -17,12 +17,12 @@ class List[V]:
     def __init__(self,
         array: 'list[V] | tuple[V] | Self[V] | filter[V] | JSON | _var | PKL | range' = []
     ):
-        from .file import JSON, PKL, temp
+        from .file import JSON, PKL, temp, TXT
         from builtins import filter
         from .classOBJ import path
         from .pc import _var
 
-        if isinstance(array, (JSON, _var, PKL)):
+        if isinstance(array, (JSON, _var, PKL, TXT)):
             self.var = array
 
         elif isinstance(array, List):
