@@ -219,7 +219,13 @@ class Module:
         # Upgrade all python packages
         for pkg in self.packages:
             run(
-                args = ['pip', 'install', '--user', '--upgrade', *split(pkg)],
+                args = [
+                    'pip', 'install',
+                    *split(pkg),
+                    '--user',
+                    '--no-warn-script-location', 
+                    '--upgrade'
+                ],
                 wait = True,
                 terminal = 'pym',
                 hide = hide
