@@ -340,7 +340,8 @@ class Service:
 
         try:
             return self.__mod.cap(self.__path+'Running')
-        except JSONDecodeError:
+        
+        except JSONDecodeError, AttributeError:
             return False
     
     def Stop(self) -> None:
