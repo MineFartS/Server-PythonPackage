@@ -304,12 +304,19 @@ class Service:
         path: str
     ):
         
-        self.__mod = module
-        
-        if path.endswith('/'):
-            self.__path = path
-        else:
-            self.__path = path+'/'
+        self.module = module
+
+        # ================================
+
+        if not path.startswith('/'):
+            path = '/'+path
+
+        if not path.endswith('/'):
+            path += '/'
+
+        self.path = path
+
+        # ================================
 
     def Start(self,
         force: bool = False
@@ -320,17 +327,17 @@ class Service:
         Will do nothing if already running unless force is True
         """
 
-        arg = self.__path+'Start'
+        arg = self.path+'Start'
 
         if force:
 
             self.Stop()
 
-            self.__mod.runH(arg)
+            self.module.runH(arg)
 
         elif not self.Running():
             
-            self.__mod.runH(arg)
+            self.module.runH(arg)
 
     def Running(self) -> bool:
         """
@@ -339,7 +346,7 @@ class Service:
         from json.decoder import JSONDecodeError
 
         try:
-            return self.__mod.cap(self.__path+'Running')
+            return self.module.cap(self.path+'Running')
         
         except JSONDecodeError, AttributeError:
             return False
@@ -348,4 +355,4 @@ class Service:
         """
         Stop the Service
         """
-        self.__mod.runH(self.__path+'Stop')
+        self.module.runH(self.path+'Stop')
