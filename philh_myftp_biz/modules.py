@@ -312,7 +312,7 @@ class Service:
             self.__path = path+'/'
 
     def Start(self,
-        force: bool = True
+        force: bool = False
     ):
         """
         Start the Service
