@@ -1014,12 +1014,13 @@ class ProgressBar:
 
         self.__tqdm = tqdm(
             iterable = range(total),
-            bar_format = self.__bar_format
+            bar_format = self.__bar_format,
+            dynamic_ncols = True,
         )
 
         self.reset = self.__tqdm.reset
-        self.stop = self.__tqdm.close
-        self.step = self.__tqdm.update
+        self.stop  = self.__tqdm.close
+        self.step  = self.__tqdm.update
 
         self.total = self.__tqdm.total
 
