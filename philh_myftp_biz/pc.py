@@ -1,9 +1,9 @@
-from typing import Literal, Self, Generator, TYPE_CHECKING
+from typing import Literal, Self, Generator, TYPE_CHECKING, Callable, Any
 
 if TYPE_CHECKING:
-    from .db import colors
     from .time import from_stamp
     from psutil import Process
+    from .db import colors
 
 def NAME() -> str:
     """
@@ -476,6 +476,16 @@ class Path:
         """
         return open(self.path, mode)
 
+class BasePipe:
+
+    def __init__(self):
+        pass
+
+    write: Callable[[Self, Any], None]
+
+    def flush(self):
+        pass
+
 def cwd() -> Path:
     """
     Get the Current Working Directory
@@ -539,6 +549,8 @@ class terminal:
     """
     Misc. Functions for the Terminal/Console
     """
+
+    from sys import stdout, stderr
     
     def width() -> int:
         """
@@ -1004,45 +1016,71 @@ class Task:
 
 class ProgressBar:
 
+    class Pipe(BasePipe):
+
+        def __init__(self,
+            pbar: 'ProgressBar'
+        ):
+            from sys import stdout
+
+            self.pbar = pbar
+            self.tqdm = pbar._tqdm
+            self.sys = stdout
+
+        def write(self, s:str):
+
+            if self.pbar.finished():
+                
+                self.sys.write(s)
+
+            else:
+
+                self.tqdm.clear()
+
+                self.sys.write(s)
+ 
     __bar_format = "{n_fmt}/{total_fmt} | {bar} | {elapsed}"
 
     def __init__(self,
         total: int = 0
     ):
         from .__init__ import thread
-        from tqdm import tqdm
+        from tqdm.auto import tqdm
+        import sys
 
-        self.__tqdm = tqdm(
+        self._tqdm = tqdm(
             iterable = range(total),
             bar_format = self.__bar_format,
-            dynamic_ncols = True,
+            dynamic_ncols = True
         )
 
-        self.reset = self.__tqdm.reset
-        self.stop  = self.__tqdm.close
-        self.step  = self.__tqdm.update
+        self.reset = self._tqdm.reset
+        self.stop  = self._tqdm.close
+        self.step  = self._tqdm.update
 
-        self.total = self.__tqdm.total
+        self.total = self._tqdm.total
+
+        sys.stdout = self.Pipe(pbar=self)
 
         thread(self.__refresh)
 
     def finished(self) -> bool:
 
-        if self.__tqdm.total == 0:
+        if self._tqdm.total == 0:
             return False
         else:
-            return (self.__tqdm.n == self.__tqdm.total)
+            return (self._tqdm.n == self._tqdm.total)
 
     def running(self):
-        return not (self.finished() or self.__tqdm.disable)
+        return not (self.finished() or self._tqdm.disable)
     
     def set_total(self, total:int):
-        self.__tqdm.total = total
+        self._tqdm.total = total
 
     def step_total(self,
         n: float = 1
     ):
-        self.__tqdm.total += n
+        self._tqdm.total += n
     
     def __refresh(self):
         from .time import sleep
@@ -1053,4 +1091,4 @@ class ProgressBar:
             sleep(.3)
             
             # Update the timer
-            self.__tqdm.refresh()
+            self._tqdm.refresh()
