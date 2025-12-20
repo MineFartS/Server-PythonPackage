@@ -1021,23 +1021,15 @@ class ProgressBar:
         def __init__(self,
             pbar: 'ProgressBar'
         ):
-            from sys import stdout
-
             self.pbar = pbar
             self.tqdm = pbar._tqdm
-            self.sys = stdout
 
         def write(self, s:str):
 
-            if self.pbar.finished():
-                
-                self.sys.write(s)
-
-            else:
-
+            if not self.pbar.finished():
                 self.tqdm.clear()
 
-                self.sys.write(s)
+            terminal.stdout.write(s)
  
     __bar_format = "{n_fmt}/{total_fmt} | {bar} | {elapsed}"
 
