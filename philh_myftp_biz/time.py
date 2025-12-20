@@ -51,7 +51,7 @@ class Stopwatch:
         self.end_time = None
         self.running = False
 
-    def elapsed(self) -> None | int:
+    def elapsed(self) -> None | float:
         """
         Get the # of seconds between now or the stop time, and the start time
         """
@@ -88,6 +88,26 @@ class Stopwatch:
         self.running = False
         
         return self
+
+    def __int__(self):
+        return int(self.elapsed())
+    
+    __float__ = elapsed
+
+    def __gt__(self, other):
+        return self.elapsed() > other
+
+    def __ge__(self, other):
+        return self.elapsed() >= other
+
+    def __lt__(self, other):
+        return self.elapsed() < other
+    
+    def __le__(self, other):
+        return self.elapsed() <= other
+    
+    def __eq__(self, other):
+        return self.elapsed() == other
 
 class from_stamp:
     """
