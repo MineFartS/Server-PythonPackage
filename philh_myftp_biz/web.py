@@ -1,11 +1,11 @@
 from typing import Literal, Self, Generator, TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
-    from .pc import Path
-    from requests import Response
-    from bs4 import BeautifulSoup
     from qbittorrentapi import Client, TorrentDictionary, TorrentFile
     from paramiko.channel import ChannelFile, ChannelStderrFile
+    from requests import Response
+    from bs4 import BeautifulSoup
+    from .pc import Path
 
 def IP(
     method: Literal['local', 'public'] = 'local'
@@ -451,6 +451,7 @@ class api:
         """
         Client for qBitTorrent Web Server
         """
+        from sys import maxsize
 
         class File:
             """
@@ -636,7 +637,8 @@ class api:
             self.start(magnet)
 
         def files(self,
-            magnet: Magnet
+            magnet: Magnet,
+            timeout: int = maxsize
         ) -> Generator[File]:
             """
             List all files in Magnet Download
@@ -653,6 +655,10 @@ class api:
                 file['size'] # Full File Size
             
             """
+            from .time import Stopwatch
+
+            sw = Stopwatch()
+            sw.start()
 
             t = self._get(magnet)
 
@@ -662,7 +668,9 @@ class api:
 
                 #
                 while len(t.files) == 0:
-                    pass
+                    
+                    if sw >= timeout:
+                        raise TimeoutError()
 
                 t.setForceStart(False)
 
