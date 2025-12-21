@@ -1030,7 +1030,9 @@ class Driver:
         from selenium.webdriver import FirefoxService, FirefoxOptions, Firefox
         from selenium.common.exceptions import InvalidCookieDomainException
         from subprocess import CREATE_NO_WINDOW
+        from threading import Thread
         from .file import temp
+        from .pc import Task
         
         self.__via_with = False
         self.debug = debug
@@ -1092,6 +1094,9 @@ class Driver:
                 except InvalidCookieDomainException:
                     pass
 
+        pid = self._drvr.capabilities.get('moz:processID')
+        self.task = Task(pid)
+
         self.current_url = self._drvr.current_url
         """URL of the Current Page"""
 
@@ -1103,6 +1108,18 @@ class Driver:
 
         self.clear_cookies = self._drvr.delete_all_cookies
         """Clear All Session Cookies"""
+
+        Thread(
+            target = self.__background
+        ).start()
+
+    def __background(self):
+        from threading import main_thread
+
+        while main_thread().is_alive():
+            pass
+
+        self._drvr.quit()
 
     def read_var(self, name:str):
         return self.run(f'return {name}')
