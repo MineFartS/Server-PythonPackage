@@ -2,6 +2,7 @@ from typing import Literal, TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from threading import Thread
+    from io import StringIO
     from .file import PKL
     from .db import Ring
     from .pc import Path
@@ -177,8 +178,7 @@ class run:
         terminal: Literal['cmd', 'ps', 'psfile', 'py', 'pym', 'vbs'] | None = 'cmd',
         dir: 'Path' = None,
         hide: bool = False,
-        timeout: int | None = None,
-        venv: Path = None
+        timeout: int | None = None
     ):
         from .array import stringify
         from .pc import Path, cwd
@@ -201,9 +201,6 @@ class run:
             args = stringify(args)
         else:
             args = [str(args)]
-
-        if venv:
-            executable = str(venv.child('/Scripts/python.exe'))
 
         if terminal == 'ext':
 
@@ -246,6 +243,17 @@ class run:
         # Start the process
         self.start()
 
+    __pipe: dict[Literal['stdout', 'stderr'], 'StringIO|None'] = {
+        'stdout': None,
+        'stderr': None
+    }
+
+    def pipe(self,
+        pipe: 'StringIO|None' = None,
+        stream: Literal['stdout', 'stderr'] = 'stdout'
+    ):
+        self.__pipe[stream] = pipe
+
     def __monitor(self) -> None:
         """
         Monitor the Process' status
@@ -277,12 +285,25 @@ class run:
             
             if cls_cmd in line:
 
-                #
+                # Reset stdout stream
                 self.stdout = ''
 
-                #
+                # Reset stderr stream
+                self.stderr = ''
+
+                # Reset combined stream
                 self.stdcomb = ''
-                
+
+                # Reset stdout pipe
+                if self.__pipe['stdout']:
+                    self.__pipe['stdout'].seek(0)
+                    self.__pipe['stdout'].truncate(0)
+
+                # Reset stderr pipe
+                if self.__pipe['stderr']:
+                    self.__pipe['stderr'].seek(0)
+                    self.__pipe['stderr'].truncate(0)
+
                 #
                 if not self.__hide:
                     cls()
@@ -293,6 +314,9 @@ class run:
                 self.stdout += line
 
                 self.stdcomb += line
+
+                if self.__pipe['stdout']:
+                    self.__pipe['stdout'].write(line)
 
                 #
                 if not self.__hide:
@@ -311,6 +335,9 @@ class run:
             self.stderr += line
 
             self.stdcomb += line
+
+            if self.__pipe['stderr']:
+                self.__pipe['stderr'].write(line)
 
             if not self.__hide:
                 terminal.write(line, 'err')
@@ -407,8 +434,8 @@ class run:
         """
         Read the output from the Subprocess
         """
-        from . import json
         from .text import hex
+        from . import json
 
         stream: str = getattr(self, 'std'+stream)
 
@@ -422,3 +449,4 @@ class run:
         
         else:
             return output
+
