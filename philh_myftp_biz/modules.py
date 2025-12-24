@@ -82,14 +82,19 @@ class Module:
         from .file import YAML
         from .pc import Path
 
+        #====================================================
+
         self.dir = Path(module)
+
+        self.name = self.dir.name()
+
+        #====================================================
+        # CONFIG
 
         configFile = self.dir.child('/module.yaml')
 
         if not configFile.exists():
             raise ModuleNotFoundError(self.dir.path)
-
-        self.name = self.dir.name()
 
         config = YAML(configFile).read()
 
@@ -98,6 +103,8 @@ class Module:
         self.packages: list[str] = config['packages']
 
         self.watch_files = [WatchFile(self, p) for p in config['watch_files']]
+
+        #====================================================
 
     def run(self, *args) -> 'run':
         """
@@ -314,7 +321,13 @@ class Service:
         if not path.endswith('/'):
             path += '/'
 
-        self.path = path
+        self.__path = path
+
+        self.path = (module.name + path)
+
+        # ================================
+
+        self.name = self.path.split('/')[-2]
 
         # ================================
 
@@ -327,7 +340,7 @@ class Service:
         Will do nothing if already running unless force is True
         """
 
-        arg = self.path+'Start'
+        arg = self.__path+'Start'
 
         if force:
 
@@ -346,7 +359,7 @@ class Service:
         from json.decoder import JSONDecodeError
 
         try:
-            return self.module.cap(self.path+'Running')
+            return self.module.cap(self.__path+'Running')
         
         except JSONDecodeError, AttributeError:
             return False
@@ -355,4 +368,4 @@ class Service:
         """
         Stop the Service
         """
-        self.module.runH(self.path+'Stop')
+        self.module.runH(self.__path+'Stop')
