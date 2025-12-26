@@ -1,9 +1,11 @@
-from typing import TYPE_CHECKING, Self, Generator
+from typing import TYPE_CHECKING, Self, Generator, Any, Callable
 from json import load, loads, dump, dumps
 
 if TYPE_CHECKING:
     from .file import JSON, PKL, YAML, TOML, INI
     from .pc import _var
+
+#========================================================
 
 def valid(value:str):
     """
@@ -17,8 +19,7 @@ def valid(value:str):
     except decoder.JSONDecodeError:
         return False
 
-class InvalidDictError(Exception):
-    pass
+#========================================================
 
 class Dict[V]:
     """
@@ -28,44 +29,40 @@ class Dict[V]:
     """
 
     def __init__(self,
-        table: 'dict[str, V] | Self[str, V] | JSON | _var | PKL | YAML | TOML | INI' = {}
+        t: 'dict[str, V] | Self[V] | Any' = {}
     ):
-        from .file import JSON, PKL, YAML, TOML, INI, temp
+        from .file import PKL, temp
         from .classOBJ import path
-        from .pc import _var
 
-        if isinstance(table, (JSON, _var, PKL, YAML, TOML, INI)):
-            self.var = table
+        if isinstance(t, Dict):
+            self.var = t.var
 
-        elif isinstance(table, Dict):
-            self.var = table.var
+        elif hasattr(t, 'read') and hasattr(t, 'save'):
+            self.var = t
 
-        elif isinstance(table, dict):
+        elif isinstance(t, dict):
             self.var = PKL(
-                path = temp('table', 'json')
+                path = temp('table', 'json'),
+                default = t
             )
-            self.var.save(table)
 
         else:
+            raise TypeError(path(t))
+        
+        self.read: Callable[[], dict[str, V]] = self.var.read
+        """Read Data"""
 
-            raise InvalidDictError(path(table))
+        self.save: Callable[[dict[V]], None] = self.var.save
+        """Save Data"""
 
     def items(self) -> Generator[list[str, V]]:
         return self.read().items()
-
-    def save(self, data:dict[str, V]) -> None:
-        """Save Data"""
-        self.var.save(data)
-
-    def read(self) -> dict[str, V]:
-        """Read Data"""
-        return self.var.read()
     
     def __iter__(self):
         return iter(self.read())
 
     def __len__(self) -> int:
-        return len(self.keys())
+        return len(self.read().keys())
     
     def __getitem__(self, key) -> None | V:
         try:
@@ -98,8 +95,6 @@ class Dict[V]:
         # Save the dictionary
         self.save(arr)
 
-    remove = __delitem__
-
     def __contains__(self, value:V):
         return (value in self.read())
     
@@ -125,5 +120,9 @@ class Dict[V]:
         return self
 
     def __str__(self) -> str:
-        return dumps(self.read(), indent=2)
+        return dumps(
+            obj = self.read(),
+            indent = 2
+        )
 
+#========================================================

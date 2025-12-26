@@ -233,8 +233,8 @@ def get(
     """
     from requests.exceptions import ConnectionError
     from urllib.parse import urlencode
+    from .terminal import warn
     from requests import get
-    from .pc import warn
 
     if debug:
         if len(params) > 1:
@@ -1031,8 +1031,8 @@ class Driver:
         from selenium.common.exceptions import InvalidCookieDomainException
         from subprocess import CREATE_NO_WINDOW
         from threading import Thread
+        from .process import SysTask
         from .file import temp
-        from .pc import Task
         
         self.__via_with = False
         self.debug = debug
@@ -1095,7 +1095,7 @@ class Driver:
                     pass
 
         pid = self._drvr.capabilities.get('moz:processID')
-        self.task = Task(pid)
+        self.task = SysTask(pid)
 
         self.current_url = self._drvr.current_url
         """URL of the Current Page"""
@@ -1317,34 +1317,6 @@ class Driver:
             self._drvr.page_source
         )
 
-def static(url) -> Soup:
-    """
-    Save a webpage as a static soup
-    """
-
-    if not ping(url):
-        raise ConnectionRefusedError(url)
-
-    return Soup(get(url).content)
-
-def dynamic(
-    url: str,
-    driver: 'Driver' = None
-) -> 'Soup':
-    """
-    Open a webpage in a webdriver and return a soup of the contents
-    """
-    
-    if not ping(url):
-        raise ConnectionRefusedError(url)
-    
-    if driver is None:
-        driver = Driver()
-
-    driver.open(url, True)
-
-    return driver.soup()
-
 def download(
     url: str,
     path: 'Path',
@@ -1411,7 +1383,7 @@ class WiFi:
         Will return true if the connection succeeded
         
         """
-        from .__init__ import run
+        from .process import RunHidden
 
         # If the profile is not given
         if not profile:
@@ -1419,15 +1391,11 @@ class WiFi:
             profile = ssid
 
         # Run the 'netsh' command to connect to the network
-        r = run(
-            args = [
-                'netsh', 'wlan', 'connect',
-                f'ssid={ssid}', 
-                f'name={profile}'
-            ],
-            wait = True,
-            hide = True
-        )
+        r = RunHidden([
+            'netsh', 'wlan', 'connect',
+            f'ssid={ssid}', 
+            f'name={profile}'
+        ])
 
         # Return bool if the connection succeeded
         return ('completed successfully' in r.output())

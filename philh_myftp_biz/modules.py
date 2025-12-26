@@ -1,55 +1,8 @@
-from typing import Generator, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from .process import SubProcess
     from .pc import Path
-    from .__init__ import run
-
-def when_modified(*modules:'Module') -> Generator['WatchFile']:
-    """
-    Wait for any Watch File to be modified
-
-    EXAMPLE:
-    m1 = Module('C:/module1/')
-    m2 = Module('C:/module2/')
-
-    gen = modules.when_modified(m1, m2)
-
-    for watchfile in gen:
-        {Code to run when a watchfile is modified}
-    """
-    from .time import sleep
-
-    watch_files: list['WatchFile'] = []
-
-    for module in modules:
-        watch_files += module.watch_files
-
-    while True:
-        for wf in watch_files:
-            if wf.modified():
-                yield wf
-
-        sleep(.25)
-
-def Scanner() -> Generator['Module']:
-    """
-    Scan for modules in the 'E:/' directory
-    """
-    from .pc import Path
-    
-    path = Path('E:/')
-    
-    for p in path.children():
-    
-        try:
-            yield Module(p)
-        
-        except ModuleNotFoundError:
-            pass
-
-class ModuleDisabledError(Exception):
-    def __init__(self, module:'Module'):
-        super().__init__(module.dir.path)
 
 class Module:
     """
@@ -98,88 +51,59 @@ class Module:
 
         config = YAML(configFile).read()
 
-        self.enabled: bool = config['enabled']
-
         self.packages: list[str] = config['packages']
-
-        self.watch_files = [WatchFile(self, p) for p in config['watch_files']]
 
         #====================================================
 
-    def run(self, *args) -> 'run':
+    def run(self, *args) -> 'SubProcess':
         """
         Execute a new Process and wait for it to finish
         """
-        return self.__process(
-            args = list(args),
-            hide = False,
-            wait = True
-        )
+        from .process import Run
+
+        args = list(args)
+        args[0] = str(self.file(args[0]))
+
+        return Run(args[0], terminal='ext')
     
-    def runH(self, *args) -> 'run':
+    def runH(self, *args) -> 'SubProcess':
         """
         Execute a new hidden Process and wait for it to finish
         """
-        return self.__process(
-            args = list(args),
-            hide = True,
-            wait = True
-        )
+        from .process import RunHidden
 
-    def start(self, *args) -> 'run':
+        args = list(args)
+        args[0] = str(self.file(args[0]))
+
+        return RunHidden(args[0], terminal='ext')
+
+    def start(self, *args) -> 'SubProcess':
         """
         Execute a new Process simultaneously with the current execution
         """
-        return self.__process(
-            args = list(args),
-            hide = False,
-            wait = False
-        )
+        from .process import Start
+
+        args = list(args)
+        args[0] = str(self.file(args[0]))
+
+        return Start(args[0], terminal='ext')
     
-    def startH(self, *args) -> 'run':
+    def startH(self, *args) -> 'SubProcess':
         """
         Execute a new hidden Process simultaneously with the current execution
         """
-        return self.__process(
-            args = list(args),
-            hide = True,
-            wait = False
-        )
+        from .process import Run
+
+        args = list(args)
+        args[0] = str(self.file(args[0]))
+
+        return Run(args[0], terminal='ext')
     
-    def __process(self,
-        args: list[str],
-        hide: bool,
-        wait: bool
-    ) -> 'run':
-        from .__init__ import run
-
-        if self.enabled:
-
-            #
-            args[0] = self.file(args[0]).path
-
-            #
-            return run(
-                args = args,
-                wait = wait,
-                hide = hide,
-                terminal = 'ext'
-            )
-        
-        else:
-
-            raise ModuleDisabledError(self)
-
-    def cap(self,
-        *args
-    ):
+    def cap(self, *args):
         """
         Execute a new hidden Process and capture the output as JSON
         """
-
-        p = self.runH(*args)
-
-        return p.output('json')
+        return self.runH(*args).output('json')
 
     def file(self,
         *name: str
@@ -206,26 +130,27 @@ class Module:
         dir = self.dir.child('/'.join(parts[:-1]))
 
         for p in dir.children():
+            
             if p.isfile() and ((p.name().lower()) == (parts[-1].lower())):
+                
                 return p
 
         raise FileNotFoundError(dir.path + parts[-1] + '.*')
 
-    def install(self,
-        hide: bool = False
-    ) -> None:
+    def install(self) -> None:
         """
         Automatically install all dependencies
         """
-        from .__init__ import run
+        from .process import Run
         from shlex import split
 
         # Initialize a git repo
-        self.git('init', hide=hide)
+        self.git('init')
 
         # Upgrade all python packages
         for pkg in self.packages:
-            run(
+            
+            Run(
                 args = [
                     'pip', 'install',
                     *split(pkg),
@@ -233,61 +158,17 @@ class Module:
                     '--no-warn-script-location', 
                     '--upgrade'
                 ],
-                wait = True,
-                terminal = 'pym',
-                hide = hide
+                terminal = 'pym'
             )
 
-    def watch(self) -> Generator['WatchFile']:
-        """
-        Returns a modules.when_modified generator for the current module
-        """
-        return when_modified(self)
+    def git(self, *args) -> 'SubProcess':
+        from .process import Run
 
-    def __str__(self):
-        return self.dir.path
-
-    def git(self,
-        *args,
-        hide: bool = False
-    ) -> 'run':
-        from .__init__ import run
-
-        return run(
+        return Run(
             args = ['git', *args],
             wait = True,
-            dir = self.dir,
-            hide = hide
+            dir = self.dir
         )
-
-class WatchFile:
-    """
-    Watch File for Module
-    """
-
-    def __init__(self,
-        module: 'Module',
-        path: str
-    ):
-        from .pc import Path
-        
-        if path.startswith('/'):
-            self.path = module.dir.child(path)
-        else:
-            self.path = Path(path)
-
-        self.module = module
-
-        self.__mtime = self.path.var('__mtime__')
-        
-        self.__mtime.save(
-            value = self.path.mtime.get().unix
-        )
-
-    def modified(self) -> bool:
-        """Check if the file has been modified"""
-        
-        return (self.__mtime.read() != self.path.mtime.get().unix)
 
 class Service:
     """

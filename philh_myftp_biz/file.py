@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING, Generator, Callable, Any
 if TYPE_CHECKING:
     from .pc import Path
 
+#========================================================
+
 def temp(
     name: str = 'undefined',
     ext: str = 'ph',
@@ -31,6 +33,8 @@ def temp(
 
     return dir.child(f'{name}-{id}.{ext}')
 
+#========================================================
+
 class _Template:
 
     def __init__(self,
@@ -49,6 +53,8 @@ class _Template:
     """
     Save data to the file
     """
+
+#========================================================
 
 class XML:
     """
@@ -372,3 +378,5 @@ class TOML(_Template):
 
         with self._path.open('wb') as f:
             dump(data, f, indent=2)
+
+#========================================================

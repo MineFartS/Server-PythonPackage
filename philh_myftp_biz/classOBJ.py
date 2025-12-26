@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .db import colors
 
+#========================================================
+
 class attr:
     """
     Attribute of Instance/Object
@@ -15,44 +17,39 @@ class attr:
         self.name = name
         self.parent = parent
 
-    def callable(self) -> bool:
-        """
-        Check if the attribute can be called like a function
-        """
-        return callable(self.value())
-    
-    def private(self) -> bool:
-        """
-        Check if the attribute is name mangled
-        """
+        #========================================================
+
+        self.callable = callable(self.value())
+
+        #========================================================
         
+        self.private = False
+
         if self.name.startswith('__'):
-            return True
+            self.private = True
         
         elif hasattr(self.parent, '__name__') and (self.name.startswith(f'_{self.parent.__name__}__')):
-            return True
+            self.private = True
         
         elif (self.name.startswith(f'_{self.parent.__class__.__name__}__')):
-            return True
+            self.private = True
 
         else:
             
             for base in self.parent.__class__.__bases__:
+
                 if self.name.startswith(f'_{base.__name__}__'):
-                    return True
+                
+                    self.private = True
+                    break
 
-        return False
-
-    def value(self):
-        """
-        Get the value of the attribute
-        
-        Will return None if private
-        """
-
-        if not self.private():
-            return getattr(self.parent, self.name)
+        #========================================================
     
+        if self.private:
+            self.value = None
+        else:
+            self.value = getattr(self.parent, self.name)
+
     def __str__(self):
         """
         Get the value of the attribute as a string
@@ -68,6 +65,8 @@ class attr:
             )
         except:
             return str(self.value())
+
+#========================================================
 
 def attrs(obj):
     """
@@ -85,11 +84,13 @@ def path(obj) -> str:
 
     return obj.__class__.__module__ + '.' + obj.__class__.__qualname__
 
-def location(obj) -> str:
+def loc(obj) -> str:
     """
     Get the hexadecimal location of an instance in memory
     """
     return hex(id(obj))
+
+#========================================================
 
 def stringify(obj) -> str:
     """
@@ -102,11 +103,11 @@ def stringify(obj) -> str:
 
     IO.write('--- ')
     IO.write(path(obj))
-    IO.write(f' @{location(obj)}')
+    IO.write(f' @{loc(obj)}')
     IO.write(' ---\n')
 
     for c in attrs(obj):
-        if not (c.private() or c.callable() or (c.value() is None)):
+        if not (c.private or c.callable or (c.value is None)):
             IO.write(c.name)
             IO.write(' = ')
             IO.write(str(c))
@@ -132,6 +133,8 @@ def log(
     
     print()
 
+#========================================================
+
 def to_json(obj) -> dict:
     """
     Convert an instance to a dictionary
@@ -140,7 +143,7 @@ def to_json(obj) -> dict:
     json_obj = {}
 
     for c in attrs(obj):
-        if not (c.private() or c.callable()):
-            json_obj[c.name] = c.value()
+        if not (c.private or c.callable):
+            json_obj[c.name] = c.value
 
     return json_obj

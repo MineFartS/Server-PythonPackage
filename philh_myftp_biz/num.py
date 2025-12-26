@@ -1,5 +1,7 @@
+from sys import maxsize as max
 from math import trunc, floor
-from sys import (maxsize as max)
+
+#========================================================
 
 def digit(num:int, i:int) -> int:
     """
@@ -10,7 +12,10 @@ def digit(num:int, i:int) -> int:
 
     return int( str(num) [i] )
 
-def shuffle_range(min:int, max:int):
+def shuffle_range(
+    min: int,
+    max: int
+):
     """
     Get a range of numbers, but shuffled
     """
@@ -22,31 +27,27 @@ def shuffle_range(min:int, max:int):
 
     return ordered
 
-class valid:
-    """
-    Check if number is valid
-    (int, float)
-    """
+#========================================================
 
-    def int(num) -> bool:
-        """
-        Check if number is a valid integer
-        """
-        try:
-            int(num)
-            return True
-        except ValueError:
-            return False
+def is_int(num) -> bool:
+    """
+    Check if number is a valid integer
+    """
+    try:
+        int(num)
+        return True
+    except ValueError:
+        return False
 
-    def float(num) -> bool:
-        """
-        Check if a number is a valid float
-        """
-        try:
-            float(num)
-            return True
-        except ValueError:
-            return False
+def is_float(num) -> bool:
+    """
+    Check if a number is a valid float
+    """
+    try:
+        float(num)
+        return True
+    except ValueError:
+        return False
 
 def is_prime(num) -> bool:
     """
@@ -73,3 +74,5 @@ def is_prime(num) -> bool:
                     return False
 
             return True
+
+#========================================================

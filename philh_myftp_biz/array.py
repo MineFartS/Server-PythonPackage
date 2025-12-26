@@ -1,11 +1,6 @@
-from typing import Callable, Self, TYPE_CHECKING, Any
+from typing import Callable, Self, Any
 
-if TYPE_CHECKING:
-    from .file import JSON, PKL, TXT
-    from .pc import _var
-
-class InvalidArrayError(Exception):
-    pass
+#========================================================
 
 class List[V]:
     """
@@ -15,36 +10,32 @@ class List[V]:
     """
 
     def __init__(self,
-        array: 'list[V] | tuple[V] | Self[V] | filter[V] | JSON | _var | PKL | range' = []
+        a: 'list[V] | tuple[V] | filter[V] | Self[V]' = []
     ):
-        from .file import JSON, PKL, temp, TXT
+        from .file import PKL, temp
         from builtins import filter
         from .classOBJ import path
-        from .pc import _var
 
-        if isinstance(array, (JSON, _var, PKL, TXT)):
-            self.var = array
+        if isinstance(a, List):
+            self.var = a.var
 
-        elif isinstance(array, List):
-            self.var = array.var
+        elif hasattr(a, 'read') and hasattr(a, 'save'):
+            self.var = a
 
-        elif isinstance(array, (list, tuple, filter, range)):
+        elif isinstance(a, (list, tuple, filter, range)):
             self.var = PKL(
-                temp('array', 'pkl')
+                temp('array', 'pkl'),
+                default = list(a)
             )
-            self.var.save(list(array))
 
         else:
-
-            raise InvalidArrayError(path(array))
-
-    def save(self, data:list[V]) -> None:
-        """Save Data"""
-        self.var.save(data)
-
-    def read(self) -> list[V]:
+            raise TypeError(path(a))
+        
+        self.read: Callable[[], list[V]] = self.var.read
         """Read Data"""
-        return self.var.read()
+
+        self.save: Callable[[list[V]], None] = self.var.save
+        """Save Data"""
     
     def rm_duplicates(self):
         data = self.read()
@@ -68,7 +59,9 @@ class List[V]:
         value: V
     ):
         data = self.read()
+
         data[key] = value
+        
         self.save(data)
 
     def __delitem__(self, key:int) -> None:
@@ -78,8 +71,6 @@ class List[V]:
         del data[key]
 
         self.save(data)
-
-    remove = __delitem__
 
     def __iadd__(self, value:V):
         
@@ -91,15 +82,13 @@ class List[V]:
 
         return self
     
-    append = __iadd__
-
     def __isub__(self, value:V):
 
         if isinstance(value, (list, tuple)):
             for item in value:
-                self.remove(item)
+                del self[item]
         else:
-            self.remove(value)
+            del self[value]
 
         return self
 
@@ -145,10 +134,10 @@ class List[V]:
     def filter(self,
         func: Callable[[V], Any] = lambda x: x
     ) -> None:
-        self.save(list(filter(
-            function = func,
-            iterable = self.read()
-        )))
+        
+        l = self.filtered(func)
+
+        self.save(l.read())
 
     def reversed(self):
 
@@ -160,11 +149,9 @@ class List[V]:
     
     def reverse(self):
 
-        data = self.read()
+        l = self.reversed()
 
-        data.reverse()
-
-        self.save(data)
+        self.save(l)
 
     def random(self) -> None | V:
         from random import choice
@@ -174,15 +161,6 @@ class List[V]:
         if len(data) > 0:
             return choice(data)
 
-    def shuffle(self) -> None:
-        from random import shuffle
-
-        data = self.read()
-
-        shuffle(data)
-        
-        self.save(data)
-    
     def shuffled(self) -> Self[V]:
         from random import shuffle
 
@@ -192,20 +170,21 @@ class List[V]:
 
         return List(data)
 
+    def shuffle(self) -> None:
+
+        l = self.shuffled()
+
+        self.save(l)
+
     def __str__(self) -> str:
         from .json import dumps
 
-        return dumps(self.read(), indent=2)
-    
-    def value_in_common(self,
-        array: list | List
-    ) -> bool:
-        
-        for v in self.read():
-            if v in array:
-                return True
-        
-        return False
+        return dumps(
+            obj = self.read(),
+            indent = 2
+        )
+
+#========================================================
 
 def stringify(array:list) -> list[str]:
 
@@ -253,3 +232,5 @@ def priority(
         p *= -1
 
     return p
+
+#========================================================

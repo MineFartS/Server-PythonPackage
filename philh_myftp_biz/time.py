@@ -9,7 +9,7 @@ def sleep(
 
     If show is True, then '#/# seconds' will print to the console each second
     """
-    from .pc import ProgressBar
+    from .terminal import ProgressBar
     from time import sleep
 
     # If show is True

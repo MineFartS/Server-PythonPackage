@@ -3,6 +3,8 @@ from typing import Literal, TYPE_CHECKING
 if TYPE_CHECKING:
     from .pc import Path
 
+#========================================================
+
 class MimeType:
 
     def Ext(ext:str):
@@ -10,8 +12,8 @@ class MimeType:
         Get the mimetype from a file extension
         """
         from .file import temp, JSON
-        from .json import Dict
         from .web import download
+        from .json import Dict
 
         if ext:
 
@@ -44,7 +46,9 @@ class MimeType:
             ext = name[:name.rfind('.')]
         )
 
-class size:
+#========================================================
+
+class Size:
     from sys import maxsize
 
     units = Literal[
@@ -93,7 +97,7 @@ class size:
         unit = match.group(3).upper()
         unit = unit[0] + unit[-1]
 
-        return value * size.conv_factors[unit]
+        return value * Size.conv_factors[unit]
 
     def from_bytes(
         value: int | float,
@@ -107,7 +111,7 @@ class size:
         """
 
         format = lambda unit: round(
-            number = (float(value) / size.conv_factors[unit]),
+            number = (float(value) / Size.conv_factors[unit]),
             ndigits = ndigits
         )
 
@@ -116,12 +120,14 @@ class size:
         
         else:
             r = 0
-            for unit in reversed(size.conv_factors):
+            for unit in reversed(Size.conv_factors):
                 r = format(unit)
                 if r >= 1:            
                     return str(r) + ' ' + unit
 
-class colors:
+#========================================================
+
+class Color:
 
     names = Literal[
         'BLACK',
@@ -155,6 +161,8 @@ class colors:
     EXAMPLE:
     colors.values['RED'] -> '\033[31m'
     """
+
+#========================================================
 
 class Ring:
     """
@@ -221,3 +229,5 @@ class Key[T]:
             return hex.decode(rvalue)
         except TypeError:
             return self.__default
+        
+#========================================================
