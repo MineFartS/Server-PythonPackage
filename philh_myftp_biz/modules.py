@@ -17,7 +17,7 @@ class Module:
     \"""
 
     EXAMPLE:
-    
+    ```
     m = Module('E:/testmodule')
 
     # Runs any script with a path starting with "E:/testmodule/main.###"
@@ -27,6 +27,8 @@ class Module:
     # 'E:/testmodule/sub/script.###'
     m.run('sub', 'script')
     m.run('sub/script')
+    
+    ```
     """
 
     def __init__(self,
@@ -64,7 +66,7 @@ class Module:
         args = list(args)
         args[0] = str(self.file(args[0]))
 
-        return Run(args[0], terminal='ext')
+        return Run(args, terminal='ext')
     
     def runH(self, *args) -> 'SubProcess':
         """
@@ -75,7 +77,7 @@ class Module:
         args = list(args)
         args[0] = str(self.file(args[0]))
 
-        return RunHidden(args[0], terminal='ext')
+        return RunHidden(args, terminal='ext')
 
     def start(self, *args) -> 'SubProcess':
         """
@@ -86,7 +88,7 @@ class Module:
         args = list(args)
         args[0] = str(self.file(args[0]))
 
-        return Start(args[0], terminal='ext')
+        return Start(args, terminal='ext')
     
     def startH(self, *args) -> 'SubProcess':
         """
@@ -97,7 +99,7 @@ class Module:
         args = list(args)
         args[0] = str(self.file(args[0]))
 
-        return Run(args[0], terminal='ext')
+        return Run(args, terminal='ext')
     
     def cap(self, *args):
         """
@@ -166,7 +168,6 @@ class Module:
 
         return Run(
             args = ['git', *args],
-            wait = True,
             dir = self.dir
         )
 
