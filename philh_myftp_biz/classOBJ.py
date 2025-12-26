@@ -18,11 +18,8 @@ class attr:
         self.parent = parent
 
         #========================================================
+        # PRIVATE
 
-        self.callable = callable(self.value())
-
-        #========================================================
-        
         self.private = False
 
         if self.name.startswith('__'):
@@ -44,11 +41,19 @@ class attr:
                     break
 
         #========================================================
-    
+        # VALUE
+
         if self.private:
             self.value = None
         else:
             self.value = getattr(self.parent, self.name)
+
+        #========================================================
+        # CALLABLE
+
+        self.callable = callable(self.value)
+
+        #========================================================
 
     def __str__(self):
         """
@@ -60,11 +65,11 @@ class attr:
 
         try:
             return dumps(
-                obj = self.value(),
+                obj = self.value,
                 indent = 2
             )
         except:
-            return str(self.value())
+            return str(self.value)
 
 #========================================================
 
@@ -122,7 +127,7 @@ def log(
     """
     Print all attributes of the instance to the terminal
     """
-    from .pc import print as __print
+    from .terminal import print as __print
     
     print()
 

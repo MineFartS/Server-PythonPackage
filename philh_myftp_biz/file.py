@@ -301,7 +301,7 @@ class ZIP:
         Extract a single file from the zip archive
         """
         from zipfile import BadZipFile
-        from .pc import warn
+        from .terminal import warn
 
         folder = temp('extract', 'zip')
 

@@ -215,10 +215,10 @@ class Magnet:
         return self.__qbit.exists(self)
     
     def __str__(self):
-        from .classOBJ import location
+        from .classOBJ import loc
         from .text import abbreviate
 
-        return f"<Magnet '{abbreviate(30, self.title)}' @{location(self)}>"
+        return f"<Magnet '{abbreviate(30, self.title)}' @{loc(self)}>"
 
 def get(
     url: str,
@@ -528,10 +528,10 @@ class api:
                 return (self.progress() == 1)
 
             def __str__(self):
-                from .classOBJ import location
+                from .classOBJ import loc
                 from .text import abbreviate
 
-                return f"<File '{abbreviate(30, self.title)}' @{location(self)}>"
+                return f"<File '{abbreviate(30, self.title)}' @{loc(self)}>"
 
         def __init__(self,
             host: str,
@@ -545,7 +545,7 @@ class api:
             from .classOBJ import path
 
             if not isinstance(host, str):
-                raise TypeError(f"host must be 'str', not '{path(host)}'")
+                raise TypeError(path(host))
 
             self.debug = debug
 
@@ -685,6 +685,7 @@ class api:
             """
             Stop downloading a Magnet
             """
+            
             t = self._get(magnet)
 
             self._debug('Stopping', str(magnet))
