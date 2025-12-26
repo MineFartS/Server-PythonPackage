@@ -222,17 +222,12 @@ class Service:
         Will do nothing if already running unless force is True
         """
 
-        arg = self.__path+'Start'
-
-        if force:
+        # If force is true or the service isn't running
+        if force or (not self.Running()):
 
             self.Stop()
 
-            self.module.runH(arg)
-
-        elif not self.Running():
-            
-            self.module.runH(arg)
+            self.module.runH(self.__path+'Start')
 
     def Running(self) -> bool:
         """
