@@ -815,7 +815,7 @@ class api:
             for magnet in thePirateBay.search('term'):
                 magnet
             """
-            from .db import size
+            from .db import Size
 
             # Remove all "." & "'" from query
             query = query.replace('.', '').replace("'", '')
@@ -852,7 +852,7 @@ class api:
                         url = self.__driver.run(start+"[3].children[0].href"),
                         
                         # Download Size
-                        size = size.to_bytes(self.__driver.run(start+"[4].textContent")),
+                        size = Size.to_bytes(self.__driver.run(start+"[4].textContent")),
 
                         # qBitTorrent Session
                         qbit = self.__qbit
