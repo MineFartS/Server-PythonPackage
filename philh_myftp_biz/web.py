@@ -199,10 +199,8 @@ class Magnet:
     def restart(self):
         self.__qbit.restart(self)
     
-    def files(self,
-        timeout: None|int = 30
-    ):
-        return self.__qbit.files(self, timeout)
+    def files(self):
+        return self.__qbit.files(self)
     
     def finished(self):
         return self.__qbit.finished(self)
@@ -552,6 +550,7 @@ class api:
 
             self.__host = host
             self.__port = port
+            self.__timeout = timeout
 
             self.__rclient = Client(
                 host = host,
@@ -639,7 +638,7 @@ class api:
 
         def files(self,
             magnet: Magnet,
-            timeout: None|int = 30
+            
         ) -> Generator[File]:
             """
             List all files in Magnet Download
@@ -657,10 +656,6 @@ class api:
             
             """
             from .time import Stopwatch
-            from sys import maxsize
-
-            if timeout is None:
-                timeout = maxsize
 
             sw = Stopwatch()
             sw.start()
@@ -674,7 +669,7 @@ class api:
                 #
                 while len(t.files) == 0:
                     
-                    if sw >= timeout:
+                    if sw >= self.__timeout:
                         raise TimeoutError()
 
                 t.setForceStart(False)
@@ -785,18 +780,6 @@ class api:
             t = self._get(magnet)
             
             return (t != None)
-
-        def wait(self):
-            
-            #
-            dbg = self.debug
-            self.debug = False
-
-            #
-            self._client()
-
-            #
-            self.debug = dbg
 
     class thePirateBay:
         """
