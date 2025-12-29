@@ -44,16 +44,19 @@ class Module:
         self.name = self.dir.name()
 
         #====================================================
-        # CONFIG
+        # LOAD CONFIGURATION
 
         configFile = self.dir.child('/module.yaml')
 
-        if not configFile.exists():
-            raise ModuleNotFoundError(self.dir.path)
+        if configFile.exists():
 
-        config = YAML(configFile).read()
+            config = YAML(configFile).read()
 
-        self.packages: list[str] = config['packages']
+            self.packages: list[str] = config['packages']
+
+        else:
+
+            self.packages = []
 
         #====================================================
 
@@ -189,29 +192,28 @@ class Service:
     """
 
     def __init__(self,
-        module: Module,
-        path: str
+        path: 'str | Path'
     ):
-        
-        self.module = module
+        from .pc import Path
 
-        # ================================
+        if isinstance(path, str):
+            path =  Path(path)
 
-        if not path.startswith('/'):
-            path = '/'+path
+        self.path = path
 
-        if not path.endswith('/'):
-            path += '/'
+    def _run(self, name:str):
+        from .process import RunHidden
 
-        self.__path = path
+        for p in self.path.children():
+            
+            if p.isfile() and ((p.name().lower()) == (name.lower())):
 
-        self.path = (module.name + path)
+                return RunHidden(
+                    args = [p],
+                    terminal = 'ext'
+                )
 
-        # ================================
-
-        self.name = self.path.split('/')[-2]
-
-        # ================================
+        raise FileNotFoundError(f'{self.dir}{name}.*')
 
     def Start(self,
         force: bool = False
@@ -227,7 +229,7 @@ class Service:
 
             self.Stop()
 
-            self.module.runH(self.__path+'Start')
+            self._run('Start')
 
     def Running(self) -> bool:
         """
@@ -236,7 +238,7 @@ class Service:
         from json.decoder import JSONDecodeError
 
         try:
-            return self.module.cap(self.__path+'Running')
+            return self._run('Running').output('json')
         
         except JSONDecodeError, AttributeError:
             return False
@@ -245,4 +247,4 @@ class Service:
         """
         Stop the Service
         """
-        self.module.runH(self.__path+'Stop')
+        self._run('Stop')
