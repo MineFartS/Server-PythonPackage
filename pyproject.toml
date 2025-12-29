@@ -1,6 +1,6 @@
 [project]
 name = "philh_myftp_biz"
-version = "v2025.12.27"
+version = "v2025.12.28"
 requires-python = ">=3.14,<4.0"
 dependencies = [ "dill", "selenium", "lxml", "paramiko", "bs4", "qbittorrent-api", "send2trash", "inputimeout", "pyyaml", "configobj", "browser_cookie3", "elevate", "tqdm", "tomli_w", "toml", "psutil", "keyring", "ping3", "QuickSocketPY", "mimetype",]
 
