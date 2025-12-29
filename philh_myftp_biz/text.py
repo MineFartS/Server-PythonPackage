@@ -101,10 +101,10 @@ def auto_convert(string:str) -> int | float | bool | dict | str:
 
     from . import num, json
 
-    if num.valid.int(string):
+    if num.is_int(string):
         return int(string)
     
-    elif num.valid.float(string):
+    elif num.is_float(string):
         return float(string)
     
     elif string.lower() in ['true', 'false']:
