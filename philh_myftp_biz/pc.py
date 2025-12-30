@@ -355,10 +355,13 @@ class Path:
         Copy the path to another location
         """
         from shutil import copyfile, copytree
-        from tqdm import tqdm
+        from .terminal import ProgressBar
         from os import walk
 
-        pbar = None
+        if show_progress:
+            pbar = ProgressBar()
+        else:
+            pbar = None
 
         def _copy(
             src: Path,
@@ -376,17 +379,14 @@ class Path:
             )
 
             if show_progress:
-                pbar.update(1)
+                pbar.step(1)
 
         try:
 
             if self.isfile():
 
                 if show_progress:
-                    pbar = tqdm(
-                        iterable = range(1),
-                        unit = 'files'
-                    )
+                    pbar.step_total(1)
 
                 if dst.isdir():
                     dst = dst.child(self.seg())
@@ -398,15 +398,8 @@ class Path:
             else:
                 
                 if show_progress:
-                    
-                    total_files = 0
                     for _, _, files in walk(self.path):
-                        total_files += len(files)
-
-                    pbar = tqdm(
-                        iterable = range(total_files),
-                        unit = 'files'
-                    )
+                        pbar.step_total(len(files))
 
                 copytree(
                     src = self.path,
