@@ -180,13 +180,31 @@ def warn(exc: Exception) -> None:
 
 class ProgressBar:
 
+    class Pipe:
+
+        def __init__(self,
+            pbar: 'ProgressBar'
+        ):
+            self.pbar = pbar
+
+        def write(self, s:str):
+
+            if not self.pbar.finished():
+                self.pbar.clear()
+
+            stdout.write(s)
+
+        def flush(self):
+            pass
+
     __bar_format = "{n_fmt}/{total_fmt} | {bar} | {elapsed}"
 
     def __init__(self,
         total: int = 0
     ):
-        from .process import SysTask
-        from tqdm.auto import tqdm
+        from .process import thread
+        from tqdm import tqdm
+        import sys
 
         self._tqdm = tqdm(
             iterable = range(total),
@@ -197,10 +215,13 @@ class ProgressBar:
         self.reset = self._tqdm.reset
         self.stop  = self._tqdm.close
         self.step  = self._tqdm.update
+        self.clear = self._tqdm.clear
 
         self.total = self._tqdm.total
 
-        SysTask(self.__refresh)
+        sys.stdout = self.Pipe(pbar=self)
+
+        thread(self.__refresh)
 
     def finished(self) -> bool:
 
@@ -211,17 +232,9 @@ class ProgressBar:
 
     def running(self):
         return not (self.finished() or self._tqdm.disable)
-    
-    def set_total(self, total:int):
-        self._tqdm.total = total
-
-    def step_total(self,
-        n: float = 1
-    ):
-        self._tqdm.total += n
-    
+        
     def __refresh(self):
-        from .time import sleep
+        from time import sleep
 
         while self.running():
 
