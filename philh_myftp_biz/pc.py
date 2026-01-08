@@ -386,7 +386,7 @@ class Path:
             if self.isfile():
 
                 if show_progress:
-                    pbar.step_total(1)
+                    pbar.reset(total=1)
 
                 if dst.isdir():
                     dst = dst.child(self.seg())
@@ -398,8 +398,12 @@ class Path:
             else:
                 
                 if show_progress:
+
+                    total = 0
                     for _, _, files in walk(self.path):
-                        pbar.step_total(len(files))
+                        total += len(files)
+
+                    pbar.reset(total=total)
 
                 copytree(
                     src = self.path,
