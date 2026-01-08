@@ -1,4 +1,4 @@
-from typing import Callable, Self, Any
+from typing import Callable, Self, Any, Iterator
 
 #========================================================
 
@@ -10,10 +10,9 @@ class List[V]:
     """
 
     def __init__(self,
-        a: 'list[V] | tuple[V] | filter[V] | Self[V]' = []
+        a: Iterator[V] = []
     ):
         from .file import PKL, temp
-        from builtins import filter
         from .classOBJ import path
 
         if isinstance(a, List):
@@ -22,7 +21,7 @@ class List[V]:
         elif hasattr(a, 'read') and hasattr(a, 'save'):
             self.var = a
 
-        elif isinstance(a, (list, tuple, filter, range)):
+        elif isinstance(a, Iterator):
             self.var = PKL(
                 temp('array', 'pkl'),
                 default = list(a)
@@ -126,10 +125,7 @@ class List[V]:
     ) -> Self[V]:
         from builtins import filter
 
-        return List(filter(
-            function = func,
-            iterable = self.read()
-        ))
+        return List(filter(func, self.read()))
     
     def filter(self,
         func: Callable[[V], Any] = lambda x: x
