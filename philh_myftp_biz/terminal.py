@@ -188,10 +188,14 @@ class ProgressBar:
             self.pbar = pbar
 
         def write(self, s:str):
+            import sys
 
-            if not self.pbar.finished():
+            if self.pbar.finished():
+                sys.stdout = stdout
+            else:
                 self.pbar.clear()
 
+            #
             stdout.write(s)
 
         def flush(self):
@@ -216,6 +220,7 @@ class ProgressBar:
         self.stop  = self._tqdm.close
         self.step  = self._tqdm.update
         self.clear = self._tqdm.clear
+        self.flush = self._tqdm.refresh
 
         self.total = self._tqdm.total
 
