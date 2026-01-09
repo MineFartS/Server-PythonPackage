@@ -10,7 +10,7 @@ class List[V]:
     """
 
     def __init__(self,
-        a: Iterator[V] = []
+        a: Iterator[V] | list[V] | tuple[V] = []
     ):
         from .file import PKL, temp
         from .classOBJ import path
@@ -21,7 +21,7 @@ class List[V]:
         elif hasattr(a, 'read') and hasattr(a, 'save'):
             self.var = a
 
-        elif isinstance(a, Iterator):
+        elif isinstance(a, (Iterator, list, tuple)):
             self.var = PKL(
                 temp('array', 'pkl'),
                 default = list(a)
