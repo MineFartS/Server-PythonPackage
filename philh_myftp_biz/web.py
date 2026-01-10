@@ -614,6 +614,8 @@ class api:
 
             t = self._get(magnet)
 
+            self._debug('Starting', str(magnet))
+
             if t:
                 t.start()
             
