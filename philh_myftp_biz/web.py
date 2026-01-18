@@ -273,42 +273,32 @@ class api:
         """
 
         def __init__(self,
-            debug: bool = False
+            debug: bool = False,
+            key = 'dc888719'
         ):
             self.__url = 'https://www.omdbapi.com/'
-            self.__apikey = 'dc888719'
+            self.__apikey = key
 
             self.debug = debug
 
         class Movie:
-
             Title: str
             Year: int
             Released: 'from_stamp'
 
         class Show:
-
             Title: str
             Year: int
-
             Seasons: list[api.omdb.Season] = []
 
         class Season:
-
             Number: int
-
-            Show: api.omdb.Show
-
             Episodes: list[api.omdb.Episode] = []
 
         class Episode:
-
             Title: str
             Number: int
-            Released: 'from_stamp'
-            
-            Season: api.omdb.Season
-            Show: api.omdb.Show
+            Released: 'from_stamp|None' = None
 
         def movie(self,
             title: str,
@@ -355,7 +345,8 @@ class api:
             from .time import from_string
             from .json import Dict
 
-            response = get(
+            # Request raw list of seasons
+            req = get(
                 url = self.__url,
                 debug = self.debug,
                 params = {
@@ -365,49 +356,69 @@ class api:
                 }
             )
 
-            r: Dict[str] = Dict(response.json())
+            # Parse the response
+            pres: Dict[str] = Dict(req.json())
 
-            #
-            if bool(r['Response']):
-                    
-                #
-                if r['Type'] == 'series':
+            # If an error is given
+            if pres['Error']:
 
-                    show = self.Show()
+                # Raise an error with the given message
+                raise ConnectionAbortedError(pres['Error'])
 
-                    show.Title = title
-                    show.Year = year
+            # If a response of 'series' type is given
+            elif pres['Type'] == 'series':
 
-                    for s in range(1, int(r['totalSeasons'])+1):
+                # Create new 'Show' obj
+                show = self.Show()
 
-                        season = self.Season()
+                # Set attributes of 'Show' obj
+                show.Title = title
+                show.Year = year
 
-                        r_: dict[str, str] = get(
-                            url = self.__url,
-                            debug = self.debug,
-                            params = {
-                                't': title,
-                                'y': year,
-                                'Season': s,
-                                'apikey': self.__apikey
-                            }
-                        ).json()
+                # Iter through all seasons by #
+                for s in range(1, int(pres['totalSeasons'])+1):
 
-                        for e in r_['Episodes']:
+                    # Create new 'Season' obj
+                    season = self.Season()
 
-                            episode = self.Episode()
+                    # Set the 'Number' attribute of the 'Season' obj
+                    season.Number = s
 
-                            episode.Number = int(e['Episode'])
-                            episode.Season = season
-                            episode.Show = show
-                            episode.Title = e['Title']
+                    # Request season details and parse response
+                    pres2: dict[str, str] = get(
+                        url = self.__url,
+                        debug = self.debug,
+                        params = {
+                            't': title,
+                            'y': year,
+                            'Season': s,
+                            'apikey': self.__apikey
+                        }
+                    ).json()
+
+                    # Iterate through the episodes in the season details
+                    for e in pres2['Episodes']:
+
+                        # Create new 'Episode' obj
+                        episode = self.Episode()
+
+                        # Set attributes of 'Episode' obj
+                        episode.Number = int(e['Episode'])
+                        episode.Title = e['Title']
+                        
+                        # If the show has a release date
+                        if e['Released'] != 'N/A':
+                            # Parse the date
                             episode.Released = from_string(e['Released'])
 
-                            season.Episodes += [episode]
+                        # Append the 'Episode' obj to the 'Season' obj
+                        season.Episodes += [episode]
 
-                        show.Seasons += [season]
+                    # Append the 'Season' obj to the 'Show' obj
+                    show.Seasons += [season]
 
-                    return show
+                # Return the 'Show' obj
+                return show
 
     def numista(url:str='', params:list=[]):
         """
