@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from requests import Response
     from bs4 import BeautifulSoup
     from .pc import Path
+    from .time import from_stamp
 
 def IP(
     method: Literal['local', 'public'] = 'local'
@@ -279,26 +280,44 @@ class api:
 
             self.debug = debug
 
-        class Item:
+        class Movie:
 
-            def __init__(self,
-                Type: Literal['movie', 'show'],
-                Title: str,
-                Year: int,
-                Seasons: dict[str, list[str]] = None
-            ):
-                self.Type = Type
-                self.Title = Title
-                self.Year = Year
-                self.Seasons = Seasons
+            Title: str
+            Year: int
+            Released: 'from_stamp'
+
+        class Show:
+
+            Title: str
+            Year: int
+
+            Seasons: list[api.omdb.Season] = []
+
+        class Season:
+
+            Number: int
+
+            Show: api.omdb.Show
+
+            Episodes: list[api.omdb.Episode] = []
+
+        class Episode:
+
+            Title: str
+            Number: int
+            Released: 'from_stamp'
+            
+            Season: api.omdb.Season
+            Show: api.omdb.Show
 
         def movie(self,
             title: str,
             year: int
-        ) -> None | Item:
+        ) -> None | Movie:
             """
             Get details of a movie
             """
+            from .time import from_string
             from .json import Dict
 
             response = get(
@@ -309,6 +328,7 @@ class api:
                     'y': year,
                     'apikey': self.__apikey
                 }                
+
             )
 
             r: Dict[str] = Dict(response.json())
@@ -317,19 +337,22 @@ class api:
                 
                 if r['Type'] == 'movie':
 
-                    return self.Item(
-                        Type = 'movie',
-                        Title = r['Title'],
-                        Year = int(r['Year'])
-                    )
+                    movie = self.Movie()
+
+                    movie.Title = r['Title']
+                    movie.Year = int(r['Year'])
+                    movie.Released = from_string(r['Released'])
+
+                    return movie
 
         def show(self,
             title: str,
             year: int
-        ) -> None | Item:
+        ) -> None | Show:
             """
             Get details of a show
             """
+            from .time import from_string
             from .json import Dict
 
             response = get(
@@ -344,13 +367,20 @@ class api:
 
             r: Dict[str] = Dict(response.json())
 
+            #
             if bool(r['Response']):
                     
+                #
                 if r['Type'] == 'series':
 
-                    Seasons: dict[str, int] = {}
+                    show = self.Show()
 
-                    for season in range(1, int(r['totalSeasons'])+1):
+                    show.Title = title
+                    show.Year = year
+
+                    for s in range(1, int(r['totalSeasons'])+1):
+
+                        season = self.Season()
 
                         r_: dict[str, str] = get(
                             url = self.__url,
@@ -358,61 +388,27 @@ class api:
                             params = {
                                 't': title,
                                 'y': year,
-                                'Season': season,
+                                'Season': s,
                                 'apikey': self.__apikey
                             }
                         ).json()
 
-                        x = str(season).zfill(2)
-                        Seasons[x] = []
-
                         for e in r_['Episodes']:
-                            Seasons[x] += [str(e['Episode']).zfill(2)]
 
-                    return self.Item(
-                        Type = 'show', 
-                        Title = r['Title'],
-                        Year = int(r['Year'].split(r'–')[0]),
-                        Seasons = Seasons
-                    )
+                            episode = self.Episode()
 
-        def search(self,
-            query: str
-        ) -> Generator[Item]:
-            """
-            Search for movies and shows
-            """
-            
-            r:  list[dict[str, str]] = get(
-                url = self.__url,
-                debug = self.debug,
-                params = {
-                    's': query,
-                    'apikey': self.__apikey
-                }
-            ).json()
+                            episode.Number = int(e['Episode'])
+                            episode.Season = season
+                            episode.Show = show
+                            episode.Title = e['Title']
+                            episode.Released = from_string(e['Released'])
 
-            #
-            if r['Response'] == 'True':
+                            season.Episodes += [episode]
 
-                for i in r['Search']:
-                    
-                    if i['Type'] == 'movie':
-                        
-                        yield self.Item(
-                            Type = 'movie',
-                            Title = i['Title'],
-                            Year = i['Year']
-                        )
+                        show.Seasons += [season]
 
-                    elif i['Type'] == 'series':
+                    return show
 
-                        yield self.Item(
-                            Type = 'show',
-                            Title = i['Title'],
-                            Year = int(i['Year'].split(r'–')[0])
-                        )
- 
     def numista(url:str='', params:list=[]):
         """
         Numista API
@@ -527,8 +523,8 @@ class api:
                 return (self.progress() == 1)
 
             def __str__(self):
-                from .classOBJ import loc
                 from .text import abbreviate
+                from .classOBJ import loc
 
                 return f"<File '{abbreviate(30, self.title)}' @{loc(self)}>"
 

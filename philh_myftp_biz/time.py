@@ -153,6 +153,12 @@ class from_stamp:
     
     def __float__(self):
         return float(self.unix)
+    
+    def __str__(self):
+        from .text import abbreviate
+        from .classOBJ import loc
+
+        return f"<from_stamp '{abbreviate(30, self.__dt.isoformat())}' @{loc(self)}>"
 
     def __eq__(self, other):
 
@@ -188,23 +194,14 @@ def now() -> from_stamp:
     return from_stamp(time())
 
 def from_string(
-    string: str,
-    separator:str = '/',
-    order:str = 'YMD'
+    string: str
 ) -> from_stamp:
     """
     Get details of time string
     """
-    from datetime import datetime
+    from dateutil import parser
 
-    split = string.split(separator)
-
-    order = order.lower()
-    Y = split[order.index('y')]
-    M = split[order.index('m')]
-    D = split[order.index('d')]
-
-    dt = datetime.strptime(f'{Y}-{M}-{D}', "%Y-%m-%d")
+    dt = parser.parse(string)
 
     return from_stamp(dt.timestamp())
 
