@@ -242,6 +242,8 @@ class ProgressBar:
     def __refresh(self):
         from time import sleep
 
+        lastval = None
+
         while self.running():
 
             # Wait .3 seconds
@@ -249,6 +251,20 @@ class ProgressBar:
             
             # Update the timer
             self._tqdm.refresh()
+
+            if lastval != self._tqdm.n:
+
+                n = self._tqdm.n
+                t = self._tqdm.total
+
+                try:
+                    p = round(n/t, 2)
+                except ZeroDivisionError:
+                    p = 0
+
+                Log.verbose(f'ProgressBar: ({p}%, n={n}, t={t})')
+
+                lastval = n
 
 #========================================================
 
@@ -342,16 +358,17 @@ class ParsedArgs:
         parsed, _ = self.__parser.parse_known_args()
         
         handler = self.__handlers[key]
-        
-        value = getattr(parsed, key)
 
-        if value == -1:
-
-            return self.__defaults[key]
+        rvalue = getattr(parsed, key)
         
+        if rvalue == -1:
+            value = self.__defaults[key]
         else:
+            value = handler(rvalue)
 
-            return handler(value)            
+        Log.verbose(f'Parsed Arguement: (key={key}, in={rvalue}, out={value})')
+
+        return value
 
 #========================================================
 
