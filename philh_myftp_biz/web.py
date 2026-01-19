@@ -273,11 +273,10 @@ class api:
         """
 
         def __init__(self,
-            debug: bool = False,
-            key = 'dc888719'
+            debug:bool = False
         ):
             self.__url = 'https://www.omdbapi.com/'
-            self.__apikey = key
+            self.key = 'dc888719'
 
             self.debug = debug
 
@@ -316,7 +315,7 @@ class api:
                 params = {
                     't': title,
                     'y': year,
-                    'apikey': self.__apikey
+                    'apikey': self.key
                 }                
 
             )
@@ -352,7 +351,7 @@ class api:
                 params = {
                     't': title,
                     'y': year,
-                    'apikey': self.__apikey
+                    'apikey': self.key
                 }
             )
 
@@ -392,7 +391,7 @@ class api:
                             't': title,
                             'y': year,
                             'Season': s,
-                            'apikey': self.__apikey
+                            'apikey': self.key
                         }
                     ).json()
 
