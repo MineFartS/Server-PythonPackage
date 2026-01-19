@@ -144,11 +144,11 @@ def log(
     #========================
     # LOG
 
-    Log.verbose(obj)
+    Log.verbose(f'(color={color}, loc={loc(obj)}, data={dictify(obj)})')
 
 #========================================================
 
-def to_json(obj) -> dict:
+def dictify(obj) -> dict:
     """
     Convert an instance to a dictionary
     """
