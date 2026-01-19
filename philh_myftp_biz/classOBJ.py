@@ -127,16 +127,24 @@ def log(
     """
     Print all attributes of the instance to the terminal
     """
-    from .terminal import print as __print
+    from .terminal import Log, print as __print
     
+    #========================
+    # PRINT
+
     print()
 
     __print(
         stringify(obj),
         color = color
     )
-    
+
     print()
+
+    #========================
+    # LOG
+
+    Log.verbose(obj)
 
 #========================================================
 

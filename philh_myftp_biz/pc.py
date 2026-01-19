@@ -248,9 +248,7 @@ class Path:
 
         return MimeType.Path(self)
 
-    def delete(self,
-        show: bool = True
-    ) -> None:
+    def delete(self) -> None:
         """
         Delete the current path
 
@@ -259,21 +257,22 @@ class Path:
         """
         from send2trash import send2trash
         from shutil import rmtree
+        from .terminal import Log
         from os import remove
 
-        if show:
-            print()
-            print('Deleting:', self)
-            print()
+        Log.verbose(f'Recycling: {self}')
 
         if self.exists():
             
             self.set_access.full()
 
             try:
+                
                 send2trash(self.path)
 
             except OSError:
+
+                Log.warn(f'Recycling Failed, Deleting: {self}')
 
                 if self.isdir():
                     rmtree(self.path)
@@ -567,11 +566,9 @@ class _var:
 
             _mtime(self.file).set(m)
         
-        except OSError:
-            print(
-                f"Error setting var '{self.title}' at '{str(self.file)}'",
-                color = 'RED'
-            )
+        except OSError as e:
+
+            raise OSError(f"Error setting var '{self.title}' at '{self.file}'") from e
 
 class _set_access:
 

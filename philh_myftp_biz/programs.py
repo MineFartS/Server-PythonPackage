@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 def __FFMPEG(name:str):
     from .file import temp, ZIP
     from .web import download
+    from .terminal import Log
 
     # Declare 'Ffmpeg.exe' location
     exe = temp(
@@ -17,7 +18,13 @@ def __FFMPEG(name:str):
     )
 
     # Check if 'Ffmpeg.exe' does not exist
-    if not exe.exists():
+    if exe.exists():
+
+        Log.verbose(f'{name}.exe Exists')
+
+    else:
+
+        Log.verbose(f'Downloading: {name}.exe')
 
         # Declare path for 'ffmpeg' zipfile
         zipfile = temp('ffmpeg', 'zip')
@@ -45,11 +52,9 @@ def __FFMPEG(name:str):
 
     return exe
 
-def FFMPEG() -> 'Path':
-    return __FFMPEG('ffmpeg')
+FFMPEG  = lambda: __FFMPEG('ffmpeg')
 
-def FFPROBE() -> 'Path':
-    return __FFMPEG('ffprobe')
+FFPROBE = lambda: __FFMPEG('ffprobe')
 
 #=================================
 

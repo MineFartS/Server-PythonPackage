@@ -226,29 +226,23 @@ def get(
     params: dict = {},
     headers: dict = {},
     stream: bool = None,
-    cookies = None,
-    debug: bool = False
+    cookies = None
 ) -> 'Response':
     """
     Wrapper for requests.get
     """
     from requests.exceptions import ConnectionError
-    from urllib.parse import urlencode
-    from .terminal import warn
+    from .terminal import Log
     from requests import get
-
-    if debug:
-        if len(params) > 1:
-            print('Requesting:', f'{url}?{urlencode(params)}')
-        else:
-            print('Requesting:', url)
 
     headers['User-Agent'] = 'Mozilla/5.0'
     headers['Accept-Language'] = 'en-US,en;q=0.5'
 
     # Iter until interrupted
     while True:
+
         try:
+
             return get(
                 url = url,
                 params = params,
@@ -256,9 +250,9 @@ def get(
                 stream = stream,
                 cookies = cookies
             )
+        
         except ConnectionError as e:
-            if debug:
-                warn(e)
+            Log.warn(e)
 
 class api:
     """
@@ -272,13 +266,9 @@ class api:
         'https://www.omdbapi.com/{url}'
         """
 
-        def __init__(self,
-            debug:bool = False
-        ):
+        def __init__(self):
             self.__url = 'https://www.omdbapi.com/'
             self.key = 'dc888719'
-
-            self.debug = debug
 
         class Movie:
             Title: str
@@ -288,16 +278,12 @@ class api:
         class Show:
             Title: str
             Year: int
-            Seasons: list[api.omdb.Season] = []
-
-        class Season:
-            Number: int
-            Episodes: list[api.omdb.Episode] = []
+            Seasons: dict[str, dict[str, api.omdb.Episode]] = {}
 
         class Episode:
             Title: str
-            Number: int
             Released: 'from_stamp|None' = None
+            Number: int
 
         def movie(self,
             title: str,
@@ -311,7 +297,6 @@ class api:
 
             response = get(
                 url = self.__url,
-                debug = self.debug,
                 params = {
                     't': title,
                     'y': year,
@@ -347,7 +332,6 @@ class api:
             # Request raw list of seasons
             req = get(
                 url = self.__url,
-                debug = self.debug,
                 params = {
                     't': title,
                     'y': year,
@@ -377,16 +361,12 @@ class api:
                 # Iter through all seasons by #
                 for s in range(1, int(pres['totalSeasons'])+1):
 
-                    # Create new 'Season' obj
-                    season = self.Season()
-
-                    # Set the 'Number' attribute of the 'Season' obj
-                    season.Number = s
+                    #
+                    show.Seasons[f'{s:02d}'] = {}
 
                     # Request season details and parse response
                     pres2: dict[str, str] = get(
                         url = self.__url,
-                        debug = self.debug,
                         params = {
                             't': title,
                             'y': year,
@@ -402,19 +382,16 @@ class api:
                         episode = self.Episode()
 
                         # Set attributes of 'Episode' obj
-                        episode.Number = int(e['Episode'])
                         episode.Title = e['Title']
+
+                        episode.Number = int(e['Episode'])
                         
                         # If the show has a release date
                         if e['Released'] != 'N/A':
                             # Parse the date
                             episode.Released = from_string(e['Released'])
 
-                        # Append the 'Episode' obj to the 'Season' obj
-                        season.Episodes += [episode]
-
-                    # Append the 'Season' obj to the 'Show' obj
-                    show.Seasons += [season]
+                        show.Seasons [f'{s:02d}'] [e['Episode'].zfill(2)] = episode
 
                 # Return the 'Show' obj
                 return show
@@ -469,6 +446,7 @@ class api:
                 file: 'TorrentFile'
             ):
                 from .pc import Path
+                
 
                 self.path = Path(f'{torrent.save_path}/{file.name}')
                 """Download Path"""
@@ -485,8 +463,6 @@ class api:
                 self.__torrent = torrent
                 """Torrent"""
 
-                self._debug = qbit._debug
-
             def _file(self) -> 'TorrentFile':
                 return self.__torrent.files[self.__id]
 
@@ -499,8 +475,9 @@ class api:
                 """
                 Start downloading the file
                 """
+                from .terminal import Log
 
-                self._debug('Downloading File', [prioritize, str(self)])
+                Log.verbose(f'Downloading File: [priority={prioritize}, {self}]')
 
                 self.__torrent.file_priority(
                     file_ids = self.__id,
@@ -514,9 +491,10 @@ class api:
                 Ignores error if the magnet is not found
                 """
                 from qbittorrentapi.exceptions import NotFound404Error
+                from .terminal import Log
 
-                self._debug('Stopping File', str(self))
-                                
+                Log.verbose(f'Stopping File: {self}')
+
                 try:
                     self.__torrent.file_priority(
                         file_ids = self.__id,
@@ -543,7 +521,6 @@ class api:
             username: str,
             password: str,
             port: int = 8080,
-            debug: bool = False,
             timeout: int = 3600 # 1 hour
         ):
             from qbittorrentapi import Client
@@ -551,8 +528,6 @@ class api:
 
             if not isinstance(host, str):
                 raise TypeError(path(host))
-
-            self.debug = debug
 
             self.__host = host
             self.__port = port
@@ -567,24 +542,12 @@ class api:
                 REQUESTS_ARGS = {'timeout': (timeout, timeout)}
             )
 
-        def _debug(self,
-            title: str,
-            data: dict = {}
-        ) -> None:
-            """
-            Print a message if debugging is enabled
-            """
-            from .json import dumps
-            
-            if self.debug:
-                print()
-                print(title, dumps(data))
-
         def _client(self) -> 'Client':
             """
             Wait for server connection, then returns qbittorrentapi.Client
             """
             from qbittorrentapi.exceptions import LoginFailed, Forbidden403Error, APIConnectionError
+            from .terminal import Log
 
             while True:
 
@@ -594,13 +557,7 @@ class api:
                 
                 except LoginFailed, Forbidden403Error, APIConnectionError:
 
-                    self._debug(
-                        title = 'Retrying',
-                        data = {
-                            'host': self.__host,
-                            'port': self.__port
-                        }
-                    )
+                    Log.warn(f'Retrying: {self.__host}:{self.__port}')
 
         def _get(self, magnet:Magnet):
             for t in self._client().torrents_info():
@@ -617,10 +574,11 @@ class api:
             """
             Start Downloading a Magnet
             """
+            from .terminal import Log
 
             t = self._get(magnet)
 
-            self._debug('Starting', str(magnet))
+            Log.verbose(f'Starting: {magnet}')
 
             if t:
                 t.start()
@@ -638,8 +596,9 @@ class api:
             """
             Restart Downloading a Magnet
             """
+            from .terminal import Log
 
-            self._debug('Restarting', str(magnet))
+            Log.verbose(f'Restarting: {magnet}')
 
             self.stop(magnet)
             self.start(magnet)
@@ -693,10 +652,11 @@ class api:
             """
             Stop downloading a Magnet
             """
+            from .terminal import Log
             
             t = self._get(magnet)
 
-            self._debug('Stopping', str(magnet))
+            Log.verbose(f'Stopping: {magnet}')
 
             t.delete(rm_files)
 
@@ -706,8 +666,9 @@ class api:
             """
             Remove all Magnets from the download queue
             """
+            from .terminal import Log
 
-            self._debug('Clearing Download Queue')
+            Log.verbose('Clearing Download Queue')
 
             for t in self._client().torrents_info():
                 t.delete(rm_files)
@@ -718,9 +679,10 @@ class api:
             """
             Automatically Sort the Download Queue
             """
-            from .array import List, priority
+            from .array import priority
+            from .terminal import Log
             
-            self._debug('Sorting Download Queue')
+            Log.verbose('Sorting Download Queue')
 
             if func is None:
                 func = lambda t: priority(
@@ -1031,7 +993,6 @@ class Driver:
     def __init__(
         self,
         headless: bool = True,
-        debug: bool = False,
         cookies: (list[dict] | None) = None,
         extensions: list[str] = [],
         fast_load: bool = False
@@ -1042,9 +1003,9 @@ class Driver:
         from threading import Thread
         from .process import SysTask
         from .file import temp
+        from .terminal import Log
         
         self.__via_with = False
-        self.debug = debug
 
         service = FirefoxService()
         service.creation_flags = CREATE_NO_WINDOW # Suppress Console Output
@@ -1059,11 +1020,7 @@ class Driver:
         if headless:
             options.add_argument("--headless")
 
-        # Print debug message
-        self.__debug('Starting Session', {
-            'headless': headless,
-            'fast_load': fast_load
-        })
+        Log.verbose(f'Starting Session: (headless={headless}, fast_load={fast_load})')
 
         # Start Chrome Session with options
         self._drvr = Firefox(options, service)
@@ -1082,8 +1039,7 @@ class Driver:
             # Download the '.xpi' file
             download(
                 url = url,
-                path = xpifile,
-                show_progress = debug
+                path = xpifile
             )
 
             # Install the addon from the file
@@ -1177,19 +1133,6 @@ class Driver:
     def __exit__(self, *_):
         if self.__via_with:
             self.close()
-    
-    def __debug(self,
-        title: str,
-        data: dict = {}
-    ) -> None:
-        """
-        Print a message if debugging is enabled
-        """
-        from .json import dumps
-        
-        if self.debug:
-            print()
-            print(title, dumps(data))
 
     def element(self,
         by: Literal['class', 'id', 'xpath', 'name', 'attr'],
@@ -1200,6 +1143,7 @@ class Driver:
         Get List of Elements by query
         """
         from selenium.webdriver.common.by import By
+        from .terminal import Log
 
         # Force 'by' input to lowercase
         by = by.lower()
@@ -1230,10 +1174,7 @@ class Driver:
             t, c = name.split('=')
             name = f"a[{t}='{c}']"
 
-        self.__debug(
-            title = "Finding Element", 
-            data = {'by': by, 'name':name}
-        )
+        Log.verbose(f"Finding Element: (by={by}, name={name})")
 
         if wait:
 
@@ -1284,12 +1225,9 @@ class Driver:
         """
         from selenium.common.exceptions import WebDriverException
         from urllib3.exceptions import ReadTimeoutError
+        from .terminal import Log
 
-        # Print Debug Messsage
-        self.__debug(
-            title = "Opening", 
-            data = {'url':url}
-        )
+        Log.verbose(f"Opening: {url}")
 
         if not self.__headless:
             # Focus on the first tab
@@ -1308,9 +1246,9 @@ class Driver:
         Close the Session
         """
         from selenium.common.exceptions import InvalidSessionIdException
-        
-        # Print Debug Message
-        self.__debug('Closing Session')
+        from .terminal import Log
+
+        Log.verbose('Closing Session')
 
         try:
             # Exit Session

@@ -358,44 +358,40 @@ class ParsedArgs:
 class Log:
 
     #========================================================
+    # VERBOSE
+
+    from sys import argv as __argv
+
+    VERBOSE = (len({'-v', '--verbose'} & set(__argv)) >= 1)
+
+    if VERBOSE:
+        LEVEL = 10
+    else:
+        LEVEL = 20
+
+    #========================================================
+    # LOGGER
+
+    from logging import basicConfig as __basicConfig
+    from logging import getLogger as __getLogger
+    
+    logger = __getLogger()
+
+    __basicConfig(
+        level = LEVEL,
+        format = "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] %(message)s",
+        datefmt = "%Y-%m-%d %H:%M:%S",
+        stream = stdout
+    )
+
+    #========================================================
     # WRITERS
 
-    from logging import info as write
-    from logging import warning as warn
-    from logging import error
     from logging import critical as crit
-
-    #========================================================
-    # FORMATTER
-
-    from logging import Formatter
-    formatter = Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-    #========================================================
-    # Stream Handler
-
-    from logging import StreamHandler
-    from sys import argv
-
-    outH = StreamHandler(stdout)
-
-    #====================
-    # STDOUT
-
-    # If either verbose flag is passed
-    if len({'-v', '--verbose'} & set(argv)) >= 1:
-        outH.addFilter(lambda s: s.levelname in ['INFO', 'DEBUG'])
-    else:
-        outH.addFilter(lambda s: s.levelname in ['INFO'])
-
-    outH.setFormatter(formatter)
-
-    #====================
-    # STDERR
-
-    errH = StreamHandler(stderr)
-    errH.addFilter(lambda s: s.levelname in ['WARNING', 'CRITICAL'])
-    errH.setFormatter(formatter)
+    from logging import debug as verbose
+    from logging import warning as warn
+    from logging import info as write
+    from logging import error
 
     #========================================================
 
@@ -405,6 +401,6 @@ class Log:
         # Create a FileHandler
         fh = FileHandler(str(path))
         fh.setLevel(DEBUG) # Log all messages to the file
-        fh.setFormatter(Log.formatter)
+        fh.setFormatter(Log.FORMATTER)
 
     #========================================================
