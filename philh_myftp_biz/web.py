@@ -278,7 +278,7 @@ class api:
         class Show:
             Title: str
             Year: int
-            Seasons: dict[str, dict[str, api.omdb.Episode]] = {}
+            Seasons: dict[str, dict[str, api.omdb.Episode]]
 
         class Episode:
             Title: str
@@ -354,6 +354,9 @@ class api:
                 # Create new 'Show' obj
                 show = self.Show()
 
+                #
+                show.Seasons = {}
+
                 # Set attributes of 'Show' obj
                 show.Title = title
                 show.Year = year
@@ -361,7 +364,6 @@ class api:
                 # Iter through all seasons by #
                 for s in range(1, int(pres['totalSeasons'])+1):
 
-                    #
                     show.Seasons[f'{s:02d}'] = {}
 
                     # Request season details and parse response
@@ -383,12 +385,10 @@ class api:
 
                         # Set attributes of 'Episode' obj
                         episode.Title = e['Title']
-
                         episode.Number = int(e['Episode'])
                         
-                        # If the show has a release date
+                        # If the show has a release date, then parse the date
                         if e['Released'] != 'N/A':
-                            # Parse the date
                             episode.Released = from_string(e['Released'])
 
                         show.Seasons [f'{s:02d}'] [e['Episode'].zfill(2)] = episode
@@ -1002,6 +1002,7 @@ class Driver:
         from selenium.common.exceptions import InvalidCookieDomainException
         from subprocess import CREATE_NO_WINDOW
         from threading import Thread
+        from .process import SysTask
         from .terminal import Log
         from .file import temp
         
@@ -1135,10 +1136,29 @@ class Driver:
 
             elements = self._drvr.find_elements(BY, name)
 
-            # If at least 1 element was found or if wait is false
+            # If at least 1 element was found
             if (len(elements) > 0) or (not wait):
 
                 return elements
+
+    def open_tab(self, x:int):
+        
+        handle = self._drvr.window_handles[x]
+
+        self._drvr.switch_to.window(handle)
+
+    def close_tab(self, x:int):
+
+        current = str(self._drvr.current_window_handle)
+
+        target = str(self._drvr.window_handles[x])
+
+        self._drvr.switch_to.window(target)
+
+        self._drvr.close()
+
+        if current != target:
+            self._drvr.switch_to.window(current)
 
     def html(self):
         from selenium.common.exceptions import WebDriverException
