@@ -995,15 +995,15 @@ class Driver:
         headless: bool = True,
         cookies: (list[dict] | None) = None,
         extensions: list[str] = [],
-        fast_load: bool = False
+        fast_load: bool = False,
+        timeout: int = 300
     ):
         from selenium.webdriver import FirefoxService, FirefoxOptions, Firefox
         from selenium.common.exceptions import InvalidCookieDomainException
         from subprocess import CREATE_NO_WINDOW
         from threading import Thread
-        from .process import SysTask
-        from .file import temp
         from .terminal import Log
+        from .file import temp
         
         self.__via_with = False
 
@@ -1016,7 +1016,6 @@ class Driver:
         if fast_load:
             options.page_load_strategy = 'eager'
 
-        self.__headless = headless
         if headless:
             options.add_argument("--headless")
 
@@ -1025,10 +1024,13 @@ class Driver:
         # Start Chrome Session with options
         self._drvr = Firefox(options, service)
 
+        self.PID = self._drvr.service.process.pid
+        """Firefox.exe PID"""
+
         # Set Timeouts
-        self._drvr.command_executor.set_timeout(300)
-        self._drvr.set_page_load_timeout(300)
-        self._drvr.set_script_timeout(300)
+        self._drvr.command_executor.set_timeout(timeout)
+        self._drvr.set_page_load_timeout(timeout)
+        self._drvr.set_script_timeout(timeout)
 
         # Iter through all given extension urls
         for url in extensions:
@@ -1059,9 +1061,6 @@ class Driver:
                 except InvalidCookieDomainException:
                     pass
 
-        pid = self._drvr.capabilities.get('moz:processID')
-        self.task = SysTask(pid)
-
         self.current_url = self._drvr.current_url
         """URL of the Current Page"""
 
@@ -1089,43 +1088,6 @@ class Driver:
     def read_var(self, name:str):
         return self.run(f'return {name}')
 
-    def clear_cache(self):
-        # TODO (Untested)
-        from selenium.webdriver.support import expected_conditions as EC
-        from selenium.webdriver.support.ui import WebDriverWait
-        from selenium.webdriver.common.by import By
-
-        # Save current window handle
-        current = str(self._drvr.current_window_handle)
-
-        # Open new tab
-        self._drvr.switch_to.new_window('tab')
-
-        # Navigate to Firefox's preferences page for privacy
-        self._drvr.get("about:preferences#privacy")
-
-        # Wait for the "Clear Data..." button to be clickable, then click it
-        WebDriverWait(self._drvr, 60).until(
-            EC.element_to_be_clickable((
-                By.XPATH,
-                "//button[contains(., 'Clear Data...')]"
-            ))
-        ).click()
-    
-        # Click the "Clear" button within the dialog
-        WebDriverWait(self._drvr, 60).until(
-            EC.element_to_be_clickable((
-                By.XPATH,
-                "//button[contains(., 'Clear') and @data-l10n-id='clear-data-dialog-clear-button']"
-            ))
-        ).click()
-
-        # Close the settings page
-        self._drvr.close()
-
-        # Return to the previous tab
-        self._drvr.switch_to.window(current)
-
     def __enter__(self):
         self.__via_with = True
         return self
@@ -1145,67 +1107,38 @@ class Driver:
         from selenium.webdriver.common.by import By
         from .terminal import Log
 
-        # Force 'by' input to lowercase
-        by = by.lower()
+        match by.lower():
 
-        # Check if by is 'class'
-        if by == 'class':
-            
-            if isinstance(name, list):
-                name = '.'.join(name)
+            case 'class':
 
-            _by = By.CLASS_NAME
+                if isinstance(name, list):
+                    name = '.'.join(name)
 
-        # Check if by is 'id'
-        if by == 'id':
-            _by = By.ID
+                BY = By.CLASS_NAME
 
-        # Check if by is 'xpath'
-        if by == 'xpath':
-            _by = By.XPATH
+            case 'id':
+                BY = By.ID
 
-        # Check if by is 'name'
-        if by == 'name':
-            _by = By.NAME
+            case 'xpath':
+                BY = By.XPATH
 
-        # Check if by is 'attr'
-        if by == 'attr':
-            _by = By.CSS_SELECTOR
-            t, c = name.split('=')
-            name = f"a[{t}='{c}']"
+            case 'name':
+                BY = By.NAME
+
+            case 'attr':
+                name = f"a[{name}']"
+                BY = By.CSS_SELECTOR
 
         Log.verbose(f"Finding Element: (by={by}, name={name})")
 
-        if wait:
+        while True:
 
-            while True:
+            elements = self._drvr.find_elements(BY, name)
 
-                elements = self._drvr.find_elements(_by, name)
+            # If at least 1 element was found or if wait is false
+            if (len(elements) > 0) or (not wait):
 
-                if len(elements) > 0:
-                    return elements
-
-        else:
-            return self._drvr.find_elements(_by, name)
-
-    def open_tab(self, x:int):
-        
-        handle = self._drvr.window_handles[x]
-
-        self._drvr.switch_to.window(handle)
-
-    def close_tab(self, x:int):
-
-        current = str(self._drvr.current_window_handle)
-
-        target = str(self._drvr.window_handles[x])
-
-        self._drvr.switch_to.window(target)
-
-        self._drvr.close()
-
-        if current != target:
-            self._drvr.switch_to.window(current)
+                return elements
 
     def html(self):
         from selenium.common.exceptions import WebDriverException
@@ -1229,9 +1162,8 @@ class Driver:
 
         Log.verbose(f"Opening: {url}")
 
-        if not self.__headless:
-            # Focus on the first tab
-            self._drvr.switch_to.window(self._drvr.window_handles[0])
+        # Focus on the first tab
+        self._drvr.switch_to.window(self._drvr.window_handles[0])
 
         # Open the url
         while True:
