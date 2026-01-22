@@ -144,7 +144,7 @@ def log(
     #========================
     # LOG
 
-    Log.verbose(f'(color={color}, loc={loc(obj)}, data={dictify(obj)})')
+    Log.VERB(f'(color={color}, loc={loc(obj)}, data={dictify(obj)})')
 
 #========================================================
 

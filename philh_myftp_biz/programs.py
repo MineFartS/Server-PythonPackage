@@ -20,11 +20,11 @@ def __FFMPEG(name:str):
     # Check if 'Ffmpeg.exe' does not exist
     if exe.exists():
 
-        Log.verbose(f'{name}.exe Exists')
+        Log.VERB(f'{name}.exe Exists')
 
     else:
 
-        Log.verbose(f'Downloading: {name}.exe')
+        Log.VERB(f'Downloading: {name}.exe')
 
         # Declare path for 'ffmpeg' zipfile
         zipfile = temp('ffmpeg', 'zip')

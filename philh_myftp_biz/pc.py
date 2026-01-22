@@ -260,7 +260,7 @@ class Path:
         from .terminal import Log
         from os import remove
 
-        Log.verbose(f'Recycling: {self}')
+        Log.VERB(f'Recycling: {self}')
 
         if self.exists():
             
@@ -272,7 +272,7 @@ class Path:
 
             except OSError:
 
-                Log.warn(f'Recycling Failed, Deleting: {self}')
+                Log.WARN(f'Recycling Failed, Deleting: {self}')
 
                 if self.isdir():
                     rmtree(self.path)

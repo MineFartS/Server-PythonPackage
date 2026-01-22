@@ -262,7 +262,7 @@ class ProgressBar:
                 except ZeroDivisionError:
                     p = 0
 
-                Log.verbose(f'ProgressBar: ({p}%, n={n}, t={t})')
+                Log.VERB(f'ProgressBar: ({p}%, n={n}, t={t})')
 
                 lastval = n
 
@@ -366,7 +366,7 @@ class ParsedArgs:
         else:
             value = handler(rvalue)
 
-        Log.verbose(f'Parsed Arguement: (key={key}, in={rvalue}, out={value})')
+        Log.VERB(f'Parsed Arguement: (key={key}, in={rvalue}, out={value})')
 
         return value
 
@@ -396,7 +396,7 @@ class Log:
 
     __basicConfig(
         level = LEVEL,
-        format = "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] %(message)s",
+        format = "\n[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] %(message)s",
         datefmt = "%Y-%m-%d %H:%M:%S",
         stream = stdout
     )
@@ -404,11 +404,46 @@ class Log:
     #========================================================
     # WRITERS
 
-    from logging import critical as crit
-    from logging import debug as verbose
-    from logging import warning as warn
-    from logging import info as write
-    from logging import error
+    def __log(
+        mess: str|BaseException,
+        func: Callable
+    ) -> None:
+        from .classOBJ import path
+
+        #
+        if isinstance(mess, str):
+            #
+            func(mess)
+        
+        #
+        elif issubclass(mess.__class__, BaseException):
+            #
+            func('', exc_info=mess)
+
+        #
+        else:
+            #
+            raise TypeError(path(mess))
+        
+    def VERB(mess: str|BaseException):
+        from logging import debug
+        Log.__log(mess, debug)
+
+    def INFO(mess: str|BaseException):
+        from logging import info
+        Log.__log(mess, info)
+
+    def WARN(mess: str|BaseException):
+        from logging import warning
+        Log.__log(mess, warning)
+
+    def FAIL(mess: str|BaseException):
+        from logging import error
+        Log.__log(mess, error)
+    
+    def CRIT(mess: str|BaseException):
+        from logging import critical
+        Log.__log(mess, critical)
 
     #========================================================
 

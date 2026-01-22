@@ -252,7 +252,7 @@ def get(
             )
         
         except ConnectionError as e:
-            Log.warn(e)
+            Log.WARN(e)
 
 class api:
     """
@@ -477,7 +477,7 @@ class api:
                 """
                 from .terminal import Log
 
-                Log.verbose(f'Downloading File: [priority={prioritize}, {self}]')
+                Log.VERB(f'Downloading File: [priority={prioritize}, {self}]')
 
                 self.__torrent.file_priority(
                     file_ids = self.__id,
@@ -493,7 +493,7 @@ class api:
                 from qbittorrentapi.exceptions import NotFound404Error
                 from .terminal import Log
 
-                Log.verbose(f'Stopping File: {self}')
+                Log.VERB(f'Stopping File: {self}')
 
                 try:
                     self.__torrent.file_priority(
@@ -557,7 +557,7 @@ class api:
                 
                 except LoginFailed, Forbidden403Error, APIConnectionError:
 
-                    Log.warn(f'Retrying: {self.__host}:{self.__port}')
+                    Log.WARN(f'Retrying: {self.__host}:{self.__port}')
 
         def _get(self, magnet:Magnet):
             for t in self._client().torrents_info():
@@ -578,7 +578,7 @@ class api:
 
             t = self._get(magnet)
 
-            Log.verbose(f'Starting: {magnet}')
+            Log.VERB(f'Starting: {magnet}')
 
             if t:
                 t.start()
@@ -598,7 +598,7 @@ class api:
             """
             from .terminal import Log
 
-            Log.verbose(f'Restarting: {magnet}')
+            Log.VERB(f'Restarting: {magnet}')
 
             self.stop(magnet)
             self.start(magnet)
@@ -656,7 +656,7 @@ class api:
             
             t = self._get(magnet)
 
-            Log.verbose(f'Stopping: {magnet}')
+            Log.VERB(f'Stopping: {magnet}')
 
             t.delete(rm_files)
 
@@ -668,7 +668,7 @@ class api:
             """
             from .terminal import Log
 
-            Log.verbose('Clearing Download Queue')
+            Log.VERB('Clearing Download Queue')
 
             for t in self._client().torrents_info():
                 t.delete(rm_files)
@@ -682,7 +682,7 @@ class api:
             from .array import priority
             from .terminal import Log
             
-            Log.verbose('Sorting Download Queue')
+            Log.VERB('Sorting Download Queue')
 
             if func is None:
                 func = lambda t: priority(
@@ -1020,7 +1020,7 @@ class Driver:
         if headless:
             options.add_argument("--headless")
 
-        Log.verbose(f'Starting Session: (headless={headless}, fast_load={fast_load})')
+        Log.VERB(f'Starting Session: (headless={headless}, fast_load={fast_load})')
 
         # Start Chrome Session with options
         self._drvr = Firefox(options, service)
@@ -1130,7 +1130,7 @@ class Driver:
                 name = f"a[{name}']"
                 BY = By.CSS_SELECTOR
 
-        Log.verbose(f"Finding Element: (by={by}, name={name})")
+        Log.VERB(f"Finding Element: (by={by}, name={name})")
 
         while True:
 
@@ -1180,7 +1180,7 @@ class Driver:
         from urllib3.exceptions import ReadTimeoutError
         from .terminal import Log
 
-        Log.verbose(f"Opening: {url}")
+        Log.VERB(f"Opening: {url}")
 
         # Focus on the first tab
         self._drvr.switch_to.window(self._drvr.window_handles[0])
@@ -1200,7 +1200,7 @@ class Driver:
         from selenium.common.exceptions import InvalidSessionIdException
         from .terminal import Log
 
-        Log.verbose('Closing Session')
+        Log.VERB('Closing Session')
 
         try:
             # Exit Session
