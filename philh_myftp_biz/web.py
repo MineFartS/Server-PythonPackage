@@ -1025,7 +1025,7 @@ class Driver:
         # Start Chrome Session with options
         self._drvr = Firefox(options, service)
 
-        self.PID = self._drvr.service.process.pid
+        self.Task = SysTask(self._drvr.service.process.pid)
         """Firefox.exe PID"""
 
         # Set Timeouts
