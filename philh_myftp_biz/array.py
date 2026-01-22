@@ -83,11 +83,11 @@ class List[V]:
     
     def __isub__(self, value:V):
 
-        if isinstance(value, (list, tuple)):
-            for item in value:
-                del self[item]
-        else:
-            del self[value]
+        data = self.read()
+        
+        data.remove(value)
+        
+        self.save(data)
 
         return self
 
