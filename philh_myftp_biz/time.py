@@ -200,10 +200,16 @@ def from_string(
     Get details of time string
     """
     from dateutil import parser
+    from .classOBJ import path
 
-    dt = parser.parse(string)
-
-    return from_stamp(dt.timestamp())
+    try:
+    
+        dt = parser.parse(string)
+        return from_stamp(dt.timestamp())
+    
+    except OSError:
+    
+        raise TypeError(path(dt))
 
 def from_ymdhms(
     year:   int = 0,
