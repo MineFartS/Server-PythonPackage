@@ -1,9 +1,10 @@
-from sys import stdout, stderr
 from typing import Literal, TYPE_CHECKING, Callable, Any
+from sys import stdout, stderr
 
 if TYPE_CHECKING:
     from .db import Color
     from .pc import Path
+    from logging import LogRecord
 
 def width() -> int:
     """
@@ -387,64 +388,51 @@ class Log:
         LEVEL = 20
 
     #========================================================
-    # LOGGER
-
-    from logging import basicConfig as __basicConfig
-    from logging import getLogger as __getLogger
-    from .db import Color
-    
-    logger = __getLogger()
-
-    __basicConfig(
-        level = LEVEL,
-        format = f"\n{Color.values['BOLD']}[%(asctime)s] {Color.values['CYAN']}%(levelname)s{Color.values['DEFAULT']} %(message)s",
-        datefmt = "%Y-%m-%d %H:%M:%S",
-        stream = stdout
-    )
-
-    #========================================================
     # WRITERS
+    from logging import Formatter
 
-    def __log(
-        mess: str|BaseException,
-        func: Callable
-    ) -> None:
-        from .classOBJ import path
+    from logging import debug    as VERB
+    from logging import info     as INFO
+    from logging import warning  as WARN
+    from logging import error    as FAIL
+    from logging import critical as CRIT
 
-        #
-        if isinstance(mess, str):
-            #
-            func(mess)
-        
-        #
-        elif issubclass(mess.__class__, BaseException):
-            #
-            func('', exc_info=mess)
+    class CustomFormatter(Formatter):
 
-        #
-        else:
-            #
-            raise TypeError(path(mess))
-        
-    def VERB(mess: str|BaseException):
-        from logging import debug
-        Log.__log(mess, debug)
+        def format(self, r:'LogRecord'):
+            from .db import Color
+            from .time import now
 
-    def INFO(mess: str|BaseException):
-        from logging import info
-        Log.__log(mess, info)
+            match r.levelno:
 
-    def WARN(mess: str|BaseException):
-        from logging import warning
-        Log.__log(mess, warning)
+                case 10: COLOR, LEVEL = ('WHITE',   'VERB')
+                
+                case 20: COLOR, LEVEL = ('WHITE',   'INFO')
+                
+                case 30: COLOR, LEVEL = ('YELLOW',  'WARN')
+                
+                case 40: COLOR, LEVEL = ('RED',     'FAIL')
+                
+                case 50: COLOR, LEVEL = ('MAGENTA', 'CRIT')
 
-    def FAIL(mess: str|BaseException):
-        from logging import error
-        Log.__log(mess, error)
-    
-    def CRIT(mess: str|BaseException):
-        from logging import critical
-        Log.__log(mess, critical)
+            n = now()
+
+            return \
+                f'{n.year-2000:02d}-{n.month:02d}-{n.day:02d} {n.hour}-{n.minute}-{n.second}.{n.centisecond} '+ \
+                f'{r.filename}:{r.lineno:04d} '+ \
+                f'{Color.values[COLOR]}\033[1m{LEVEL}\033[0m '+ \
+                r.msg
+
+    from logging import basicConfig, StreamHandler
+
+    SH = StreamHandler(stdout)
+    SH.setLevel(10)
+    SH.setFormatter(CustomFormatter())
+
+    basicConfig(
+        level = LEVEL,
+        handlers = [SH]
+    )
 
     #========================================================
 

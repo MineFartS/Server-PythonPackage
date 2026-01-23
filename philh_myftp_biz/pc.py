@@ -141,6 +141,9 @@ class Path:
 
     def __str__(self) -> str:
         return self.path
+    
+    def __format__(self, spec):
+        return f'{self.path:{spec}}'
 
     def __eq__(self, other) -> bool:
 
@@ -260,19 +263,20 @@ class Path:
         from .terminal import Log
         from os import remove
 
-        Log.VERB(f'Recycling: {self}')
-
         if self.exists():
             
             self.set_access.full()
 
             try:
+
+                Log.VERB(f'Recycling: {self}')
                 
                 send2trash(self.path)
 
-            except OSError:
+            except OSError as e:
 
-                Log.WARN(f'Recycling Failed, Deleting: {self}')
+                Log.VERB(e)
+                Log.VERB(f'Deleting: {self}')
 
                 if self.isdir():
                     rmtree(self.path)
@@ -347,87 +351,78 @@ class Path:
 
     def copy(
         self,
-        dst: 'Path',
-        show_progress: bool = True
-    ) -> Self:
+        dst: 'Path'
+    ) -> 'Path':
         """
         Copy the path to another location
         """
         from shutil import copyfile, copytree
-        from .terminal import ProgressBar
-        from os import walk
+        from .terminal import Log
 
-        if show_progress:
-            pbar = ProgressBar()
-        else:
-            pbar = None
+        Log.VERB(f'Initializing Copier: {src=} | {dst=}')
 
-        def _copy(
-            src: Path,
-            dst: Path
-        ):
+        pairs: list[list[Path, Path]] = []
+
+        # If the source is a file
+        if self.isfile():
+
+            # If the destination is a folder
+            if dst.isdir():
+                pairs += [[self, dst.child(self.seg())]]
             
-            if dst.exists():
-                dst.delete()
+            # If the destination is a file
+            else:
+                pairs += [[self, dst]]
 
-            mkdir(dst.parent())
+        # If the source is a folder
+        else:
 
-            copyfile(
-                src = src.path,
-                dst = dst.path
+            copytree(
+
+                src = str(self),
+                dst = str(dst), 
+
+                dirs_exist_ok = True,
+                
+                # Append paths to list instead of directly copying
+                copy_function = lambda s, d, **_: \
+                    pairs.append([Path(s), Path(d)])
+
             )
-
-            if show_progress:
-                pbar.step(1)
 
         try:
 
-            if self.isfile():
+            # Iter through source and destination pairs
+            for src, dst in pairs:
 
-                if show_progress:
-                    pbar.reset(total=1)
+                Log.VERB(f'Copying File: {src=} | {dst=}')
 
-                if dst.isdir():
-                    dst = dst.child(self.seg())
-
-                _copy(self, dst)
-
-                return dst
-
-            else:
-                
-                if show_progress:
-
-                    total = 0
-                    for _, _, files in walk(self.path):
-                        total += len(files)
-
-                    pbar.reset(total=total)
-
-                copytree(
-                    src = self.path,
-                    dst = dst.path, 
-                    copy_function = lambda s, d, **_: _copy(Path(s), Path(d)),
-                    dirs_exist_ok = True   
+                copyfile(
+                    src = str(src),
+                    dst = str(dst)
                 )
 
-                return dst
+            Log.VERB(f'Copy Completed: {src=} | {dst=}')
 
         except Exception as e:
- 
-            dst.delete(show_progress)
+
+            Log.VERB(f'Copy Failed: {src=} | {dst=}')
+
+            # Iter through source and destination pairs
+            for src, dst in pairs:
+
+                dst.delete()
 
             raise e
 
     def move(self,
-        dst: Self,
-        show_progress: bool = True
+        dst: Self
     ) -> None:
         """
         Move the path to another location
         """
-        self.copy(dst, show_progress)
-        self.delete(show_progress)
+        self.copy(dst)
+        self.delete()
 
     def inuse(self) -> bool:
         """
@@ -500,31 +495,30 @@ class _mtime:
     def set(self,
         mtime: int | 'from_stamp' = None
     ):
+        from .time import from_stamp
         from .time import now
         from os import utime
-        from .time import from_stamp
         
         if isinstance(mtime, from_stamp):
             mtime = mtime.unix
 
         if mtime:
             utime(self.path.path, (mtime, mtime))
+
         else:
             now = now().unix
             utime(self.path.path, (now, now))
 
-    def get(self):
-        from os import path
-        from .time import from_stamp
-
-        stamp = path.getmtime(str(self.path))
-
-        return from_stamp(stamp)
-    
     def stopwatch(self):
-        from .time import Stopwatch
+        from .time import Stopwatch, from_stamp
+        from os import path
+
         SW = Stopwatch()
-        SW.start_time = self.get()
+
+        mtime = path.getmtime( str(self.path) )
+
+        SW.start_time = from_stamp(mtime)
+        
         return SW
 
 class _var:
@@ -584,15 +578,23 @@ class _set_access:
                 yield path
     
     def readonly(self):
+        from .terminal import Log
         from os import chmod
 
         for path in self.__paths():
+
+            Log.VERB(f'Updating Access [READ ONLY]: {path}')
+            
             chmod(str(path), 0o644)
 
     def full(self):
+        from .terminal import Log
         from os import chmod
 
         for path in self.__paths():
+
+            Log.VERB(f'Updating Access [FULL ACCESS]: {path}')
+
             chmod(str(path), 0o777)
 
 class _visibility:

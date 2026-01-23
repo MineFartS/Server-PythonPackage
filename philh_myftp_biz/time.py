@@ -124,25 +124,37 @@ class from_stamp:
             )
         )
 
-        self.year:  int = self.__dt.year
+        self.year = self.__dt.year
         """Year (####)"""
 
-        self.month: int = self.__dt.month
+        self.month = self.__dt.month
         """Month (1-12)"""
         
-        self.day:   int = self.__dt.day
+        self.day = self.__dt.day
         """Day of the Month (1-31)"""
         
-        self.hour:  int = self.__dt.hour
+        self.hour = self.__dt.hour
         """Hour (0-23)"""
         
-        self.minute:int = self.__dt.minute
+        self.minute = self.__dt.minute
         """Minute (0-59)"""
         
-        self.second:int = self.__dt.second
+        self.second = self.__dt.second
         """Second (0-59)"""
 
-        self.unix:  int = stamp
+        self.decisecond = (self.__dt.microsecond // 100000)
+        """TODO"""
+
+        self.centisecond = (self.__dt.microsecond // 10000)
+        """TODO"""
+
+        self.millisecond = (self.__dt.microsecond // 1000)
+        """TODO"""
+
+        self.microsecond = self.__dt.microsecond
+        """TODO"""
+
+        self.unix = stamp
         """Unix Time Stamp"""
 
         self.stamp = self.__dt.strftime
@@ -199,6 +211,7 @@ def from_string(
     """
     Get details of time string
     """
+    from dateutil.parser._parser import ParserError
     from dateutil import parser
     from .classOBJ import path
 
@@ -207,7 +220,7 @@ def from_string(
         dt = parser.parse(string)
         return from_stamp(dt.timestamp())
     
-    except OSError:
+    except OSError, ParserError:
     
         raise TypeError(path(string))
 
