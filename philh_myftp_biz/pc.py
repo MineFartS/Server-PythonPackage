@@ -273,10 +273,9 @@ class Path:
                 
                 send2trash(self.path)
 
-            except OSError as e:
+            except OSError:
 
-                Log.VERB(e)
-                Log.VERB(f'Deleting: {self}')
+                Log.VERB(f'Deleting: {self}', exc_info=True)
 
                 if self.isdir():
                     rmtree(self.path)

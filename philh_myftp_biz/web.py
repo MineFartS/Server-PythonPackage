@@ -238,6 +238,8 @@ def get(
     headers['User-Agent'] = 'Mozilla/5.0'
     headers['Accept-Language'] = 'en-US,en;q=0.5'
 
+    Log.VERB(f'Requesting Page: {url=} | {params=} | {headers=}')
+
     # Iter until interrupted
     while True:
 
@@ -251,8 +253,8 @@ def get(
                 cookies = cookies
             )
         
-        except ConnectionError as e:
-            Log.WARN(e)
+        except ConnectionError:
+            Log.WARN('Retrying Request', exc_info=True)
 
 class api:
     """
@@ -266,9 +268,17 @@ class api:
         'https://www.omdbapi.com/{url}'
         """
 
-        def __init__(self):
-            self.__url = 'https://www.omdbapi.com/'
-            self.key = 'dc888719'
+        __url = 'https://www.omdbapi.com/'
+
+        def __init__(self,
+            key: int = 0
+        ):
+            
+            match key:
+
+                case 0: self.key = 'dc888719'
+
+                case 1: self.key = '2e0c4a98'
 
         class Movie:
             Title: str
@@ -443,13 +453,11 @@ class api:
             """
 
             def __init__(self,
-                qbit: 'api.qBitTorrent',
                 torrent: 'TorrentDictionary',
                 file: 'TorrentFile'
             ):
                 from .pc import Path
                 
-
                 self.path = Path(f'{torrent.save_path}/{file.name}')
                 """Download Path"""
                 
@@ -479,7 +487,7 @@ class api:
                 """
                 from .terminal import Log
 
-                Log.VERB(f'Downloading File: [priority={prioritize}, {self}]')
+                Log.VERB(f'Downloading File: {prioritize=} | {self}]')
 
                 self.__torrent.file_priority(
                     file_ids = self.__id,
@@ -527,13 +535,16 @@ class api:
         ):
             from qbittorrentapi import Client
             from .classOBJ import path
+            from .terminal import Log
+
+            Log.VERB(f'Connecting to qBitTorrentAPI: {host=} {port=} | {username=} | {timeout=}')
 
             if not isinstance(host, str):
                 raise TypeError(path(host))
 
-            self.__host = host
-            self.__port = port
-            self.__timeout = timeout
+            self.host = host
+            self.port = port
+            self.timeout = timeout
 
             self.__rclient = Client(
                 host = host,
@@ -551,6 +562,8 @@ class api:
             from qbittorrentapi.exceptions import LoginFailed, Forbidden403Error, APIConnectionError
             from .terminal import Log
 
+            Log.VERB(f'Awaiting qBitTorrentAPI: {self.host=} {self.port=}')
+
             while True:
 
                 try:
@@ -558,8 +571,7 @@ class api:
                     return self.__rclient
                 
                 except LoginFailed, Forbidden403Error, APIConnectionError:
-
-                    Log.WARN(f'Retrying: {self.__host}:{self.__port}')
+                    Log.WARN('Retrying Connection', exc_info=True)
 
         def _get(self, magnet:Magnet):
             for t in self._client().torrents_info():
@@ -580,7 +592,7 @@ class api:
 
             t = self._get(magnet)
 
-            Log.VERB(f'Starting: {magnet}')
+            Log.VERB(f'Starting: {magnet=}')
 
             if t:
                 t.start()
@@ -600,14 +612,13 @@ class api:
             """
             from .terminal import Log
 
-            Log.VERB(f'Restarting: {magnet}')
+            Log.VERB(f'Restarting: {magnet=}')
 
             self.stop(magnet)
             self.start(magnet)
 
         def files(self,
-            magnet: Magnet,
-            
+            magnet: Magnet            
         ) -> Generator[File]:
             """
             List all files in Magnet Download
@@ -625,6 +636,9 @@ class api:
             
             """
             from .time import Stopwatch
+            from .terminal import Log
+
+            Log.VERB(f'Scanning Files: {magnet=}')
 
             sw = Stopwatch()
             sw.start()
@@ -638,14 +652,14 @@ class api:
                 #
                 while len(t.files) == 0:
                     
-                    if sw >= self.__timeout:
+                    if sw >= self.timeout:
                         raise TimeoutError()
 
                 t.setForceStart(False)
 
                 for f in t.files:
 
-                    yield self.File(self, t, f)
+                    yield self.File(t, f)
 
         def stop(self,
             magnet: Magnet,
@@ -658,51 +672,27 @@ class api:
             
             t = self._get(magnet)
 
-            Log.VERB(f'Stopping: {magnet}')
+            Log.VERB(f'Stopping: {rm_files=} | {magnet=}')
 
             t.delete(rm_files)
 
             return
 
-        def clear(self, rm_files:bool=True) -> None:
+        def clear(self,
+            rm_files: bool = True
+        ) -> None:
             """
             Remove all Magnets from the download queue
             """
             from .terminal import Log
 
-            Log.VERB('Clearing Download Queue')
+            Log.VERB(f'Clearing Download Queue: {rm_files=}')
 
-            for t in self._client().torrents_info():
-                t.delete(rm_files)
-
-        def sort(self,
-            func: Callable[['TorrentFile'], bool] = None
-        ) -> None:
-            """
-            Automatically Sort the Download Queue
-            """
-            from .array import priority
-            from .terminal import Log
-            
-            Log.VERB('Sorting Download Queue')
-
-            if func is None:
-                func = lambda t: priority(
-                    _1 = t.num_complete, # Seeders
-                    _2 = (t.size - t.downloaded) # Remaining
-                )
-
-            #
-            torrents: list[TorrentDictionary] = sorted(
-                self._client().torrents_info(),
-                key = func
-            )
-
-            # Loop through all items
-            for t in torrents:
-
-                # Move to the top of the queue
-                t.top_priority()
+            for torrent in self._client().torrents_info():
+                
+                Log.VERB(f'Deleting Queue Item: {rm_files=} | {torrent=}')
+                
+                torrent.delete(rm_files)
 
         def finished(self,
             magnet: Magnet
@@ -761,13 +751,21 @@ class api:
         """
         
         def __init__(self,
-            url: str = "https://thepiratebay.org/search.php?q={}&video=on",
+            url: Literal[
+                "thepiratebay11.com",
+                "thepiratebay10.info",
+                "thepiratebay7.com",
+                "thepiratebay0.org",
+                "thehiddenbay.com",
+                "piratebay.live",
+                "tpb.party"
+            ] = "thepiratebay0.org",
             driver: Driver = None,
             qbit: 'api.qBitTorrent' = None
         ):
             
             self.__url = url
-            """fString for searching tpb"""
+            """tpb mirror url"""
 
             self.__qbit = qbit
             """qBitTorrent Session"""
@@ -794,17 +792,14 @@ class api:
 
             # Open the search in a url
             self.__driver.open(
-                url = self.__url.format(query)
+                url = f'https://{self.__url}/search/{query}/1/99/0'
             )
 
             # Set driver var 'lines' to a list of lines
-            self.__driver.run("window.lines = document.getElementsByClassName('list-entry')")
+            self.__driver.run("window.lines = document.getElementById('searchResult').children[1].children")
 
             # Iter from 0 to # of lines
             for x in range(0, self.__driver.run('return lines.length')):
-
-                # Start of following commands
-                start = f"return lines[{x}].children"
 
                 try:
 
@@ -812,19 +807,19 @@ class api:
                     yield Magnet(
 
                         # Raw Tttle
-                        title = self.__driver.run(start+"[1].children[0].text"),
+                        title = self.__driver.run(f"return lines[{x}].children[1].textContent"),
 
                         # Num of Seeders
-                        seeders = int(self.__driver.run(start+"[5].textContent")),
+                        seeders = int(self.__driver.run(f"return lines[{x}].children[5].textContent")),
 
                         # Num of leechers
-                        leechers = int(self.__driver.run(start+"[6].textContent")),
+                        leechers = int(self.__driver.run(f"return lines[{x}].children[6].textContent")),
 
                         # Magnet URL
-                        url = self.__driver.run(start+"[3].children[0].href"),
+                        url = self.__driver.run(f"return lines[{x}].children[3].children[0].children[0].href"),
                         
                         # Download Size
-                        size = Size.to_bytes(self.__driver.run(start+"[4].textContent")),
+                        size = Size.to_bytes(self.__driver.run(f"return lines[{x}].children[4].textContent")),
 
                         # qBitTorrent Session
                         qbit = self.__qbit
@@ -1008,7 +1003,7 @@ class Driver:
         from .terminal import Log
         from .file import temp
         
-        self.__via_with = False
+        Log.VERB(f'Starting Session: {headless=} | {fast_load=} | {timeout=}')
 
         service = FirefoxService()
         service.creation_flags = CREATE_NO_WINDOW # Suppress Console Output
@@ -1021,8 +1016,6 @@ class Driver:
 
         if headless:
             options.add_argument("--headless")
-
-        Log.VERB(f'Starting Session: (headless={headless}, fast_load={fast_load})')
 
         # Start Chrome Session with options
         self._drvr = Firefox(options, service)
@@ -1037,6 +1030,8 @@ class Driver:
 
         # Iter through all given extension urls
         for url in extensions:
+
+            Log.VERB(f'Installing Extension: {url}')
             
             # Temporary path for '.xpi' file
             xpifile = temp('firefox-extension', 'xpi')
@@ -1067,37 +1062,48 @@ class Driver:
         self.current_url = self._drvr.current_url
         """URL of the Current Page"""
 
-        self.reload = self._drvr.refresh
-        """Reload the Current Page"""
-
-        self.run = self._drvr.execute_script
-        """Run JavaScript Code on the Current Page"""
-
-        self.clear_cookies = self._drvr.delete_all_cookies
-        """Clear All Session Cookies"""
-
         Thread(
             target = self.__background
         ).start()
 
+    def reload(self):
+        """Reload the Current Page"""
+        from .terminal import Log
+
+        Log.VERB(f'Reloading Page: {self.current_url=}')
+
+        self._drvr.refresh()
+
+    def clear_cookies(self):
+        """Clear All Session Cookies"""
+        from .terminal import Log
+
+        Log.INFO('Clearing Session Cookies')
+
+        self._drvr.delete_all_cookies()
+
+    def run(self, code:str):
+        """Run JavaScript Code on the Current Page"""
+        from .terminal import Log
+
+        Log.VERB(f'Executing JavaScript: {self.current_url=} |{code=}')
+
+        response = self._drvr.execute_script(code)
+
+        Log.VERB(f'JavaScript Executed: {response=}')
+
+        return response
+
     def __background(self):
         from threading import main_thread
+        from .terminal import Log
 
         while main_thread().is_alive():
             pass
 
+        Log.VERB('Closing Session: Main Thread Terminated')
+
         self._drvr.quit()
-
-    def read_var(self, name:str):
-        return self.run(f'return {name}')
-
-    def __enter__(self):
-        self.__via_with = True
-        return self
-
-    def __exit__(self, *_):
-        if self.__via_with:
-            self.close()
 
     def element(self,
         by: Literal['class', 'id', 'xpath', 'name', 'attr'],
@@ -1109,6 +1115,8 @@ class Driver:
         """
         from selenium.webdriver.common.by import By
         from .terminal import Log
+
+        Log.VERB(f"Finding Element: {by=} | {name=}")
 
         match by.lower():
 
@@ -1132,8 +1140,6 @@ class Driver:
                 name = f"a[{name}']"
                 BY = By.CSS_SELECTOR
 
-        Log.VERB(f"Finding Element: (by={by}, name={name})")
-
         while True:
 
             elements = self._drvr.find_elements(BY, name)
@@ -1141,26 +1147,9 @@ class Driver:
             # If at least 1 element was found
             if (len(elements) > 0) or (not wait):
 
+                Log.VERB(f"Found Elements: {elements=}")
+
                 return elements
-
-    def open_tab(self, x:int):
-        
-        handle = self._drvr.window_handles[x]
-
-        self._drvr.switch_to.window(handle)
-
-    def close_tab(self, x:int):
-
-        current = str(self._drvr.current_window_handle)
-
-        target = str(self._drvr.window_handles[x])
-
-        self._drvr.switch_to.window(target)
-
-        self._drvr.close()
-
-        if current != target:
-            self._drvr.switch_to.window(current)
 
     def html(self):
         from selenium.common.exceptions import WebDriverException
@@ -1182,7 +1171,7 @@ class Driver:
         from urllib3.exceptions import ReadTimeoutError
         from .terminal import Log
 
-        Log.VERB(f"Opening: {url}")
+        Log.VERB(f"Opening Page: {url=}")
 
         # Focus on the first tab
         self._drvr.switch_to.window(self._drvr.window_handles[0])
@@ -1193,7 +1182,7 @@ class Driver:
                 self._drvr.get(url)
                 return
             except WebDriverException, ReadTimeoutError:
-                pass
+                Log.WARN('Failed to open url', exc_info=True)
 
     def close(self) -> None:
         """
@@ -1263,40 +1252,3 @@ def download(
 
         # Download directly to the desination file
         urlretrieve(url, str(path))
-
-class WiFi:
-    """
-    Wifi Controls
-    """
-
-    def __init__(self):
-        pass
-
-    def connect(self,
-        ssid: str,
-        profile: str = None
-    ) -> bool:
-        """
-        Connect to a wireless network
-
-        if no profile is given, then the ssid will be used
-
-        Will return true if the connection succeeded
-        
-        """
-        from .process import RunHidden
-
-        # If the profile is not given
-        if not profile:
-            # Set the profile to the ssid
-            profile = ssid
-
-        # Run the 'netsh' command to connect to the network
-        r = RunHidden([
-            'netsh', 'wlan', 'connect',
-            f'ssid={ssid}', 
-            f'name={profile}'
-        ])
-
-        # Return bool if the connection succeeded
-        return ('completed successfully' in r.output())
