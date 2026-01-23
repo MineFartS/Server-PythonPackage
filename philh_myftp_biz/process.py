@@ -118,13 +118,17 @@ class SubProcess:
         """
         Monitor the Process' status
         """
+        from threading import main_thread
         from .time import sleep
+
+        mt = main_thread()
 
         while True:
             
             sleep(.1)
 
-            if self.finished() or self.timed_out():
+            # If the either the main exec or the subprocess is stopped 
+            if self.finished() or self.timed_out() or (not mt.is_alive()):
                 
                 self.stop()
                 
