@@ -391,12 +391,13 @@ class Log:
 
     from logging import basicConfig as __basicConfig
     from logging import getLogger as __getLogger
+    from .db import Color
     
     logger = __getLogger()
 
     __basicConfig(
         level = LEVEL,
-        format = "\n[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] %(message)s",
+        format = f"\n{Color.values['BOLD']}[%(asctime)s] {Color.values['CYAN']}%(levelname)s{Color.values['DEFAULT']} %(message)s",
         datefmt = "%Y-%m-%d %H:%M:%S",
         stream = stdout
     )

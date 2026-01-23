@@ -138,13 +138,14 @@ class Color:
         'MAGENTA',
         'CYAN',
         'WHITE',
-        'DEFAULT'
+        'DEFAULT',
+        'BOLD'
     ]
     """
     Type hint for keys in colors.values
     """
 
-    values = {
+    values: dict[names, str] = {
         'BLACK' : '\033[30m',
         'RED' : '\033[31m',
         'GREEN' : '\033[32m',
@@ -153,7 +154,8 @@ class Color:
         'MAGENTA' : '\033[35m',
         'CYAN' : '\033[36m',
         'WHITE' : '\033[37m',
-        'DEFAULT' : '\033[0m'
+        'DEFAULT' : '\033[0m',
+        'BOLD': '\033[1m'
     }
     r"""
     COLOR CONVERSION TABLE
