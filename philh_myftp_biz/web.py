@@ -282,7 +282,7 @@ class api:
 
         class Episode:
             Title: str
-            Released: 'from_stamp|None' = None
+            Released: 'from_stamp|None'
             Number: int
 
         def movie(self,
@@ -388,8 +388,10 @@ class api:
                         episode.Number = int(e['Episode'])
                         
                         # If the show has a release date, then parse the date
-                        if e['Released'] != 'N/A':
+                        try:
                             episode.Released = from_string(e['Released'])
+                        except TypeError:
+                            episode.Released = None
 
                         show.Seasons [f'{s:02d}'] [e['Episode'].zfill(2)] = episode
 

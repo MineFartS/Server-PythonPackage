@@ -209,7 +209,7 @@ def from_string(
     
     except OSError:
     
-        raise TypeError(path(dt))
+        raise TypeError(path(string))
 
 def from_ymdhms(
     year:   int = 0,
