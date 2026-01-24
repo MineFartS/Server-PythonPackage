@@ -539,6 +539,7 @@ class api:
 
             Log.VERB(f'Connecting to qBitTorrentAPI: {host=} {port=} | {username=} | {timeout=}')
 
+            # if the host is not a string
             if not isinstance(host, str):
                 raise TypeError(path(host))
 
@@ -562,8 +563,6 @@ class api:
             from qbittorrentapi.exceptions import LoginFailed, Forbidden403Error, APIConnectionError
             from .terminal import Log
 
-            Log.VERB(f'Awaiting qBitTorrentAPI: {self.host=} {self.port=}')
-
             while True:
 
                 try:
@@ -571,7 +570,7 @@ class api:
                     return self.__rclient
                 
                 except LoginFailed, Forbidden403Error, APIConnectionError:
-                    Log.WARN('Retrying Connection', exc_info=True)
+                    Log.WARN('qBitTorrentAPI Connection Error')
 
         def _get(self, magnet:Magnet):
             for t in self._client().torrents_info():

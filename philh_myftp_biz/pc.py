@@ -269,13 +269,13 @@ class Path:
 
             try:
 
-                Log.VERB(f'Recycling: {self}')
+                Log.VERB(f'Recycling: {str(self)=}')
                 
                 send2trash(self.path)
 
             except OSError:
 
-                Log.VERB(f'Deleting: {self}', exc_info=True)
+                Log.VERB(f'Deleting: {str(self)=}', exc_info=True)
 
                 if self.isdir():
                     rmtree(self.path)
@@ -358,7 +358,7 @@ class Path:
         from shutil import copyfile, copytree
         from .terminal import Log
 
-        Log.VERB(f'Initializing Copier: {src=} | {dst=}')
+        Log.VERB(f'Initializing Copier: {str(self)=} | {str(dst)=}')
 
         pairs: list[list[Path, Path]] = []
 
@@ -394,18 +394,18 @@ class Path:
             # Iter through source and destination pairs
             for src, dst in pairs:
 
-                Log.VERB(f'Copying File: {src=} | {dst=}')
+                Log.VERB(f'Copying File: {str(src)=} | {str(dst)=}')
 
                 copyfile(
                     src = str(src),
                     dst = str(dst)
                 )
 
-            Log.VERB(f'Copy Completed: {src=} | {dst=}')
+            Log.VERB(f'Copy Completed: {str(src)=} | {str(dst)=}')
 
         except Exception as e:
 
-            Log.VERB(f'Copy Failed: {src=} | {dst=}')
+            Log.VERB(f'Copy Failed: {str(src)=} | {str(dst)=}')
 
             # Iter through source and destination pairs
             for src, dst in pairs:
