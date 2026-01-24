@@ -784,6 +784,7 @@ class api:
             for magnet in thePirateBay.search('term'):
                 magnet
             """
+            from selenium.common.exceptions import JavascriptException
             from .db import Size
 
             # Remove all "." & "'" from query
@@ -794,13 +795,13 @@ class api:
                 url = f'https://{self.__url}/search/{query}/1/99/0'
             )
 
-            # Set driver var 'lines' to a list of lines
-            self.__driver.run("window.lines = document.getElementById('searchResult').children[1].children")
+            try:
 
-            # Iter from 0 to # of lines
-            for x in range(0, self.__driver.run('return lines.length')):
+                # Set driver var 'lines' to a list of lines
+                self.__driver.run("window.lines = document.getElementById('searchResult').children[1].children")
 
-                try:
+                # Iter from 0 to # of lines
+                for x in range(0, self.__driver.run('return lines.length')):
 
                     # Yield a magnet instance
                     yield Magnet(
@@ -824,9 +825,9 @@ class api:
                         qbit = self.__qbit
 
                     )
-
-                except KeyError:
-                    pass
+            
+            except JavascriptException:
+                pass
 
     class _1337x:
         """
