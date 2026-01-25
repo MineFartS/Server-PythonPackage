@@ -784,7 +784,7 @@ class api:
             for magnet in thePirateBay.search('term'):
                 magnet
             """
-            from selenium.common.exceptions import JavascriptException
+            from .terminal import Log
             from .db import Size
 
             # Remove all "." & "'" from query
@@ -826,8 +826,8 @@ class api:
 
                     )
             
-            except JavascriptException:
-                pass
+            except RuntimeError:
+                Log.WARN('', exc_info=True)
 
     class _1337x:
         """
@@ -1085,14 +1085,26 @@ class Driver:
     def run(self, code:str):
         """Run JavaScript Code on the Current Page"""
         from .terminal import Log
+        from selenium.common.exceptions import JavascriptException
 
         Log.VERB(f'Executing JavaScript: {self.current_url=} |{code=}')
 
-        response = self._drvr.execute_script(code)
+        try:
 
-        Log.VERB(f'JavaScript Executed: {response=}')
+            response = self._drvr.execute_script(code)
 
-        return response
+            Log.VERB(f'JavaScript Executed: {response=}')
+
+            return response
+        
+        except JavascriptException as e:
+
+            # Truncate the Error Message
+            mess: str = e.msg
+            mess = mess[mess.find(':')+2:]
+            mess = mess[:mess.find('\nStacktrace:')]
+
+            raise RuntimeError(mess) from None
 
     def __background(self):
         from threading import main_thread
