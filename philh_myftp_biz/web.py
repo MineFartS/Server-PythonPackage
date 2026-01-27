@@ -582,7 +582,7 @@ class api:
 
         def start(self,
             magnet: Magnet,
-            path: str = None
+            path: Path = None
         ) -> None:
             """
             Start Downloading a Magnet
@@ -591,15 +591,17 @@ class api:
 
             t = self._get(magnet)
 
-            Log.VERB(f'Starting: {magnet=}')
+            Log.VERB(f'Starting: {magnet=} | {str(path)=}')
 
             if t:
+
                 t.start()
+                t.reannounce()
             
             else:
                 self._client().torrents_add(
                     urls = [magnet.url],
-                    save_path = path,
+                    save_path = str(path),
                     tags = magnet.url
                 )
 
