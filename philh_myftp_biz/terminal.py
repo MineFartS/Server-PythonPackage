@@ -363,12 +363,14 @@ class ParsedArgs:
         rvalue = getattr(parsed, key)
         
         if rvalue == -1:
-            Log.VERB(f'Parsed Arguement: {key=} | {self.__defaults[key]=}')
+            
             value = self.__defaults[key]
+            Log.VERB(f'Parsed Arguement: {key=} | {self.__defaults[key]=}')
+        
         else:
-            value = handler(rvalue)
 
-        Log.VERB(f'Parsed Arguement: {key=} | {rvalue=} | {value=}')
+            value = handler(rvalue)
+            Log.VERB(f'Parsed Arguement: {key=} | {rvalue=} | {value=}')
 
         return value
 
