@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING
 
+type ServiceDisabledError = Exception
+
 if TYPE_CHECKING:
     from .process import SubProcess
     from .pc import Path
@@ -198,8 +200,13 @@ class Service:
 
         if isinstance(path, str):
             path =  Path(path)
-
         self.path = path
+
+        self.__lockfile = path.child('__pycache__/lock.ini')
+
+        self.Enable  = self.__lockfile.delete
+
+        self.Enabled = self.__lockfile.exists
 
     def _run(self, name:str):
         from .process import RunHidden
@@ -225,9 +232,16 @@ class Service:
         """
 
         # If force is true or the service isn't running
-        if force or (not self.Running()):
+        if force:
 
             self.Stop()
+
+            self._run('Start')
+
+        elif not self.Enabled():
+            raise ServiceDisabledError(str(self.path))
+
+        elif not self.Running():
 
             self._run('Start')
 
@@ -248,3 +262,13 @@ class Service:
         Stop the Service
         """
         self._run('Stop')
+
+    def Disable(self,
+        stop: bool = True
+    ):
+        
+        self.__lockfile.open('w')
+        
+        if stop:
+            self.Stop()
+
