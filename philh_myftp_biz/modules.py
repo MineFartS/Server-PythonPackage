@@ -196,17 +196,23 @@ class Service:
     def __init__(self,
         path: 'str | Path'
     ):
-        from .pc import Path
+        from .pc import Path, mkdir
+
+        #==============================
 
         if isinstance(path, str):
             path =  Path(path)
         self.path = path
+        
+        #==============================
 
         self.__lockfile = path.child('__pycache__/lock.ini')
+        
+        mkdir(self.__lockfile.parent())
 
         self.Enable  = self.__lockfile.delete
 
-        self.Enabled = self.__lockfile.exists
+        #==============================
 
     def _run(self, name:str):
         from .process import RunHidden
@@ -263,12 +269,15 @@ class Service:
         """
         self._run('Stop')
 
+    def Enabled(self) -> bool:
+        return (not self.__lockfile.exists())
+
     def Disable(self,
         stop: bool = True
     ):
         
+        # Create the lock file
         self.__lockfile.open('w')
         
         if stop:
             self.Stop()
-
