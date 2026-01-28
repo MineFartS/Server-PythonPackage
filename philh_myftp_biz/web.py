@@ -525,7 +525,8 @@ class api:
             if t:
 
                 t.start()
-                t.reannounce()
+
+                self.reannounce(magnet)
             
             else:
                 self._client().torrents_add(
@@ -599,6 +600,8 @@ class api:
                     
                     if sw >= self.timeout:
                         raise TimeoutError()
+                    
+                    self.reannounce(magnet)
 
                 t.setForceStart(False)
 
