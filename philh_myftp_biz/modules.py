@@ -196,7 +196,7 @@ class Service:
     def __init__(self,
         path: 'str | Path'
     ):
-        from .pc import Path, mkdir
+        from .pc import Path
 
         #==============================
 
@@ -207,8 +207,6 @@ class Service:
         #==============================
 
         self.__lockfile = path.child('__pycache__/lock.ini')
-        
-        mkdir(self.__lockfile.parent())
 
         self.Enable  = self.__lockfile.delete
 
@@ -237,16 +235,18 @@ class Service:
         Will do nothing if already running unless force is True
         """
 
-        # If force is true or the service isn't running
+        # If force is true
         if force:
 
             self.Stop()
 
             self._run('Start')
 
+        # If this serivce is disabled
         elif not self.Enabled():
             raise ServiceDisabledError(str(self.path))
 
+        # If this service is stopped
         elif not self.Running():
 
             self.Stop()
@@ -276,8 +276,12 @@ class Service:
 
     def Disable(self,
         stop: bool = True
-    ):
-        
+    ) -> None:
+        from .pc import mkdir
+
+        #
+        mkdir(self.__lockfile.parent())
+
         # Create the lock file
         self.__lockfile.open('w')
         
