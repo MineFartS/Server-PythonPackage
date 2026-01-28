@@ -851,11 +851,13 @@ class Magnet(api.qBitTorrent):
                     partial(value, self=self, magnet=self)
                 )
 
-    def __str__(self):
+    def __repl__(self):
         from .text import abbreviate
         from .classOBJ import loc
 
         return f"<Magnet '{abbreviate(30, self.title)}' @{loc(self)}>"
+    
+    __str__ = __repl__
 
 class Soup:
     """
