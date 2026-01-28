@@ -148,79 +148,6 @@ class ssh:
 
         return self.__Response(stdout, stderr)
 
-class Magnet:
-    """
-    Handler for MAGNET URLs
-    """
-
-    __qualities = {
-        'hdtv': 0,
-        'tvrip': 0,
-        '2160p': 2160,
-        '1440p': 1440,
-        '1080p': 1080,
-        '720p': 720,
-        '480p': 480,
-        '360p': 360,
-        '4K': 2160
-    }
-    """
-    QUALITY LOOKUP TABLE
-
-    Find quality in magnet title
-    """
-
-    def __init__(self,
-        title: str,
-        seeders: int,
-        leechers: int,
-        url: str,
-        size: str,
-        qbit: 'api.qBitTorrent' = None
-    ):
-            
-        self.title = title.lower()
-        self.seeders = seeders
-        self.leechers = leechers
-        self.url = url
-        self.size = size
-        self.__qbit = qbit
-
-        self.quality = 0
-        for term in self.__qualities:
-            if term in title.lower():
-                self.quality = self.__qualities[term]
-
-    def start(self, path:str=None):
-        self.__qbit.start(self, path)
-
-    def stop(self, rm_files:bool=True):
-        self.__qbit.stop(self, rm_files)
-
-    def restart(self):
-        self.__qbit.restart(self)
-    
-    def files(self):
-        return self.__qbit.files(self)
-    
-    def finished(self):
-        return self.__qbit.finished(self)
-    
-    def errored(self):
-        return self.__qbit.errored(self)
-    
-    def downloading(self):
-        return self.__qbit.downloading(self)
-    
-    def exists(self):
-        return self.__qbit.exists(self)
-    
-    def __str__(self):
-        from .classOBJ import loc
-        from .text import abbreviate
-
-        return f"<Magnet '{abbreviate(30, self.title)}' @{loc(self)}>"
-
 def get(
     url: str,
     params: dict = {},
@@ -547,7 +474,7 @@ class api:
             self.port = port
             self.timeout = timeout
 
-            self.__rclient = Client(
+            self._rclient = Client(
                 host = host,
                 port = port,
                 username = username,
@@ -566,13 +493,15 @@ class api:
             while True:
 
                 try:
-                    self.__rclient.torrents_info()
-                    return self.__rclient
+                    self._rclient.torrents_info()
+                    return self._rclient
                 
                 except LoginFailed, Forbidden403Error, APIConnectionError:
                     Log.WARN('qBitTorrentAPI Connection Error')
 
-        def _get(self, magnet:Magnet):
+        def _get(self,
+            magnet: Magnet
+        ):
             for t in self._client().torrents_info():
                 
                 #
@@ -581,8 +510,8 @@ class api:
                     return t
 
         def start(self,
-            magnet: Magnet,
-            path: Path = None
+            magnet: 'Magnet',
+            path: 'Path' = None
         ) -> None:
             """
             Start Downloading a Magnet
@@ -605,8 +534,23 @@ class api:
                     tags = magnet.url
                 )
 
+        def reannounce(self,
+            magnet: 'Magnet'
+        ) -> None:
+            """
+            """
+            from .terminal import Log
+
+            Log.VERB(f'Reannouncing: {magnet=}')
+
+            t = self._get(magnet)
+
+            if t:
+
+                t.reannounce()
+
         def restart(self,
-            magnet: Magnet
+            magnet: 'Magnet'
         ) -> None:
             """
             Restart Downloading a Magnet
@@ -619,7 +563,7 @@ class api:
             self.start(magnet)
 
         def files(self,
-            magnet: Magnet            
+            magnet: 'Magnet'            
         ) -> Generator[File]:
             """
             List all files in Magnet Download
@@ -663,7 +607,7 @@ class api:
                     yield self.File(t, f)
 
         def stop(self,
-            magnet: Magnet,
+            magnet: 'Magnet',
             rm_files: bool = True
         ) -> None:
             """
@@ -696,7 +640,7 @@ class api:
                 torrent.delete(rm_files)
 
         def finished(self,
-            magnet: Magnet
+            magnet: 'Magnet'
         ) -> None | bool:
             """
             Check if a magnet is finished downloading
@@ -708,7 +652,7 @@ class api:
                 return (t.state_enum.is_uploading or t.state_enum.is_complete)
 
         def errored(self,
-            magnet: Magnet
+            magnet: 'Magnet'
         ) -> None | bool:
             """
             Check if a magnet is errored
@@ -720,8 +664,8 @@ class api:
                 return t.state_enum.is_errored
 
         def downloading(self,
-            magnet: Magnet
-        ) -> bool:
+            magnet: 'Magnet'
+        ) -> None | bool:
             """
             Check if a magnet is downloading
             """
@@ -730,11 +674,9 @@ class api:
             
             if t:
                 return t.state_enum.is_downloading
-            else:
-                return False
 
         def exists(self,
-            magnet: Magnet
+            magnet: 'Magnet'
         ) -> bool:
             """
             Check if a magnet is in the download queue
@@ -743,6 +685,18 @@ class api:
             t = self._get(magnet)
             
             return (t != None)
+
+        def stalled(self,
+            magnet: 'Magnet'
+        ) -> None | bool:
+            """
+            Check if a magnet is stalled
+            """
+                        
+            t = self._get(magnet)
+            
+            if t:
+                return (t.state_enum.value == 'stalledDL')
 
     class thePirateBay:
         """
@@ -831,97 +785,77 @@ class api:
             except RuntimeError:
                 Log.WARN('', exc_info=True)
 
-    class _1337x:
-        """
-        1337x
+class Magnet(api.qBitTorrent):
+    """
+    Handler for MAGNET URLs
+    """
 
-        'https://1337x.to/'
-        """
-        
-        # TODO Bypass Captcha via cookies
+    __qualities = {
+        'hdtv': 0,
+        'tvrip': 0,
+        '2160p': 2160,
+        '1440p': 1440,
+        '1080p': 1080,
+        '720p': 720,
+        '480p': 480,
+        '360p': 360,
+        '4K': 2160
+    }
+    """
+    QUALITY LOOKUP TABLE
 
-        def __init__(self,
-            url: str = "https://1337x.to/search/{}/1/",
-            driver: Driver = None,
-            qbit: 'api.qBitTorrent' = None
-        ):
+    Find quality in magnet title
+    """
+
+    def __init__(self,
+        title: str = '',
+        seeders: int = -1,
+        leechers: int = -1,
+        url: str = '',
+        size: str = -1,
+        qbit: api.qBitTorrent = None
+    ):
+        from functools import partial
+        from inspect import signature
             
-            self.__url = url
-            """fString for searching 1337x"""
+        self.title = title.lower()
+        self.leechers = leechers
+        self.seeders = seeders
+        self.url = url
+        self.size = size
 
-            self.__qbit = qbit
-            """qBitTorrent Session"""
-            
-            if driver:
-                self.__driver = driver
-            else:
-                self.__driver = Driver()
+        self.quality = 0
+        for term in self.__qualities:
+            if term in self.title:
+                self.quality = self.__qualities[term]
 
-        def search(self,
-            query: str
-        ) -> None | Generator[Magnet]:
-            """
-            Search 1337x for magnets
-
-            EXAMPLE:
-            for magnet in _1337x.search('term'):
-                magnet
-            """
-            from .db import size
-
-            # Remove all "." & "'" from query
-            query = query.replace('.', '').replace("'", '')
-
-            # Open the search in a url
-            self.__driver.open(
-                url = self.__url.format(query)
-            )
-
-            #
-            self.__driver.run("let tr = Array.from(document.getElementsByTagName('tr')).slice(1)")
-
-            items: list[list[list[str] | str]] = [] # [[lines, URL], ...]
-
-            #
-            for x in range(0, self.__driver.run('return tr.length')):
-
-                #
-                textContent: str = self.__driver.run(f'return tr[{x}].textContent')
-
-                #
-                lines: list[str] = textContent.split('\n')[1:5]
-
-                #
-                innerHTML: str = self.__driver.run(f"return tr[{x}].innerHTML")
-                
-                #
-                URL = innerHTML.split('</a><a href=')[1].split('"')[1]
-
-                #
-                items.append([lines, URL])
-
-                
-            for lines, URL in items:
-
-                self.__driver.open('https://1337x.to' + URL)
-
-                yield Magnet(
-
-                    title = lines[0].strip(),
-
-                    seeders = int(lines[1]),
-
-                    leechers = int(lines[2]),
-
-                    size = size.to_bytes(lines[4][:lines[4].find('B')+1]),
-
-                    url = self.__driver.element(
-                        'xpath', '/html/body/main/div/div/div/div[2]/div[1]/ul[1]/li[1]/a'
-                    )[0].get_attribute('href'),
-
-                    qbit = self.__qbit
-
+        if qbit:
+            for name in ['_rclient', 'timeout']:
+                setattr(
+                    self, name,
+                    getattr(qbit, name)
                 )
+
+        for name, value in vars(api.qBitTorrent).items():
+
+            CALLABLE = callable(value)
+
+            PUBLIC = ('_' not in name)
+
+            MAGNETPARAM = (CALLABLE and ('magnet' in signature(value).parameters))
+
+            if CALLABLE and PUBLIC and MAGNETPARAM:
+
+                setattr(
+                    self, name,
+                    partial(value, self=self, magnet=self)
+                )
+
+    def __str__(self):
+        from .text import abbreviate
+        from .classOBJ import loc
+
+        return f"<Magnet '{abbreviate(30, self.title)}' @{loc(self)}>"
 
 class Soup:
     """
