@@ -249,6 +249,8 @@ class Service:
 
         elif not self.Running():
 
+            self.Stop()
+
             self._run('Start')
 
     def Running(self) -> bool:
