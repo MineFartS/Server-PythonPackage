@@ -1,5 +1,11 @@
 from typing import Self
 
+#====================================================
+# Time Zone
+from pytz import timezone as __timezone
+TIMEZONE = __timezone('America/New_York')
+#====================================================
+
 def sleep(
     s: int,
     show: bool = False
@@ -115,50 +121,55 @@ class from_stamp:
     """
 
     def __init__(self, stamp:int):
-        from datetime import timezone, timedelta, datetime
+        from datetime import datetime
+        from functools import partial
 
-        self.__dt = datetime.fromtimestamp(
+        dt = datetime.fromtimestamp(
             timestamp = stamp,
-            tz = timezone(
-                offset = timedelta(hours=-4)
-            )
+            tz = TIMEZONE
         )
 
-        self.year = self.__dt.year
+        self.year = dt.year
         """Year (####)"""
 
-        self.month = self.__dt.month
+        self.month = dt.month
         """Month (1-12)"""
         
-        self.day = self.__dt.day
+        self.day = dt.day
         """Day of the Month (1-31)"""
         
-        self.hour = self.__dt.hour
+        self.hour = dt.hour
         """Hour (0-23)"""
         
-        self.minute = self.__dt.minute
+        self.minute = dt.minute
         """Minute (0-59)"""
         
-        self.second = self.__dt.second
+        self.second = dt.second
         """Second (0-59)"""
 
-        self.decisecond = (self.__dt.microsecond // 100000)
-        """TODO"""
+        self.decisecond = (dt.microsecond // 100000)
+        """Decisecond (0-9)"""
 
-        self.centisecond = (self.__dt.microsecond // 10000)
-        """TODO"""
+        self.centisecond = (dt.microsecond // 10000)
+        """Centisecond (0-99)"""
 
-        self.millisecond = (self.__dt.microsecond // 1000)
-        """TODO"""
+        self.millisecond = (dt.microsecond // 1000)
+        """Millisecond (0-999)"""
 
-        self.microsecond = self.__dt.microsecond
-        """TODO"""
+        self.microsecond = dt.microsecond
+        """Microsecond (0-999999)"""
 
         self.unix = stamp
         """Unix Time Stamp"""
 
-        self.stamp = self.__dt.strftime
+        self.stamp = partial(
+            dt.strftime,
+            format = "%Y-%m-%d %H:%M:%S"
+        )
         """Get Formatted Time Stamp"""
+
+        self.ISO = dt.isoformat()
+        """ISO format string"""
 
     def __int__(self):
         return int(self.unix)
@@ -166,11 +177,13 @@ class from_stamp:
     def __float__(self):
         return float(self.unix)
     
-    def __str__(self):
+    def __repl__(self):
         from .text import abbreviate
         from .classOBJ import loc
 
-        return f"<from_stamp '{abbreviate(30, self.__dt.isoformat())}' @{loc(self)}>"
+        return f"<from_stamp '{abbreviate(30, self.ISO)}' @{loc(self)}>"
+    
+    __str__ = __repl__
 
     def __eq__(self, other):
 
