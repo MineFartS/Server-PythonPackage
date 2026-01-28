@@ -635,7 +635,7 @@ class api:
 
             for torrent in self._client().torrents_info():
                 
-                Log.VERB(f'Deleting Queue Item: {rm_files=} | {torrent=}')
+                Log.VERB(f'Deleting Queue Item: {rm_files=} | {torrent.name=}')
                 
                 torrent.delete(rm_files)
 
