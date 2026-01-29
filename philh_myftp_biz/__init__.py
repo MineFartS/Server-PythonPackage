@@ -24,12 +24,13 @@ class CustomStreamHandler(StreamHandler):
 
                 Traceback = StringIO()
 
-                # Get the current time as an OBJ
-                n = now()
-
+                # If an exception is passed
                 if r.exc_info:
-
+                    # Store the exception string
                     print_exception(*r.exc_info, file=Traceback)
+
+                # Get the current time
+                n = now()
 
                 # Parse the Terminal color value and the level name from the record
                 match r.levelno:
@@ -49,9 +50,9 @@ class CustomStreamHandler(StreamHandler):
                     f'\n{Color.values[COLOR]}\033[1m'+ \
                     f'{n.year-2000:02d}-{n.month:02d}-{n.day:02d} {n.hour:02d}-{n.minute:02d}-{n.second:02d}.{n.centisecond:02d} '+ \
                     f'{r.filename}:{r.lineno} '+ \
-                    f'{LEVEL}\033[22m '+ \
+                    f'{LEVEL}\033[22m\n'+ \
                     f'{r.msg}\033[0m\n'+ \
-                    Traceback.getvalue()
+                    Traceback.getvalue().strip()
     
     def __init__(self):
 
