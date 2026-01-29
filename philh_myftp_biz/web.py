@@ -583,6 +583,7 @@ class api:
             """
             from .time import Stopwatch
             from .terminal import Log
+            from time import sleep
 
             Log.VERB(f'Scanning Files: {magnet=}')
 
@@ -597,6 +598,8 @@ class api:
 
                 #
                 while len(t.files) == 0:
+
+                    sleep(1)
                     
                     if sw >= self.timeout:
                         raise TimeoutError()
@@ -1054,7 +1057,7 @@ class Driver:
         while main_thread().is_alive():
             pass
 
-        Log.VERB('Closing Session: Main Thread Terminated')
+        Log.WARN('Closing Session: Main Thread Terminated')
 
         self._drvr.quit()
 
