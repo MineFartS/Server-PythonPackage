@@ -118,7 +118,7 @@ class List[V]:
         func: Callable[[V], Any] = lambda x: x
     ) -> None | V:
         if len(self) > 0:
-            return self.sorted(func)[0]
+            return self.sorted(func)[-1]
     
     def filtered(self,
         func: Callable[[V], Any] = lambda x: x
