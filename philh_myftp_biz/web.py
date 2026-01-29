@@ -520,7 +520,7 @@ class api:
 
             t = self._get(magnet)
 
-            Log.VERB(f'Starting: {magnet=} | {str(path)=}')
+            Log.VERB(f'Starting: {repr(magnet)=} | {str(path)=}')
 
             if t:
 
@@ -542,7 +542,7 @@ class api:
             """
             from .terminal import Log
 
-            Log.VERB(f'Reannouncing: {magnet=}')
+            Log.VERB(f'Reannouncing: {repr(magnet)=}')
 
             t = self._get(magnet)
 
@@ -558,7 +558,7 @@ class api:
             """
             from .terminal import Log
 
-            Log.VERB(f'Restarting: {magnet=}')
+            Log.VERB(f'Restarting: {repr(magnet)=}')
 
             self.stop(magnet)
             self.start(magnet)
@@ -585,7 +585,7 @@ class api:
             from .terminal import Log
             from time import sleep
 
-            Log.VERB(f'Scanning Files: {magnet=}')
+            Log.VERB(f'Scanning Files: {repr(magnet)=}')
 
             sw = Stopwatch()
             sw.start()
@@ -623,7 +623,7 @@ class api:
             
             t = self._get(magnet)
 
-            Log.VERB(f'Stopping: {rm_files=} | {magnet=}')
+            Log.VERB(f'Stopping: {rm_files=} | {repr(magnet)=}')
 
             t.delete(rm_files)
 
@@ -862,8 +862,6 @@ class Magnet(api.qBitTorrent):
         from .classOBJ import loc
 
         return f"<Magnet '{abbreviate(30, self.title)}' @{loc(self)}>"
-    
-    __str__ = __repl__
 
 class Soup:
     """
@@ -930,6 +928,9 @@ class Driver:
     Wrapper for FireFox Selenium Session
     """
     from selenium.webdriver.remote.webelement import WebElement
+
+    current_url: str
+    """URL of the Current Page"""
 
     def __init__(
         self,
@@ -1003,9 +1004,6 @@ class Driver:
                 except InvalidCookieDomainException:
                     pass
 
-        self.current_url = self._drvr.current_url
-        """URL of the Current Page"""
-
         Thread(
             target = self.__background
         ).start()
@@ -1051,15 +1049,31 @@ class Driver:
             raise RuntimeError(mess) from None
 
     def __background(self):
+        from selenium.common.exceptions import WebDriverException
         from threading import main_thread
         from .terminal import Log
+        from time import sleep
 
-        while main_thread().is_alive():
-            pass
+        while True:
 
-        Log.WARN('Closing Session: Main Thread Terminated')
+            sleep(.25)
 
-        self._drvr.quit()
+            try:
+                # Update the current url value
+                self.current_url = self._drvr.current_url
+            
+            # Stop if the session is closed
+            except WebDriverException:
+                return
+
+            # Close session if the main thread is terminated
+            if not main_thread().is_alive():
+
+                Log.WARN('Closing Session: Main Thread Terminated')
+
+                self._drvr.quit()
+
+                return
 
     def element(self,
         by: Literal['class', 'id', 'xpath', 'name', 'attr'],
