@@ -789,7 +789,7 @@ class api:
                     )
             
             except RuntimeError:
-                Log.WARN('', exc_info=True)
+                pass
 
 class Magnet(api.qBitTorrent):
     """
