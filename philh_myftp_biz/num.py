@@ -1,5 +1,6 @@
 from sys import maxsize as max
 from math import trunc, floor
+from typing import Literal
 
 #========================================================
 
@@ -36,6 +37,33 @@ def clamp(
     Clamp a number to a range
     """
     return max(min(x, MAX), MIN)
+
+def flop(
+    x1: float,
+    op: Literal['+', '-', '*', '/'],
+    x2: float
+):
+
+    # Get x # of digits to scale by (y*10^x)
+    scale = max(
+        len(str(x1).split('.')[1]),
+        len(str(x2).split('.')[1])
+    )
+
+    # Scale the floats to integers
+    _x1 = int(x1 * 10**scale)
+    _x2 = int(x2 * 10**scale)
+
+    # Evaluate the expression
+    y = eval(f'{_x1} {op} {_x2}')
+
+    # If the operation is not division
+    if op != '/':
+
+        # Scale the result back to a float
+        y /= 10**scale
+
+    return y
 
 #========================================================
 
