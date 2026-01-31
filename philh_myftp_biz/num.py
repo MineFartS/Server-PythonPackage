@@ -27,6 +27,16 @@ def shuffle_range(
 
     return ordered
 
+def clamp(
+    x:   int|float,
+    MIN: int|float,
+    MAX: int|float
+):
+    """
+    Clamp a number to a range
+    """
+    return max(min(x, MAX), MIN)
+
 #========================================================
 
 def is_int(num) -> bool:
