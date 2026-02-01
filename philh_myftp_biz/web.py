@@ -509,6 +509,15 @@ class api:
 
                     return t
 
+        def connected(self) -> bool:
+            """
+            Check if qBitTorrent is connected to the internet
+            """
+
+            conn_status = self._client().transfer.info().connection_status
+
+            return (conn_status == 'connected')
+
         def start(self,
             magnet: 'Magnet',
             path: 'Path' = None
