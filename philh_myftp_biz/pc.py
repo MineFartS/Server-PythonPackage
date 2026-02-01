@@ -518,15 +518,20 @@ class _mtime:
             now = now().unix
             utime(self.path.path, (now, now))
 
-    def stopwatch(self):
-        from .time import Stopwatch, from_stamp
+    def get(self):
+        from .time import from_stamp
         from os import path
-
-        SW = Stopwatch()
 
         mtime = path.getmtime( str(self.path) )
 
-        SW.start_time = from_stamp(mtime)
+        return from_stamp(mtime)
+
+    def stopwatch(self):
+        from .time import Stopwatch
+
+        SW = Stopwatch()
+
+        SW.start_time = self.get()
         
         return SW
 
