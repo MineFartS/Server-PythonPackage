@@ -36,6 +36,36 @@ class thread:
 
         self.running = self._t.is_alive
 
+class Sleeper:
+    """
+    Call a function before exiting after main thread has ended
+    """
+
+    def __init__(self,
+        func: Callable,
+        *args,
+        **kwargs
+    ) -> 'Thread':
+        from threading import Thread
+
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+
+        # Create new thread
+        Thread(self._main).start()
+
+    def _main(self):
+        from threading import main_thread
+        from time import sleep
+
+        MT = main_thread()
+
+        while MT.is_alive():
+            sleep(.1)
+
+        self.func(*self.args, **self.kwargs)
+
 #========================================================
 
 class SubProcess:
