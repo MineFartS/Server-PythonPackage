@@ -1,6 +1,9 @@
 from typing import TYPE_CHECKING
 
-type ServiceDisabledError = Exception
+class ServiceDisabledError(Exception):
+
+    def __init__(self, serv:'Service'):
+        super().__init__(str(serv.path))
 
 if TYPE_CHECKING:
     from .process import SubProcess
@@ -244,7 +247,7 @@ class Service:
 
         # If this serivce is disabled
         elif not self.Enabled():
-            raise ServiceDisabledError(str(self.path))
+            raise ServiceDisabledError(self)
 
         # If this service is stopped
         elif not self.Running():
