@@ -251,36 +251,46 @@ class Path:
 
         return MimeType.Path(self)
 
-    def delete(self) -> None:
+    def delete(self,
+        force: bool = False
+    ) -> None:
         """
         Delete the current path
 
         Uses the 'send2trash' package.
-        Will use 'os.remove' if send2trash raises an OSError.
+        Will use 'os.remove' if send2trash raises an OSError or force=True.
         """
         from send2trash import send2trash
         from shutil import rmtree
         from .terminal import Log
-        from os import remove
+        
 
         if self.exists():
+
+            if self.isdir():
+                from shutil import rmtree as delete
+            else:
+                from os import remove as delete
             
             self.set_access.full()
 
-            try:
+            if force:
+                Log.VERB(f'Deleting: {str(self)=}')
+                delete(self.path)
 
-                Log.VERB(f'Recycling: {str(self)=}')
-                
-                send2trash(self.path)
+            else:
 
-            except OSError:
+                try:
 
-                Log.VERB(f'Deleting: {str(self)=}', exc_info=True)
+                    Log.VERB(f'Recycling: {str(self)=}')
+                    
+                    send2trash(self.path)
 
-                if self.isdir():
-                    rmtree(self.path)
-                else:
-                    remove(self.path)
+                    return
+
+                except OSError:
+                    Log.VERB(f'Deleting: {str(self)=}', exc_info=True)
+                    delete(self.path)
 
     def rename(self,
         dst,
