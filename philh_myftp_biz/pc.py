@@ -141,6 +141,8 @@ class Path:
 
     def __str__(self) -> str:
         return self.path
+
+    __repr__ = __str__
     
     def __format__(self, spec):
         return f'{self.path:{spec}}'
@@ -275,21 +277,21 @@ class Path:
             self.set_access.full()
 
             if force:
-                Log.VERB(f'Deleting: {str(self)=}')
+                Log.VERB(f'Deleting: {self=}')
                 delete(self.path)
 
             else:
 
                 try:
 
-                    Log.VERB(f'Recycling: {str(self)=}')
+                    Log.VERB(f'Recycling: {self=}')
                     
                     send2trash(self.path)
 
                     return
 
                 except OSError:
-                    Log.VERB(f'Deleting: {str(self)=}', exc_info=True)
+                    Log.VERB(f'Deleting: {self=}', exc_info=True)
                     delete(self.path)
 
     def rename(self,
@@ -368,7 +370,11 @@ class Path:
         from shutil import copyfile, copytree
         from .terminal import Log
 
-        Log.VERB(f'Initializing Copier: {str(self)=} | {str(dst)=}')
+        Log.VERB(
+            f'Initializing Copier\n'+ \
+            f'{self=}\n'+ \
+            f'{dst=}'
+        )
 
         pairs: list[list[Path, Path]] = []
 
@@ -404,14 +410,22 @@ class Path:
             # Iter through source and destination pairs
             for src, dst in pairs:
 
-                Log.VERB(f'Copying File: {str(src)=} | {str(dst)=}')
+                Log.VERB(
+                    f'Copying File\n'+ \
+                    f'{src=}\n'+ \
+                    f'{dst=}'
+                )
 
                 copyfile(
                     src = str(src),
                     dst = str(dst)
                 )
 
-            Log.VERB(f'Copy Completed: {str(src)=} | {str(dst)=}')
+            Log.VERB(
+                f'Copy Completed\n'+ \
+                f'{src=}\n'+ \
+                f'{dst=}'
+            )
 
         except Exception as e:
 

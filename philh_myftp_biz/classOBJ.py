@@ -141,11 +141,6 @@ def log(
 
     print()
 
-    #========================
-    # LOG
-
-    Log.VERB(f'(color={color}, loc={loc(obj)}, data={dictify(obj)})')
-
 #========================================================
 
 def dictify(obj) -> dict:

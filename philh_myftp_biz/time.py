@@ -177,13 +177,11 @@ class from_stamp:
     def __float__(self):
         return float(self.unix)
     
-    def __repl__(self):
+    def __repr__(self):
         from .text import abbreviate
         from .classOBJ import loc
 
         return f"<from_stamp '{abbreviate(30, self.ISO)}' @{loc(self)}>"
-    
-    __str__ = __repl__
 
     def __eq__(self, other):
 

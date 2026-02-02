@@ -165,7 +165,12 @@ def get(
     headers['User-Agent'] = 'Mozilla/5.0'
     headers['Accept-Language'] = 'en-US,en;q=0.5'
 
-    Log.VERB(f'Requesting Page: {url=} | {params=} | {headers=}')
+    Log.VERB(
+        f'Requesting Page\n'+ \
+        f'{url=}\n'+ \
+        f'{params=}\n'+ \
+        f'{headers=}'
+    )
 
     # Iter until interrupted
     while True:
@@ -407,18 +412,18 @@ class api:
                 return self._file().progress
 
             def start(self,
-                prioritize: bool = False
+                force: bool = False
             ):
                 """
                 Start downloading the file
                 """
                 from .terminal import Log
 
-                Log.VERB(f'Downloading File: {prioritize=} | {self}]')
+                Log.VERB(f'Downloading File: {force=} | {self}]')
 
                 self.__torrent.file_priority(
                     file_ids = self.__id,
-                    priority = (7 if prioritize else 1)
+                    priority = (7 if force else 1)
                 )
 
             def stop(self):
@@ -447,7 +452,7 @@ class api:
 
                 return (self.progress() == 1)
 
-            def __str__(self):
+            def __repr__(self):
                 from .text import abbreviate
                 from .classOBJ import loc
 
@@ -464,7 +469,12 @@ class api:
             from .classOBJ import path
             from .terminal import Log
 
-            Log.VERB(f'Connecting to qBitTorrentAPI: {host=} {port=} | {username=} | {timeout=}')
+            Log.VERB(
+                f'Connecting to qBitTorrentAPI\n'+ \
+                f'{host=} | {port=}\n'+ \
+                f'{username=}\n'+ \
+                f'{timeout=}'
+            )
 
             # if the host is not a string
             if not isinstance(host, str):
@@ -529,7 +539,11 @@ class api:
 
             t = self._get(magnet)
 
-            Log.VERB(f'Starting: {repr(magnet)=} | {str(path)=}')
+            Log.VERB(
+                f'Starting\n'+ \
+                f'{magnet=}\n'+ \
+                f'{path=}'
+            )
 
             if t:
 
@@ -551,7 +565,7 @@ class api:
             """
             from .terminal import Log
 
-            Log.VERB(f'Reannouncing: {repr(magnet)=}')
+            Log.VERB(f'Reannouncing: {magnet=}')
 
             t = self._get(magnet)
 
@@ -567,7 +581,7 @@ class api:
             """
             from .terminal import Log
 
-            Log.VERB(f'Restarting: {repr(magnet)=}')
+            Log.VERB(f'Restarting: {magnet=}')
 
             self.stop(magnet)
             self.start(magnet)
@@ -594,7 +608,7 @@ class api:
             from .terminal import Log
             from time import sleep
 
-            Log.VERB(f'Scanning Files: {repr(magnet)=}')
+            Log.VERB(f'Scanning Files: {magnet=}')
 
             sw = Stopwatch()
             sw.start()
@@ -632,14 +646,15 @@ class api:
             
             t = self._get(magnet)
 
-            Log.VERB(f'Stopping: {rm_files=} | {repr(magnet)=}')
+            Log.VERB(f'Stopping: {rm_files=} | {magnet=}')
 
             t.delete(rm_files)
 
             return
 
         def clear(self,
-            rm_files: bool = True
+            rm_files: bool = True,
+            filter_func: Callable[['TorrentDictionary'], bool] = lambda t: True
         ) -> None:
             """
             Remove all Magnets from the download queue
@@ -649,10 +664,12 @@ class api:
             Log.VERB(f'Clearing Download Queue: {rm_files=}')
 
             for torrent in self._client().torrents_info():
+
+                if filter_func(torrent):
                 
-                Log.VERB(f'Deleting Queue Item: {rm_files=} | {torrent.name=}')
-                
-                torrent.delete(rm_files)
+                    Log.VERB(f'Deleting Queue Item: {rm_files=} | {torrent.name=}')
+                    
+                    torrent.delete(rm_files)
 
         def finished(self,
             magnet: 'Magnet'
@@ -866,7 +883,7 @@ class Magnet(api.qBitTorrent):
                     partial(value, self=self, magnet=self)
                 )
 
-    def __repl__(self):
+    def __repr__(self):
         from .text import abbreviate
         from .classOBJ import loc
 
@@ -956,8 +973,13 @@ class Driver:
         from .process import SysTask
         from .terminal import Log
         from .file import temp
-        
-        Log.VERB(f'Starting Session: {headless=} | {fast_load=} | {timeout=}')
+
+        Log.VERB(
+            f'Starting Session\n'+ \
+            f'{headless=}\n'+ \
+            f'{fast_load=}\n'+ \
+            f'{timeout=}'
+        )
 
         service = FirefoxService()
         service.creation_flags = CREATE_NO_WINDOW # Suppress Console Output
@@ -1038,13 +1060,20 @@ class Driver:
         from .terminal import Log
         from selenium.common.exceptions import JavascriptException
 
-        Log.VERB(f'Executing JavaScript: {self.current_url=} |{code=}')
+        Log.VERB(
+            f'Executing JavaScript\n'+ \
+            f'{self.current_url=}\n'+ \
+            f'{code=}'
+        )
 
         try:
 
             response = self._drvr.execute_script(code)
 
-            Log.VERB(f'JavaScript Executed: {response=}')
+            Log.VERB(
+                f'JavaScript Executed\n'+ \
+                f'{response=}'
+            )
 
             return response
         
