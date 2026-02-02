@@ -415,7 +415,11 @@ class Path:
 
         except Exception as e:
 
-            Log.VERB(f'Copy Failed: {str(src)=} | {str(dst)=}')
+            Log.CRIT(
+                f'Copy Failed:\n'+ \
+                f'{str(src)=}\n'+ \
+                f'{str(dst)=}'
+            )
 
             # Iter through source and destination pairs
             for src, dst in pairs:
