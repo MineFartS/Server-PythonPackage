@@ -56,43 +56,28 @@ class _Template:
 
 #========================================================
 
-class XML:
+class XML(_Template):
     """
     .XML File
     """
 
-    def __init__(self, path, title):
-        from xml.etree import ElementTree
-        from .pc import Path
+    def read(self) -> dict:
+        from xmltodict import parse
 
-        self.root = ElementTree(title)
-        self.path = Path(path)
+        with self._path.open() as f:
 
-    def child(element, title:str, text:str):
-        """
-        
-        """
-        from xml.etree import ElementTree
+            return parse(f.read())
 
-        e = ElementTree.SubElement(element, title)
-        e.text = text
+    def save(self,
+        data: dict
+    ) -> None:
+        from xmltodict import unparse
 
-        return e
+        with self._path.open('w') as f:
 
-    def save(self) -> None:
-        """
-        Save the current XML data to the file 
-        """
-        from xml.etree import ElementTree
-        from bs4 import BeautifulSoup
-        
-        tree = ElementTree.ElementTree(self.root)
-        
-        tree.write(self.path.path, encoding="utf-8", xml_declaration=True)
-        
-        d = BeautifulSoup(self.path.open(), 'xml').prettify()
+            data = unparse(data, pretty=True)
 
-        self.path.write(d)
+            f.write(data)
 
 class PKL(_Template):
     """
