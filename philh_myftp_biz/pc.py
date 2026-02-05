@@ -376,71 +376,65 @@ class Path:
             f'{dst=}'
         )
 
-        pairs: list[list[Path, Path]] = []
-
-        # If the source is a file
-        if self.isfile():
-
-            # If the destination is a folder
-            if dst.isdir():
-                pairs += [[self, dst.child(self.seg())]]
-            
-            # If the destination is a file
-            else:
-                pairs += [[self, dst]]
-
-        # If the source is a folder
-        else:
-
-            copytree(
-
-                src = str(self),
-                dst = str(dst), 
-
-                dirs_exist_ok = True,
-                
-                # Append paths to list instead of directly copying
-                copy_function = lambda s, d, **_: \
-                    pairs.append([Path(s), Path(d)])
-
-            )
-
         try:
 
-            # Iter through source and destination pairs
-            for src, dst in pairs:
+            pairs: list[list[Path, Path]] = []
+
+            # If the source is a file
+            if self.isfile():
+
+                # If the destination is a folder
+                if dst.isdir():
+                    pairs += [[self, dst.child(self.seg())]]
+                
+                # If the destination is a file
+                else:
+                    pairs += [[self, dst]]
+
+            # If the source is a folder
+            else:
+
+                copytree(
+
+                    src = str(self),
+                    dst = str(dst), 
+
+                    dirs_exist_ok = True,
+                    
+                    # Append paths to list instead of directly copying
+                    copy_function = lambda s, d, **_: \
+                        pairs.append([Path(s), Path(d)])
+
+                )
+
+                # Iter through source and destination pairs
+                for s, d in pairs:
+
+                    Log.VERB(
+                        f'Copying File\n'+ \
+                        f'{s=}\n'+ \
+                        f'{d=}'
+                    )
+
+                    copyfile(
+                        src = str(s),
+                        dst = str(d)
+                    )
 
                 Log.VERB(
-                    f'Copying File\n'+ \
-                    f'{src=}\n'+ \
+                    f'Copy Completed\n'+ \
+                    f'{self=}\n'+ \
                     f'{dst=}'
                 )
 
-                copyfile(
-                    src = str(src),
-                    dst = str(dst)
-                )
-
-            Log.VERB(
-                f'Copy Completed\n'+ \
-                f'{src=}\n'+ \
-                f'{dst=}'
-            )
-
         except Exception as e:
 
-            Log.CRIT(
-                f'Copy Failed:\n'+ \
-                f'{str(src)=}\n'+ \
-                f'{str(dst)=}'
-            )
-
             # Iter through source and destination pairs
-            for src, dst in pairs:
+            for s, d in pairs:
 
                 dst.delete()
 
-            raise e
+            raise OSError(f'Failed to copy "{str(self)}" to "{str(dst)}" ') from e
 
     def move(self,
         dst: Self
