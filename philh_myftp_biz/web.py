@@ -426,6 +426,20 @@ class api:
                     priority = (7 if force else 1)
                 )
 
+            def enabled(self) -> bool:
+                """
+                """
+
+                priority: int = self._file().priority
+
+                return (priority > 0)
+
+            def downloading(self):
+                """
+                """
+
+                return (self.enabled() and (not self.finished()))
+
             def stop(self):
                 """
                 Stop downloading the file
@@ -729,6 +743,14 @@ class api:
             
             if t:
                 return (t.state_enum.value == 'stalledDL')
+
+        def randomize_port(self):
+            from random import randint
+            
+            # Update preference
+            self._client().app_setPreferences(preferences={
+                'listen_port': randint(10000, 60000)
+            })
 
     class thePirateBay:
         """
