@@ -814,7 +814,7 @@ class api:
 
                     )
             
-            except RuntimeError:
+            except RuntimeError, KeyError:
                 pass
 
 class Magnet(api.qBitTorrent):
