@@ -265,7 +265,7 @@ class Service:
         try:
             return self._run('Running').output('json')
         
-        except JSONDecodeError, AttributeError:
+        except JSONDecodeError, AttributeError, FileNotFoundError:
             return False
     
     def Stop(self) -> None:
