@@ -1,4 +1,4 @@
-from sys import maxsize as max
+from sys import maxsize as maxint
 from math import trunc, floor
 from typing import Literal
 
@@ -14,15 +14,15 @@ def digit(num:int, i:int) -> int:
     return int( str(num) [i] )
 
 def shuffle_range(
-    min: int,
-    max: int
+    MIN: int,
+    MAX: int
 ):
     """
     Get a range of numbers, but shuffled
     """
     from .array import List
 
-    ordered = List(range(min, max+1))
+    ordered = List(range(MIN, MAX+1))
 
     ordered.shuffle()
 
@@ -43,27 +43,63 @@ def flop(
     op: Literal['+', '-', '*', '/'],
     x2: float
 ):
+    """
+    Perform floating point operations without rounding
 
-    # Get x # of digits to scale by (y*10^x)
-    scale = max(
+    Example:
+    ```
+    >>> .1 + .2
+    0.30000000000000004
+
+    >>> flop(.1, '+', .2)
+    .3
+    ```
+    """
+    
+    SCALE = 10 ** max(
         len(str(x1).split('.')[1]),
         len(str(x2).split('.')[1])
     )
 
     # Scale the floats to integers
-    _x1 = int(x1 * 10**scale)
-    _x2 = int(x2 * 10**scale)
+    _x1 = int(x1 * SCALE)
+    _x2 = int(x2 * SCALE)
 
-    # Evaluate the expression
-    y = eval(f'{_x1} {op} {_x2}')
+    match op:
 
-    # If the operation is not division
-    if op != '/':
+        case '+':
+            return (_x1 + _x2) / SCALE
 
-        # Scale the result back to a float
-        y /= 10**scale
+        case '-':
+            return (_x1 - _x2) / SCALE
+    
+        case '*':
+            return (_x1 * _x2) / SCALE
+    
+        case '/':
+            return (_x1 / _x2)
+    
+        case _:
+            raise NotImplementedError(f'{op=}')
 
-    return y
+def nearest_multiple(
+    x: int|float,
+    multiple_of: int
+) -> int:
+    """
+    Snap x to the nearest multiple of a number
+
+    EXAMPLES:
+    ```
+    >>> nearest_multiple(17, 8)
+    16
+
+    >>> nearest_multiple(22, 10)
+    20
+    ```
+    """
+
+    return x//multiple_of * multiple_of
 
 #========================================================
 
