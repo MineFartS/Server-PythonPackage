@@ -227,34 +227,22 @@ class Service:
                     terminal = 'ext'
                 )
 
-        raise FileNotFoundError(f'{self.dir}{name}.*')
+        raise FileNotFoundError(f'{self.path}{name}.*')
 
-    def Start(self,
-        force: bool = False
-    ):
+    def Start(self):
         """
         Start the Service
-        
-        Will do nothing if already running unless force is True
         """
 
-        # If force is true
-        if force:
+        # Raise error if this serivce is disabled
+        if self.Enabled():
 
             self.Stop()
-
             self._run('Start')
 
-        # If this serivce is disabled
-        elif not self.Enabled():
+        else:
+
             raise ServiceDisabledError(self)
-
-        # If this service is stopped
-        elif not self.Running():
-
-            self.Stop()
-
-            self._run('Start')
 
     def Running(self) -> bool:
         """
