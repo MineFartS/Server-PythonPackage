@@ -378,47 +378,46 @@ class Path:
 
         try:
 
-            pairs: list[list[Path, Path]] = []
+            files: list[dict[Literal['src', 'dst'], Path]]
 
-            # If the source is a file
-            if self.isfile():
+            # If the source is a directory
+            if self.isdir():
 
-                # If the destination is a folder
-                if dst.isdir():
-                    pairs += [[self, dst.child(self.seg())]]
+                files = relscan(self, dst)
+
+            # If the source is file and destination is folder 
+            elif dst.isdir():
+                files = [{
+                    'src': self, 
+                    'dst': dst.child(self.seg())
+                }]
                 
-                # If the destination is a file
-                else:
-                    pairs += [[self, dst]]
-
-            # If the source is a folder
+            # If both the source and destination are files
             else:
-
-                copytree(
-
-                    src = str(self),
-                    dst = str(dst), 
-
-                    dirs_exist_ok = True,
-                    
-                    # Append paths to list instead of directly copying
-                    copy_function = lambda s, d, **_: \
-                        pairs.append([Path(s), Path(d)])
-
-                )
+                files = [{
+                    'src': self, 
+                    'dst': dst
+                }]
 
             # Iter through source and destination pairs
-            for s, d in pairs:
+            for file in files:
 
                 Log.VERB(
                     f'Copying File\n'+ \
-                    f'{s=}\n'+ \
-                    f'{d=}'
+                    f'{file['src']=}\n'+ \
+                    f'{file['dst']=}'
                 )
 
+                # Delete destination file
+                file['dst'].delete()
+
+                # Create the parent folder of the destination file
+                mkdir(file['dst'].parent())
+
+                # Copy the source file to the destination
                 copyfile(
-                    src = str(s),
-                    dst = str(d)
+                    src = str(file['src']),
+                    dst = str(file['dst'])
                 )
 
             Log.VERB(
@@ -429,12 +428,11 @@ class Path:
 
         except Exception as e:
 
-            # Iter through source and destination pairs
-            for s, d in pairs:
+            # Delete destination paths
+            for file in files:
+                file['dst'].delete()
 
-                dst.delete()
-
-            raise OSError(f'Failed to copy "{str(self)}" to "{str(dst)}" ') from e
+            raise OSError(f'Failed to copy \n"{self}" \nto \n"{dst}" ') from e
 
     def move(self,
         dst: Self
@@ -736,27 +734,26 @@ def relscan(
         'dst': Path('D:/Child1')
     }]
     """
-    from os import listdir
+    from shutil import copytree
 
     items = []
-
-    def scanner(src_:Path, dst_:Path):
-        for item in listdir(src.path):
-
-            s = src_.child(item)
-            d = dst_.child(item)
-
-            if s.isfile():
-                items.append({
-                    'src': s,
-                    'dst': d
-                })
-
-            elif s.isdir():
-                scanner(s, d)
-            
-    scanner(src, dst)
     
+    # Copytree dry run
+    copytree(
+
+        src = str(src),
+        dst = str(dst), 
+
+        dirs_exist_ok = True,
+        
+        # Append paths to list instead of directly copying
+        copy_function = lambda s, d, **_: items.append({
+            'src': Path(s), 
+            'dst': Path(d)
+        })
+
+    )
+
     return items
 
 #========================================================
