@@ -258,41 +258,27 @@ class Path:
     ) -> None:
         """
         Delete the current path
-
-        Uses the 'send2trash' package.
-        Will use 'os.remove' if send2trash raises an OSError or force=True.
         """
-        from send2trash import send2trash
-        from shutil import rmtree
         from .terminal import Log
-        
 
+        # If path is a directory
+        if self.isdir():
+            from shutil import rmtree as delete
+        
+        # If path is a file
+        else:
+            from os import remove as delete
+
+        # If the path exists
         if self.exists():
 
-            if self.isdir():
-                from shutil import rmtree as delete
-            else:
-                from os import remove as delete
-            
+            # Update Access
             self.set_access.full()
 
-            if force:
-                Log.VERB(f'Deleting: {self=}')
-                delete(self.path)
+            Log.VERB(f'Deleting: {self=}')
 
-            else:
-
-                try:
-
-                    Log.VERB(f'Recycling: {self=}')
-                    
-                    send2trash(self.path)
-
-                    return
-
-                except OSError:
-                    Log.VERB(f'Deleting: {self=}', exc_info=True)
-                    delete(self.path)
+            #            
+            delete(self.path)
 
     def rename(self,
         dst,
