@@ -80,7 +80,7 @@ class SubProcess:
     def __init__(self,
         args: list,
         terminal: Literal['cmd', 'ps', 'psfile', 'py', 'pym', 'vbs', 'ext'] | None = 'cmd',
-        dir: 'Path' = None,
+        dir: 'str|Path' = None,
         timeout: int | None = None
     ):
         from .array import stringify
@@ -91,11 +91,15 @@ class SubProcess:
 
         self.__timeout = timeout
 
-        if dir:
-            self.__dir = dir
-        else:
+        if dir is None:
             self.__dir = cwd()
-        
+
+        elif isinstance(dir, str):
+            self.__dir = Path(dir)
+
+        elif isinstance(dir, Path):
+            self.__dir = dir
+                    
         # =====================================   
 
         if isinstance(args, (tuple, list)):
