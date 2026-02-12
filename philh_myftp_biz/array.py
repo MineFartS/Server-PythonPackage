@@ -182,9 +182,19 @@ class List[V]:
 
 #========================================================
 
+def _copy(
+    array: list|tuple
+) -> list:
+    
+    if isinstance(array, list):
+        return array.copy()
+    
+    elif isinstance(array, tuple):
+        return list(array[:])
+
 def stringify(array:list) -> list[str]:
 
-    array = array.copy()
+    array = _copy(array)
 
     for x, item in enumerate(array):
         array[x] = str(item)
@@ -193,7 +203,7 @@ def stringify(array:list) -> list[str]:
 
 def intify(array:list) -> list[int]:
 
-    array = array.copy()
+    array = _copy(array)
 
     for x, item in enumerate(array):
         array[x] = int(item)
@@ -203,7 +213,7 @@ def intify(array:list) -> list[int]:
 def auto_convert(array:list):
     from .text import auto_convert
 
-    array = array.copy()
+    array = _copy(array)
 
     for x, a in enumerate(array):
         array[x] = auto_convert(a)
