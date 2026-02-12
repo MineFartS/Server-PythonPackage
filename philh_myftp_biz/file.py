@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Generator, Callable, Any
+from typing import TYPE_CHECKING, Generator, Callable, Any, Literal
 
 if TYPE_CHECKING:
     from .pc import Path
@@ -41,17 +41,22 @@ class _Template:
         path: 'Path',
         default = ''
     ):
+        from .pc import mkdir
+
         self._default = default
         self._path    = path
+
+        # Make the parent dir of the output path
+        mkdir(path.parent())
 
     read = Callable[[], Any]
     """
     Read data from the file
     """
-    
+
     save = Callable[[Any], None]
     """
-    Save data to the file
+    Read data from the file
     """
 
 #========================================================
