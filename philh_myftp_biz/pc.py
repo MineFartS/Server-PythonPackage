@@ -407,25 +407,25 @@ class Path:
 
                 )
 
-                # Iter through source and destination pairs
-                for s, d in pairs:
-
-                    Log.VERB(
-                        f'Copying File\n'+ \
-                        f'{s=}\n'+ \
-                        f'{d=}'
-                    )
-
-                    copyfile(
-                        src = str(s),
-                        dst = str(d)
-                    )
+            # Iter through source and destination pairs
+            for s, d in pairs:
 
                 Log.VERB(
-                    f'Copy Completed\n'+ \
-                    f'{self=}\n'+ \
-                    f'{dst=}'
+                    f'Copying File\n'+ \
+                    f'{s=}\n'+ \
+                    f'{d=}'
                 )
+
+                copyfile(
+                    src = str(s),
+                    dst = str(d)
+                )
+
+            Log.VERB(
+                f'Copy Completed\n'+ \
+                f'{self=}\n'+ \
+                f'{dst=}'
+            )
 
         except Exception as e:
 
