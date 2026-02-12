@@ -197,8 +197,10 @@ class Service:
     """
 
     def __init__(self,
-        path: 'str | Path'
+        path: 'str | Path',
+        args: list[str] = []
     ):
+        from .array import stringify
         from .pc import Path
 
         #==============================
@@ -206,6 +208,8 @@ class Service:
         if isinstance(path, str):
             path =  Path(path)
         self.path = path
+
+        self.args = stringify(args)
         
         #==============================
 
@@ -223,7 +227,7 @@ class Service:
             if p.isfile() and ((p.name().lower()) == (name.lower())):
 
                 return RunHidden(
-                    args = [p],
+                    args = [p] + self.args,
                     terminal = 'ext'
                 )
 
@@ -233,6 +237,9 @@ class Service:
         """
         Start the Service
         """
+        from .terminal import Log
+
+        Log.VERB(f"Starting Service: {self.path=}")
 
         # Raise error if this serivce is disabled
         if self.Enabled():
@@ -260,15 +267,29 @@ class Service:
         """
         Stop the Service
         """
+        from .terminal import Log
+
+        Log.VERB(f"Stopping Service: {self.path=}")
+
         self._run('Stop')
 
     def Enabled(self) -> bool:
+        """
+        """
+        from .terminal import Log
+
+        Log.VERB(f"Enabling Service: {self.path=}")
+        
         return (not self.__lockfile.exists())
 
     def Disable(self,
         stop: bool = True
     ) -> None:
+        """"""
+        from .terminal import Log
         from .pc import mkdir
+
+        Log.VERB(f"Disabling Service: {self.path=}")
 
         #
         mkdir(self.__lockfile.parent())
@@ -278,3 +299,9 @@ class Service:
         
         if stop:
             self.Stop()
+
+    def Args(self, *args:str):
+        """
+        Get a Copy of this Service, but with Arguements 
+        """
+        return Service(self.path, args)
