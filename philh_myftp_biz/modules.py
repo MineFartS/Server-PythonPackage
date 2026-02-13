@@ -1,5 +1,8 @@
 from typing import TYPE_CHECKING
 
+from git import Repo
+from .pc import Path
+
 class ServiceDisabledError(Exception):
 
     def __init__(self, serv:'Service'):
@@ -9,7 +12,7 @@ if TYPE_CHECKING:
     from .process import SubProcess
     from .pc import Path
 
-class Module:
+class Module(Path, Repo):
     """
     Allows for easy interaction with other languages in a directory
 
@@ -40,18 +43,17 @@ class Module:
         module: 'str | Path'
     ):
         from .file import YAML
-        from .pc import Path
 
         #====================================================
+        # INIT
 
-        self.dir = Path(module)
-
-        self.name = self.dir.name()
+        Path.__init__(self, module)
+        Repo.__init__(self, self.path)
 
         #====================================================
         # LOAD CONFIGURATION
 
-        configFile = self.dir.child('/module.yaml')
+        configFile = self.child('/module.yaml')
 
         if configFile.exists():
 
@@ -60,7 +62,6 @@ class Module:
             self.packages: list[str] = config['packages']
 
         else:
-
             self.packages = []
 
         #====================================================
@@ -137,7 +138,7 @@ class Module:
         for n in name:
             parts += n.split('/')
         
-        dir = self.dir.child('/'.join(parts[:-1]))
+        dir = self.child('/'.join(parts[:-1]))
 
         for p in dir.children():
             
@@ -155,7 +156,7 @@ class Module:
         from shlex import split
 
         # Initialize a git repo
-        self.git('init')
+        self.init()
 
         # Upgrade all python packages
         for pkg in self.packages:
@@ -171,15 +172,7 @@ class Module:
                 terminal = 'pym'
             )
 
-    def git(self, *args) -> 'SubProcess':
-        from .process import Run
-
-        return Run(
-            args = ['git', *args],
-            dir = self.dir
-        )
-
-class Service:
+class Service(Path):
     """
     Wrapper for Module Service
 
@@ -201,13 +194,11 @@ class Service:
         args: list[str] = []
     ):
         from .array import stringify
-        from .pc import Path
 
         #==============================
+        # INIT
 
-        if isinstance(path, str):
-            path =  Path(path)
-        self.path = path
+        Path.__init__(self, path)
 
         self.args = stringify(args)
         
@@ -215,14 +206,14 @@ class Service:
 
         self.__lockfile = path.child('__pycache__/lock.ini')
 
-        self.Enable  = self.__lockfile.delete
+        self.Enable = self.__lockfile.delete
 
         #==============================
 
     def _run(self, name:str):
         from .process import RunHidden
 
-        for p in self.path.children():
+        for p in self.children():
             
             if p.isfile() and ((p.name().lower()) == (name.lower())):
 
@@ -299,9 +290,3 @@ class Service:
         
         if stop:
             self.Stop()
-
-    def Args(self, *args:str):
-        """
-        Get a Copy of this Service, but with Arguements 
-        """
-        return Service(self.path, args)
