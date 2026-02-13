@@ -114,6 +114,40 @@ class Path:
         else:
             return _cd(self)
     
+    def ischild(self, parent:Path) -> bool:
+        """
+        Check if this path is a child or descendant of a parent directory
+        """
+        
+        try:
+            return self.__Path.is_relative_to(str(parent))
+        
+        except ValueError:
+            return False
+        
+    def isparent(self, child:Path) -> bool:
+        """
+        Check if this path is a parent of ancestor of a path
+        """
+        return child.ischild(self)
+
+    def isrelated(self, path:Path):
+        """
+        Check if this path is related to another
+        
+        ---
+        Returns True is any of the following:
+        - Is parent of
+        - Is child of
+        - Is same path
+        """
+
+        PARENT = self.isparent(path)
+        CHILD  = self.ischild(path)
+        SAME   = (self == path)
+
+        return any([PARENT, CHILD, SAME])
+
     def resolute(self) -> Self:
         """
         Get path with Symbolic Links Resolved
