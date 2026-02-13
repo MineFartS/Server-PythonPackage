@@ -1,9 +1,5 @@
-from typing import TYPE_CHECKING, Self, Generator, Any, Callable
 from json import load, loads, dump, dumps
-
-if TYPE_CHECKING:
-    from .file import JSON, PKL, YAML, TOML, INI
-    from .pc import _var
+from typing import Any, ItemsView
 
 #========================================================
 
@@ -28,34 +24,39 @@ class Dict[V]:
     Stores data to the local disk instead of memory
     """
 
+    type RAW = dict[str, V]
+    type OUT = Dict[V]
+
     def __init__(self,
-        t: 'dict[str, V] | Self[V] | Any' = {}
+        t: RAW|OUT|Any = {}
     ):
         from .file import PKL, temp
         from .classOBJ import path
 
         if isinstance(t, Dict):
-            self.var = t.var
+            self._var = t._var
 
         elif hasattr(t, 'read') and hasattr(t, 'save'):
-            self.var = t
+            self._var = t
 
         elif isinstance(t, dict):
-            self.var = PKL(
+            self._var = PKL(
                 path = temp('table', 'json'),
                 default = t
             )
 
         else:
             raise TypeError(path(t))
-        
-        self.read: Callable[[], dict[str, V]] = self.var.read
+
+    def read(self) -> RAW:
         """Read Data"""
-
-        self.save: Callable[[dict[V]], None] = self.var.save
+        return self._var.read()
+    
+    def save(self, data:RAW) -> None:
         """Save Data"""
+        return self._var.save(data)
 
-    def items(self) -> Generator[list[str, V]]:
+    def items(self) -> ItemsView[str, V]:
         return self.read().items()
     
     def __iter__(self):
@@ -99,8 +100,8 @@ class Dict[V]:
         return (value in self.read())
     
     def __iadd__(self,
-        dict: dict[str, V]
-    ) -> Self[V]:
+        dict: RAW
+    ) -> OUT:
         """
         Append another dictionary
         """
