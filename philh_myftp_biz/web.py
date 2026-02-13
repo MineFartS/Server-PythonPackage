@@ -65,31 +65,46 @@ class Port:
     Details of a port on a network device
     """
 
+    listening: bool
+    """Port is listening/in use"""
+
     def __init__(self,
-        host: str,
-        port: int
+        port: int,
+        host: str = '127.0.0.1'
     ):
         from socket import error, SHUT_RDWR
         from quicksocketpy import socket
+        
         self.port = port
 
-        s = socket()
-
         try:
+            
+            s = socket()
             s.connect((host, port))
             s.shutdown(SHUT_RDWR)
-            self.listening = True
-            """Port is listening"""
             
+            self.listening = True
+
         except error:
             self.listening = False
-            """Port is listening"""
         
         finally:
             s.close()
 
     def __int__(self) -> int:
         return self.port
+    
+    def __repr__(self):
+
+        match self.listening:
+
+            case True:
+                state = 'LISTENING'
+
+            case False:
+                state = 'CLOSED'
+
+        return f"Port({self.port}, {state})"
 
 def find_open_port(min:int, max:int) -> None | int:
     """
