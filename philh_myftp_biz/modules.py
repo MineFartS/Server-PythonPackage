@@ -220,7 +220,7 @@ class Service(Path):
         
         #==============================
 
-        self.__lockfile = path.child('__pycache__/lock.ini')
+        self.__lockfile = self.child('__pycache__/lock.ini')
 
         self.Enable = self.__lockfile.delete
 
