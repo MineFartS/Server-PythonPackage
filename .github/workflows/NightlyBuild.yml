@@ -35,7 +35,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install toml poetry
-          poetry install --no-root
+          poetry install --no-root --no-interaction
 
       - name: Update version in pyproject.toml
         run: |
@@ -52,10 +52,7 @@ jobs:
               dump(data, f)
               
           "
-
-      - name: Remove poetry.lock
-        run: rm -f poetry.lock
-  
+    
       - name: Save Changes
         uses: stefanzweifel/git-auto-commit-action@v5
 
