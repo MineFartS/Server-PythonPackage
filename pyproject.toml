@@ -1,8 +1,8 @@
 [project]
 name = "philh_myftp_biz"
-version = "v2026.02.01"
+version = "v2026.02.14"
 requires-python = ">=3.14,<4.0"
-dependencies = [ "dill", "selenium", "lxml", "paramiko", "bs4", "qbittorrent-api", "send2trash", "inputimeout", "pyyaml", "configobj", "browser_cookie3", "elevate", "tqdm", "tomli_w", "toml", "psutil", "keyring", "ping3", "QuickSocketPY", "mimetype", "python-dateutil", "pytz", "xmltodict", "GitPython"]
+dependencies = [ "dill", "selenium", "lxml", "paramiko", "bs4", "qbittorrent-api", "send2trash", "inputimeout", "pyyaml", "configobj", "browser_cookie3", "elevate", "tqdm", "tomli_w", "toml", "psutil", "keyring", "ping3", "QuickSocketPY", "mimetype", "python-dateutil", "pytz", "xmltodict", "GitPython",]
 
 [build-system]
 requires = [ "poetry-core>=2.0.0,<3.0.0",]
