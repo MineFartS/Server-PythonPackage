@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
-
-from git import Repo
+from git import Repo as __Repo
 from .pc import Path
 
 class ServiceDisabledError(Exception):
@@ -11,6 +10,23 @@ class ServiceDisabledError(Exception):
 if TYPE_CHECKING:
     from .process import SubProcess
     from .pc import Path
+
+class Repo(__Repo):
+
+    def __init__(self, path:Path):
+        
+        super().__init__(str(path))
+
+        try:
+            self.REMOTE = self.remotes[0]
+        except:
+            self.REMOTE = None
+
+    def refresh(self):
+
+        self.git.rm('-r', '--cached', '.')
+
+        self.index.add(['.'])
 
 class Module(Path, Repo):
     """
@@ -48,7 +64,7 @@ class Module(Path, Repo):
         # INIT
 
         Path.__init__(self, module)
-        Repo.__init__(self, self.path)
+        Repo.__init__(self, self)
 
         #====================================================
         # LOAD CONFIGURATION
