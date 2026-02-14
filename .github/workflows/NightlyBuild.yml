@@ -32,9 +32,13 @@ jobs:
         with:
           python-version: '3.*'
 
-      - name: Install dependencies
+      - name: Install Python Packages
         run: |
           pip install toml poetry
+
+      - name: Initialize Poetry
+        run: |
+          poetry lock
           poetry install --no-root --no-interaction
 
       - name: Update version in pyproject.toml
@@ -61,8 +65,7 @@ jobs:
         with:
           tag_name: v${{ env.ISO }}
           name: ${{ env.ISO }}
-          body: |
-            Automatic Nightly Build
+          body: Automatic Nightly Build
           prerelease: false
           draft: false
 
