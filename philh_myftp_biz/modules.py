@@ -229,12 +229,20 @@ class Service(Path):
     def _run(self, name:str):
         from .process import RunHidden
 
+        # Iter through all children of the service path
         for p in self.children():
-            
-            if p.isfile() and ((p.name().lower()) == (name.lower())):
 
+            ISFILE = p.isfile()
+            NAMEEQ = (p.name().lower() == name.lower())
+            
+            if ISFILE and NAMEEQ:
+
+                # Grant full access to file
+                p.set_access.full()
+
+                # Run the file
                 return RunHidden(
-                    args = [p] + self.args,
+                    args = [p, *self.args],
                     terminal = 'ext'
                 )
 
