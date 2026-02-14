@@ -50,8 +50,14 @@ class List[V]:
     def __len__(self) -> int:
         return len(self.read())
     
-    def __getitem__(self, key:int) -> V:
-        return self.read()[key]
+    def __getitem__(self, key:int) -> V|List[V]:
+
+        data = self.read()[key]
+
+        if isinstance(key, slice):
+            return List(data)
+        else:
+            return data
 
     def __setitem__(self,
         key: int,
