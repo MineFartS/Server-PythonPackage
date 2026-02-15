@@ -1,8 +1,7 @@
-from typing import Literal, TYPE_CHECKING, Any, Callable, Generator
+from typing import Literal, TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from threading import Thread
-    from psutil import Process
     from .pc import Path
 
 #========================================================
@@ -385,11 +384,17 @@ class SysTask:
                     break
 
         if main:
-        
-            processes = iter([
-                *main.children(True),
-                main
-            ])
+
+            processes = [main]
+
+            try:
+
+                for child in main.children(True):
+                
+                    processes += [child]
+
+            except NoSuchProcess:
+                pass
         
         else:
 
@@ -397,7 +402,7 @@ class SysTask:
 
         return filter(
             lambda p: p.is_running(),    
-            processes
+            reversed(processes)
         )
 
     def cores(self, *cores:int) -> bool:
