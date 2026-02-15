@@ -1319,7 +1319,7 @@ class FirewallException:
 
         p = RunHidden(['netsh', 'advfirewall', 'firewall', 'show', 'rule', f'name={self.name}'])
 
-        return (b"No rules match the specified criteria." not in p.output())
+        return ("No rules match the specified criteria." not in p.output())
     
     def delete(self) -> None:
         """

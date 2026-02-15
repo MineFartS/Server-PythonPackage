@@ -76,6 +76,8 @@ class SubProcess:
 
     _wait: bool
 
+    running = lambda: False
+
     def __init__(self,
         args: list,
         terminal: Literal['cmd', 'ps', 'psfile', 'py', 'pym', 'vbs', 'ext'] | None = 'cmd',
@@ -237,7 +239,7 @@ class SubProcess:
             stdout = PIPE,
             stderr = PIPE,
             text = True,
-            bufsize = 1,
+            #bufsize = 1,
             errors = 'ignore'
         )
 
@@ -245,6 +247,8 @@ class SubProcess:
 
         self._task = SysTask(self._process.pid)
         """Process Task"""
+
+        self.running = self._task.exists
 
         self._stopwatch = Stopwatch()
         """Process Runtime"""
@@ -272,12 +276,6 @@ class SubProcess:
         """
         return (not self._task.exists())
     
-    def running(self) -> bool:
-        """
-        Check if the subprocess is still running
-        """
-        return self._task.exists()
-
     def restart(self) -> None:
         """
         Restart the Subprocess
@@ -328,7 +326,7 @@ class SubProcess:
             return hex.decode(output)
         
         else:
-            return output
+            return output.decode()
 
 class Run(SubProcess):
     _hide = False
