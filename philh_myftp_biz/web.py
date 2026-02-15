@@ -1297,3 +1297,67 @@ def download(
 
         # Download directly to the desination file
         urlretrieve(url, str(path))
+
+class FirewallException:
+
+    def __init__(self,
+        name: str
+    ):
+        """
+        Windows Defender Inbound Port Exception
+        """
+        self.name = name
+
+    def __repr__(self):
+        return f'FirewallException({self.name})'
+
+    def exists(self) -> bool:
+        """
+        Check if this exception exists in Windows Defender
+        """
+        from .process import RunHidden
+
+        p = RunHidden(['netsh', 'advfirewall', 'firewall', 'show', 'rule', f'name={self.name}'])
+
+        return (b"No rules match the specified criteria." not in p.output())
+    
+    def delete(self) -> None:
+        """
+        Remove this exception from Windows Defender
+        """
+        from .process import RunHidden
+
+        RunHidden([
+            'netsh', 'advfirewall', 'firewall',
+            'delete',
+            'rule', f'name={self.name}'
+        ])
+
+    def set(self,
+        port: int,
+        override: bool = True
+    ) -> None:
+        """
+        Add this exception to Windows Defender
+
+        (Deletes & Readds if it already exists)
+        """
+        from .process import RunHidden
+
+        if self.exists():
+            
+            if override:
+                self.delete()
+            else:
+                raise FileExistsError(self)
+
+        RunHidden([
+            'netsh', 'advfirewall', 'firewall',
+            'add',
+            'rule', f'name={self.name}',
+            'dir=in', 
+            'action=allow',
+            'protocol=TCP',
+            f'localport={port}'
+        ])
+  
