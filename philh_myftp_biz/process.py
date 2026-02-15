@@ -361,35 +361,44 @@ class SysTask:
         self.id = id
         """PID / IM"""
 
-    def __scanner(self) -> Generator['Process']:
-        """
-        Scan for the main process and any of it's children
-        """
+    def __iter__(self):
         from psutil import process_iter, Process, NoSuchProcess
-
+        
         main = None
 
         if isinstance(self.id, int):
+
             try:
                 main = Process(self.id)
+            
             except NoSuchProcess:
                 pass
 
         elif isinstance(self.id, str):
+
             for proc in process_iter():
+            
                 if proc.name().lower() == self.id.lower():
+            
                     main = Process(proc.pid)
+            
                     break
 
-        if main and main.is_running():
-            try:
+        if main:
+        
+            processes = iter([
+                *main.children(True),
+                main
+            ])
+        
+        else:
 
-                for child in main.children(True):
-                    if child.is_running():
-                        yield child
+            processes = []
 
-            except NoSuchProcess:
-                pass
+        return filter(
+            lambda p: p.is_running(),    
+            processes
+        )
 
     def cores(self, *cores:int) -> bool:
         """
@@ -401,31 +410,31 @@ class SysTask:
         """
         from psutil import NoSuchProcess, AccessDenied
 
-        for p in self.__scanner():
+        for p in self:
+            
             try:
+            
                 p.cpu_affinity(cores)
+            
                 return True
+            
             except (NoSuchProcess, AccessDenied):
+            
                 return False
 
     def stop(self) -> None:
         """
         Stop Process and all of it's children
         """
-        for p in self.__scanner():
+
+        for p in self:
+            
             p.terminate()
 
     def exists(self):
         """
         Check if the process is running
-        """
-        
-        processes = list(self.__scanner())
-        
-        return len(processes) > 0
-
-    def PIDs(self) -> Generator[int]:
-        for p in self.__scanner():
-            yield p.pid
+        """        
+        return len(list(self)) > 0
 
 #========================================================
