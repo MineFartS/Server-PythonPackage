@@ -440,4 +440,10 @@ class SysTask:
         """        
         return len(list(self)) > 0
 
+    def PIDs(self):
+        
+        for process in self:
+
+            yield process.pid
+
 #========================================================
