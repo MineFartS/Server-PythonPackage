@@ -527,16 +527,25 @@ class api:
             Wait for server connection, then returns qbittorrentapi.Client
             """
             from qbittorrentapi.exceptions import LoginFailed, Forbidden403Error, APIConnectionError
+            from .time import Stopwatch
             from .terminal import Log
+
+            sw = Stopwatch()
+            sw.start()
 
             while True:
 
                 try:
+
                     self._rclient.torrents_info()
+
                     return self._rclient
                 
                 except LoginFailed, Forbidden403Error, APIConnectionError:
                     Log.WARN('qBitTorrentAPI Connection Error')
+
+                if sw.elapsed() >= self.timeout:
+                    raise TimeoutError('qBitTorrentAPI Connection Timed Out')
 
         def _get(self,
             magnet: Magnet
