@@ -269,15 +269,16 @@ class Path:
         """
         return self.parent().child(item)
     
-    def ext(self) -> str:
+    def ext(self) -> str|None:
         """
         Get file extension of path
         """
-        from os import path
 
-        ext = path.splitext(self.path)[1][1:]
-        if len(ext) > 0:
-            return ext.lower()
+        seg = self.seg()
+
+        if '.' in seg:
+
+            return seg[seg.rfind('.')+1:].lower()
 
     def type(self) -> None | str:
         """
