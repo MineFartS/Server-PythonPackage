@@ -259,7 +259,7 @@ def from_function(func: Callable):
     if func.__name__ == '<lambda>':
     
         # Parse the source code into an AST
-        tree = parse(source)
+        tree = parse(source[source.find('lambda'):])
         
         for node in walk(tree):
 
