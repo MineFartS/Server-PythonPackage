@@ -697,9 +697,14 @@ class api:
             """
             Remove all Magnets from the download queue
             """
+            from .text import from_function
             from .terminal import Log
 
-            Log.VERB(f'Clearing Download Queue: {rm_files=}')
+            Log.VERB(
+                f'Clearing Download Queue:\n'+ \
+                f'{rm_files=}\n'+ \
+                'func='+from_function(filter_func)
+            )
 
             for torrent in self._client().torrents_info():
 

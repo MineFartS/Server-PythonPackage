@@ -1,3 +1,4 @@
+from typing import Callable
 
 def split(
     value: str,
@@ -246,4 +247,29 @@ def abbreviate(
 
     else:
         return string[:num] + end
+
+def from_function(func: Callable):
+    from ast import parse, walk, Lambda, unparse
+    from inspect import getsourcelines
+    from .classOBJ import path
+
+    source = ''.join(getsourcelines(func)[0])
+
+    # If function is lambda
+    if func.__name__ == '<lambda>':
     
+        # Parse the source code into an AST
+        tree = parse(source)
+        
+        for node in walk(tree):
+
+            if isinstance(node, Lambda):
+                
+                return unparse(node).strip()
+
+    # If function declared using "def"    
+    else:
+
+        return source
+    
+    raise TypeError(path(func))
