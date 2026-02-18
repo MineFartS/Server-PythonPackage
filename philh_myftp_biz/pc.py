@@ -52,16 +52,16 @@ class Path:
         """File Path with forward slashes"""
 
         # Declare 'pathlib.Path' attribute
-        self.__Path = libPath(self.path)
+        self._libPath = libPath(self.path)
 
-        # Link 'exists', 'isfile', & 'isdir' functions from 'self.__Path'
-        self.exists = self.__Path.exists
+        # Link 'exists', 'isfile', & 'isdir' functions from 'self._libPath'
+        self.exists = self._libPath.exists
         """Check if path exists"""
 
-        self.isfile = self.__Path.is_file
+        self.isfile = self._libPath.is_file
         """Check if path is a file"""
         
-        self.isdir = self.__Path.is_dir
+        self.isdir = self._libPath.is_dir
         """Check if path is a folder"""
 
         # Declare 'set_access'
@@ -120,7 +120,7 @@ class Path:
         """
         
         try:
-            return self.__Path.is_relative_to(str(parent))
+            return self._libPath.is_relative_to(str(parent))
         
         except ValueError:
             return False
@@ -152,7 +152,7 @@ class Path:
         """
         Get path with Symbolic Links Resolved
         """
-        return Path(self.__Path.resolve(True))
+        return Path(self._libPath.resolve(True))
     
     def child(self, *name:str) -> Self:
         """
@@ -193,7 +193,7 @@ class Path:
         Check if path is Symbolic Link or Directory Junction
         """
 
-        return (self.__Path.is_symlink() or self.__Path.is_junction())
+        return (self._libPath.is_symlink() or self._libPath.is_junction())
 
     def size(self) -> int:
         """
@@ -217,7 +217,7 @@ class Path:
                  |
                  | - Child
         """
-        for p in self.__Path.iterdir():
+        for p in self._libPath.iterdir():
             yield Path(p)
 
     def descendants(self) -> Generator[Self]:
@@ -232,7 +232,7 @@ class Path:
                  | - Child - |
                              | - Descendant
         """
-        for root, dirs, files in self.__Path.walk():
+        for root, dirs, files in self._libPath.walk():
             for item in (dirs + files):
                 yield Path(root, item)
 
@@ -250,7 +250,7 @@ class Path:
         """
         Get parent of current path
         """ 
-        return Path(self.__Path.parent.as_posix() + '/')
+        return Path(self._libPath.parent.as_posix() + '/')
 
     def var(self, name:str, default=None) -> '_var':
         """
@@ -288,9 +288,7 @@ class Path:
 
         return MimeType.Path(self)
 
-    def delete(self,
-        force: bool = False
-    ) -> None:
+    def delete(self) -> None:
         """
         Delete the current path
         """
@@ -351,7 +349,7 @@ class Path:
         Ex: 'C:/example.txt' -> 'example' 
         """
 
-        name = self.__Path.name
+        name = self._libPath.name
 
         # Check if file has ext
         if self.ext():
@@ -486,6 +484,12 @@ class Path:
         Works the same as: open(self.Path)
         """
         return open(self.path, mode)
+
+    def relative(self, ancestor:Path) -> str:
+
+        relpath = self._libPath.relative_to(ancestor.path)
+        
+        return relpath.as_posix()
 
 class _cd:
     """
@@ -736,6 +740,19 @@ def link(src:Path, dst:Path) -> None:
         src = str(src),
         dst = str(dst)
     )
+
+def temp() -> Path:
+    from tempfile import gettempdir
+
+    SERVER = Path('E:/__temp__/')
+
+    OS = Path(gettempdir() + '/philh_myftp_biz/')
+
+    if SERVER.exists():
+        return SERVER
+    else:
+        mkdir(OS)
+        return OS
 
 def relscan(
     src: Path,
