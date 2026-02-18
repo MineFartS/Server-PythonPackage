@@ -13,25 +13,15 @@ def temp(
     """
     Get a random path in the temporary directory
     """
-    from .text import random        
-    from .pc import Path, mkdir
-    from tempfile import gettempdir
-
-    SERVER = Path('E:/__temp__/')
-    OS = Path(gettempdir() + '/philh_myftp_biz/')
-
-    if SERVER.exists():
-        dir = SERVER
-    else:
-        mkdir(OS)
-        dir = OS
+    from .text import random
+    from .pc import temp
 
     if id:
         id = str(id)
     else:
         id = random(50)
 
-    return dir.child(f'{name}-{id}.{ext}')
+    return temp().child(f'{name}-{id}.{ext}')
 
 #========================================================
 
