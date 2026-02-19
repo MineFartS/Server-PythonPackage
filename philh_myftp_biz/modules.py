@@ -58,13 +58,19 @@ class Module(Path, Repo):
     def __init__(self,
         module: 'str | Path'
     ):
+        from git.exc import NoSuchPathError
         from .file import YAML
 
         #====================================================
         # INIT
 
         Path.__init__(self, module)
-        Repo.__init__(self, self)
+
+        try:
+            Repo.__init__(self, self)
+        except NoSuchPathError:
+            pass
+            # TODO improve handling
 
         #====================================================
         # LOAD CONFIGURATION
