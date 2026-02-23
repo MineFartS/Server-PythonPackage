@@ -1,34 +1,48 @@
 from typing import TYPE_CHECKING
-from git import Repo as __Repo
 from .pc import Path
+
+if TYPE_CHECKING:
+    from .process import SubProcess
 
 class ServiceDisabledError(Exception):
 
     def __init__(self, serv:'Service'):
         super().__init__(str(serv.path))
 
-if TYPE_CHECKING:
-    from .process import SubProcess
-    from .pc import Path
-
-class Repo(__Repo):
+class Repo:
 
     def __init__(self, path:Path):
+        from git import Repo
         
-        super().__init__(str(path))
+        self._repo = Repo(str(path))
 
-        try:
-            self.REMOTE = self.remotes[0]
-        except:
-            self.REMOTE = None
+        self.add  = self._repo.index.add
+
+        self.diff = self._repo.index.diff
+
+        self.commit = self._repo.index.commit
+
+        self.rm   = self._repo.git.rm
+
+        self.head = self._repo.head
+
+        self.init = self._repo.init
+
+        self.new_tag = self._repo.create_tag
 
     def refresh(self):
 
-        self.git.rm('-r', '--cached', '.')
+        self.rm('-r', '--cached', '.')
 
-        self.index.add(['.'])
+        self.add(['.'])
 
-class Module(Path, Repo):
+    def push(self):
+
+        remote = self._repo.remotes[0]
+
+        remote.push()
+
+class Module(Path):
     """
     Allows for easy interaction with other languages in a directory
 
@@ -58,19 +72,12 @@ class Module(Path, Repo):
     def __init__(self,
         module: 'str | Path'
     ):
-        from git.exc import NoSuchPathError
         from .file import YAML
 
         #====================================================
         # INIT
 
         Path.__init__(self, module)
-
-        try:
-            Repo.__init__(self, self)
-        except NoSuchPathError:
-            pass
-            # TODO improve handling
 
         #====================================================
         # LOAD CONFIGURATION
@@ -170,20 +177,24 @@ class Module(Path, Repo):
 
         raise FileNotFoundError(dir.path + parts[-1] + '.*')
 
-    def install(self) -> None:
+    def install(self,
+        show: bool = True
+    ) -> None:
         """
         Automatically install all dependencies
         """
-        from .process import Run
+        from .process import Run, RunHidden
         from shlex import split
 
         # Initialize a git repo
-        self.init()
+        Repo(self).init()
+
+        runfunc = Run if show else RunHidden
 
         # Upgrade all python packages
         for pkg in self.packages:
             
-            Run(
+            runfunc(
                 args = [
                     'pip', 'install',
                     *split(pkg),
