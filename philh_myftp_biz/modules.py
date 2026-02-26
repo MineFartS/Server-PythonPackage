@@ -224,7 +224,7 @@ class Service(Path):
 
     def __init__(self,
         path: 'str | Path',
-        args: list[str] = []
+        *args: str
     ):
         from .array import stringify
 
