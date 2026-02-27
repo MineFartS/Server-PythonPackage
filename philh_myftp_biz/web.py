@@ -553,7 +553,7 @@ class api:
             for t in self._client().torrents_info():
                 
                 #
-                if magnet.url in t.tags:
+                if t.hash == magnet.hash:
 
                     return t
 
@@ -568,7 +568,8 @@ class api:
 
         def start(self,
             magnet: 'Magnet',
-            path: 'Path' = None
+            path: 'Path' = None,
+            tags: list[str] = []
         ) -> None:
             """
             Start Downloading a Magnet
@@ -593,7 +594,7 @@ class api:
                 self._client().torrents_add(
                     urls = [magnet.url],
                     save_path = str(path),
-                    tags = magnet.url
+                    tags = [magnet.url, *tags]
                 )
 
         def reannounce(self,
@@ -626,7 +627,7 @@ class api:
 
         def files(self,
             magnet: 'Magnet'            
-        ) -> Generator[File]:
+        ):
             """
             List all files in Magnet Download
 
@@ -898,8 +899,19 @@ class Magnet(api.qBitTorrent):
         size: str = -1,
         qbit: api.qBitTorrent = None
     ):
+        from urllib.parse import urlparse, parse_qs
         from functools import partial
         from inspect import signature
+
+        # Get the value of the 'xt' parameter (it's a list, so take the first element)
+        XT = parse_qs(urlparse(url).query)['xt'][0]
+        
+        # The hash follows 'urn:btih:' or 'urn:btmh:'
+        if XT.startswith('urn:btih:'):
+            self.hash = XT[len('urn:btih:'):]
+        
+        elif XT.startswith('urn:btmh:'): # for v2 magnets
+            self.hash = XT[len('urn:btmh:'):]
             
         self.title = title.lower()
         self.leechers = leechers
