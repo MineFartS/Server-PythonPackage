@@ -13,10 +13,10 @@ from os import name as __name
 match __name:
 
     case 'nt':
-        OS = 'unix'
-    
-    case _: 
         OS = 'windows'
+    
+    case _:
+        OS = 'unix'
 
 #========================================================
 
