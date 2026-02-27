@@ -4,7 +4,6 @@ from sys import stdout, stderr
 if TYPE_CHECKING:
     from .db import Color
     from .pc import Path
-    from logging import LogRecord
 
 def width() -> int:
     """

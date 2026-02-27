@@ -139,7 +139,8 @@ class Color:
         'CYAN',
         'WHITE',
         'DEFAULT',
-        'BOLD'
+        'BOLD',
+        'GRAY'
     ]
     """
     Type hint for keys in colors.values
@@ -155,7 +156,8 @@ class Color:
         'CYAN' : '\033[36m',
         'WHITE' : '\033[37m',
         'DEFAULT' : '\033[0m',
-        'BOLD': '\033[1m'
+        'BOLD': '\033[1m',
+        'GRAY': '\033[90m'
     }
     r"""
     COLOR CONVERSION TABLE
