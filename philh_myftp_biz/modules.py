@@ -95,7 +95,7 @@ class Module(Path):
 
         #====================================================
 
-    def run(self, *args) -> 'SubProcess':
+    def run(self, *args:str) -> 'SubProcess':
         """
         Execute a new Process and wait for it to finish
         """
@@ -104,9 +104,9 @@ class Module(Path):
         args = list(args)
         args[0] = str(self.file(args[0]))
 
-        return Run(args, terminal='ext')
+        return Run(args=args, terminal='ext')
     
-    def runH(self, *args) -> 'SubProcess':
+    def runH(self, *args:str) -> 'SubProcess':
         """
         Execute a new hidden Process and wait for it to finish
         """
@@ -117,7 +117,7 @@ class Module(Path):
 
         return RunHidden(args, terminal='ext')
 
-    def start(self, *args) -> 'SubProcess':
+    def start(self, *args:str) -> 'SubProcess':
         """
         Execute a new Process simultaneously with the current execution
         """
@@ -128,7 +128,7 @@ class Module(Path):
 
         return Start(args, terminal='ext')
     
-    def startH(self, *args) -> 'SubProcess':
+    def startH(self, *args:str) -> 'SubProcess':
         """
         Execute a new hidden Process simultaneously with the current execution
         """
@@ -139,11 +139,11 @@ class Module(Path):
 
         return Run(args, terminal='ext')
     
-    def cap(self, *args):
+    def cap(self, *args:str):
         """
         Execute a new hidden Process and capture the output as JSON
         """
-        return self.runH(*args).output('json')
+        return self.runH(*args).output(format='json')
 
     def file(self,
         *name: str
@@ -291,7 +291,12 @@ class Service(Path):
         from json.decoder import JSONDecodeError
 
         try:
-            return self._run('Running').output('json')
+            
+            process = self._run(name='Running')
+
+            outp: bool = process.output(format='json')
+
+            return outp
         
         except JSONDecodeError, AttributeError, FileNotFoundError:
             return False

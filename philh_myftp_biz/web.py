@@ -1,12 +1,13 @@
-from typing import Literal, Self, Generator, TYPE_CHECKING, Callable
+from typing import Literal, Generator, TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     from qbittorrentapi import Client, TorrentDictionary, TorrentFile
+    from selenium.webdriver.remote.webelement import WebElement
     from paramiko.channel import ChannelFile, ChannelStderrFile
     from requests import Response
     from bs4 import BeautifulSoup
-    from .pc import Path
     from .time import from_stamp
+    from .pc import Path
 
 def IP(
     method: Literal['local', 'public'] = 'local'
@@ -22,7 +23,7 @@ def IP(
     elif online():
         return get('https://api.ipify.org').text
 
-online = lambda: ping('1.1.1.1')
+online: Callable[[], bool] = lambda: ping('1.1.1.1')
 """Check if the local computer is connected to the internet"""
 
 def ping(
@@ -65,58 +66,42 @@ class Port:
     Details of a port on a network device
     """
 
-    listening: bool
-    """Port is listening/in use"""
-
     def __init__(self,
         port: int,
         host: str = '127.0.0.1'
-    ):
+    ) -> None:
+        
+        self.port: int = port
+
+        self.addr: tuple[str, int] = (host, port)
+
+    def listening(self) -> bool:
+        """Check if Port is listening/in use"""
+
         from socket import error, SHUT_RDWR
         from quicksocketpy import socket
-        
-        self.port = port
+
+        sock = socket()
 
         try:
             
-            s = socket()
-            s.connect((host, port))
-            s.shutdown(SHUT_RDWR)
+            sock.connect(self.addr)
+            sock.shutdown(SHUT_RDWR)
             
-            self.listening = True
+            sock.close()
+
+            return True
 
         except error:
-            self.listening = False
-        
-        finally:
-            s.close()
+
+            sock.close()
+            return False
 
     def __int__(self) -> int:
         return self.port
     
-    def __repr__(self):
-
-        match self.listening:
-
-            case True:
-                state = 'LISTENING'
-
-            case False:
-                state = 'CLOSED'
-
-        return f"Port({self.port}, {state})"
-
-def find_open_port(min:int, max:int) -> None | int:
-    """
-    Find an open port in a range on a network device
-    """
-
-    for x in range(min, max+1):
-        
-        port = Port(IP(), x)
-        
-        if not port.listening:
-            return int(port)
+    def __repr__(self) -> str:
+        return f"Port({self.port})"
 
 class ssh:
     """
@@ -125,16 +110,16 @@ class ssh:
     Wrapper for paramiko.SSHClient
     """
 
-    class __Response:
+    class Response:
 
         def __init__(self,
             stdout: 'ChannelFile',
             stderr: 'ChannelStderrFile'
         ):
-            self.output = stdout.read().decode()
+            self.output: str = stdout.read().decode()
             """stdout"""
 
-            self.error = stderr.read().decode()
+            self.error: str = stderr.read().decode()
             """stderr"""
 
     def __init__(self,
@@ -143,17 +128,25 @@ class ssh:
         password: str,
         timeout: int = None,
         port: int = 22
-    ):
+    ) -> None:
         from paramiko import SSHClient, AutoAddPolicy
 
         self.__client = SSHClient()
-        self.__client.set_missing_host_key_policy(AutoAddPolicy())
-        self.__client.connect(ip, port, username, password, timeout=timeout)
 
-        self.close = self.__client.close
+        self.__client.set_missing_host_key_policy(policy=AutoAddPolicy())
+
+        self.__client.connect(
+            hostname = ip, 
+            port = port, 
+            username = username, 
+            password = password, 
+            timeout = timeout
+        )
+
+        self.close: Callable[[], None] = self.__client.close
         """Close the connection to the remote computer"""
 
-    def run(self, command:str) -> __Response:
+    def run(self, command:str) -> ssh.Response:
         """
         Send a command to the remote computer
         """
@@ -161,19 +154,17 @@ class ssh:
         # Execute a command
         stdout, stderr = self.__client.exec_command(command)[1:]
 
-        return self.__Response(stdout, stderr)
+        return self.Response(stdout, stderr)
 
 def get(
     url: str,
-    params: dict = {},
-    headers: dict = {},
-    stream: bool = None,
-    cookies = None
+    params: dict[str, str] = {},
+    headers: dict[str, str] = {},
+    stream: bool = None
 ) -> 'Response':
     """
     Wrapper for requests.get
     """
-    from requests.exceptions import ConnectionError
     from .terminal import Log
     from requests import get
 
@@ -187,21 +178,12 @@ def get(
         f'{headers=}'
     )
 
-    # Iter until interrupted
-    while True:
-
-        try:
-
-            return get(
-                url = url,
-                params = params,
-                headers = headers,
-                stream = stream,
-                cookies = cookies
-            )
-        
-        except ConnectionError:
-            Log.WARN('Retrying Request', exc_info=True)
+    return get(
+        url = url,
+        params = params,
+        headers = headers,
+        stream = stream
+    )
 
 class api:
     """
@@ -215,7 +197,7 @@ class api:
         'https://www.omdbapi.com/{url}'
         """
 
-        __url = 'https://www.omdbapi.com/'
+        __url: str = 'https://www.omdbapi.com/'
 
         def __init__(self,
             key: int = 0
@@ -226,6 +208,8 @@ class api:
                 case 0: self.key = 'dc888719'
 
                 case 1: self.key = '2e0c4a98'
+
+                case _: raise KeyError()
 
         class Movie:
             Title: str
@@ -270,7 +254,7 @@ class api:
 
                     movie = self.Movie()
 
-                    movie.Title = r['Title']
+                    movie.Title = r['Title'] # pyright: ignore[reportAttributeAccessIssue]
                     movie.Year = int(r['Year'])
                     movie.Released = from_string(r['Released'])
 
@@ -355,40 +339,6 @@ class api:
                 # Return the 'Show' obj
                 return show
 
-    def numista(url:str='', params:list=[]):
-        """
-        Numista API
-
-        'https://api.numista.com/v3/{url}'
-        """
-        return get(
-            url = f'https://api.numista.com/v3/{url}',
-            params = params,
-            headers = {'Numista-API-Key': 'KzxGDZXGQ9aOQQHwnZSSDoj3S8dGcmJO9SLXxYk1'},
-        ).json()
-    
-    def mojang(url:str='', params:list=[]):
-        """
-        Mojang API
-
-        'https://api.mojang.com/{url}'
-        """
-        return get(
-            url = f'https://api.mojang.com/{url}',
-            params = params
-        ).json()
-    
-    def geysermc(url:str='', params:list=[]):
-        """
-        GeyserMC API
-
-        'https://api.geysermc.org/v2/{url}'        
-        """
-        return get(
-            url = f'https://api.geysermc.org/v2/{url}',
-            params = params
-        ).json()
-
     class qBitTorrent:
         """
         Client for qBitTorrent Web Server
@@ -449,13 +399,13 @@ class api:
 
                 return (priority > 0)
 
-            def downloading(self):
+            def downloading(self) -> bool:
                 """
                 """
 
                 return (self.enabled() and (not self.finished()))
 
-            def stop(self):
+            def stop(self) -> None:
                 """
                 Stop downloading the file
 
@@ -481,11 +431,11 @@ class api:
 
                 return (self.progress() == 1)
 
-            def __repr__(self):
+            def __repr__(self) -> str:
                 from .text import abbreviate
                 from .classOBJ import loc
 
-                return f"<File '{abbreviate(30, self.title)}' @{loc(self)}>"
+                return f"<File '{abbreviate(num=30, string=self.title)}' @{loc(obj=self)}>"
 
         def __init__(self,
             host: str,
@@ -493,9 +443,8 @@ class api:
             password: str,
             port: int = 8080,
             timeout: int = 3600 # 1 hour
-        ):
+        ) -> None:
             from qbittorrentapi import Client
-            from .classOBJ import path
             from .terminal import Log
 
             Log.VERB(
@@ -505,13 +454,9 @@ class api:
                 f'{timeout=}'
             )
 
-            # if the host is not a string
-            if not isinstance(host, str):
-                raise TypeError(path(host))
-
-            self.host = host
-            self.port = port
-            self.timeout = timeout
+            self.host: str = host
+            self.port: int = port
+            self.timeout: int = timeout
 
             self._rclient = Client(
                 host = host,
@@ -562,7 +507,9 @@ class api:
             Check if qBitTorrent is connected to the internet
             """
 
-            conn_status = self._client().transfer.info().connection_status
+            tinfo = self._client().transfer.info()
+
+            conn_status = tinfo.connection_status
 
             return (conn_status == 'connected')
 
@@ -624,26 +571,15 @@ class api:
             self.start(magnet)
 
         def files(self,
-            magnet: 'Magnet'            
-        ) -> list[File]:
+            magnet: 'Magnet'
+        ) -> list[api.qBitTorrent.File]:
             """
             List all files in Magnet Download
 
             Waits for at least one file to be found before returning
-
-            EXAMPLE:
-
-            qbt = qBitTorrent(*args)
-
-            for file in qbit.files():
-            
-                file['path'] # Path of the downloaded file
-                file['size'] # Full File Size
-            
             """
             from .time import Stopwatch
             from .terminal import Log
-            from time import sleep
 
             Log.VERB(f'Scanning Files: {magnet=}')
 
@@ -659,16 +595,16 @@ class api:
                 #
                 while len(t.files) == 0:
 
-                    sleep(1)
-                    
                     if sw >= self.timeout:
+
                         raise TimeoutError()
-                    
-                    self.reannounce(magnet=magnet)
 
                 t.setForceStart(False)
 
                 return [self.File(t,f) for f in t.files]
+            
+            else:
+                return []
 
         def stop(self,
             magnet: 'Magnet',
@@ -679,11 +615,11 @@ class api:
             """
             from .terminal import Log
             
-            t = self._get(magnet)
+            t = self._get(magnet=magnet)
 
             Log.VERB(f'Stopping: {rm_files=} | {magnet=}')
 
-            t.delete(rm_files)
+            t.delete(delete_files=rm_files)
 
             return
 
@@ -770,12 +706,12 @@ class api:
             if t:
                 return (t.state_enum.value == 'stalledDL')
 
-        def randomize_port(self):
+        def randomize_port(self) -> None:
             from random import randint
             
             # Update preference
             self._client().app_setPreferences(preferences={
-                'listen_port': randint(10000, 60000)
+                'listen_port': randint(a=10000, b=60000)
             })
 
     class thePirateBay:
@@ -797,7 +733,7 @@ class api:
             ] = "thepiratebay0.org",
             driver: Driver = None,
             qbit: 'api.qBitTorrent' = None
-        ):
+        ) -> None:
             
             self.__url = url
             """tpb mirror url"""
@@ -820,7 +756,6 @@ class api:
             for magnet in thePirateBay.search('term'):
                 magnet
             """
-            from .terminal import Log
             from .db import Size
 
             # Remove all "." & "'" from query
@@ -834,7 +769,7 @@ class api:
             try:
 
                 # Set driver var 'lines' to a list of lines
-                self.__driver.run("window.lines = document.getElementById('searchResult').children[1].children")
+                self.__driver.run(code="window.lines = document.getElementById('searchResult').children[1].children")
 
                 # Iter from 0 to # of lines
                 for x in range(0, self.__driver.run('return lines.length')):
@@ -870,7 +805,7 @@ class Magnet(api.qBitTorrent):
     Handler for MAGNET URLs
     """
 
-    __qualities = {
+    __qualities: dict[str, int] = {
         'hdtv': 0,
         'tvrip': 0,
         '2160p': 2160,
@@ -894,13 +829,13 @@ class Magnet(api.qBitTorrent):
         url: str = '',
         size: str = -1,
         qbit: api.qBitTorrent = None
-    ):
+    ) -> None:
         from urllib.parse import urlparse, parse_qs
         from functools import partial
         from inspect import signature
 
         # Get the value of the 'xt' parameter (it's a list, so take the first element)
-        XT = parse_qs(urlparse(url).query)['xt'][0]
+        XT: str = parse_qs(urlparse(url).query)['xt'][0]
         
         # The hash follows 'urn:btih:' or 'urn:btmh:'
         if XT.startswith('urn:btih:'):
@@ -909,16 +844,16 @@ class Magnet(api.qBitTorrent):
         elif XT.startswith('urn:btmh:'): # for v2 magnets
             self.hash = XT[len('urn:btmh:'):]
             
-        self.title = title.lower()
-        self.leechers = leechers
-        self.seeders = seeders
-        self.url = url
-        self.size = size
+        self.title: str = title.lower()
+        self.leechers: int = leechers
+        self.seeders: int = seeders
+        self.url: str = url
+        self.size: str = size
 
         self.quality = 0
         for term in self.__qualities:
             if term in self.title:
-                self.quality = self.__qualities[term]
+                self.quality: int = self.__qualities[term]
 
         if qbit:
             for name in ['_rclient', 'timeout']:
@@ -966,8 +901,8 @@ class Soup:
         
         elif isinstance(soup, (str, bytes)):
             self.__soup = BeautifulSoup(
-                soup,
-                'html.parser'
+                markup=soup,
+                features='html.parser'
             )
 
         self.select = self.__soup.select
@@ -976,20 +911,18 @@ class Soup:
         self.select_one = self.__soup.select_one
         """Perform a CSS selection operation on the current element."""
 
-        self.__dom:_Element = HTML(str(soup))
+        self.__dom: _Element = HTML(str(soup))
 
     def element(self,
         by: Literal['class', 'id', 'xpath', 'name', 'attr'],
         name: str
-    ) -> list[Self]:
+    ) -> list[Soup]:
         """
         Get List of Elements by query
         """
 
-        by = by.lower()
-
         if by in ['class', 'classname', 'class_name']:
-            items = self.__soup.select(f'.{name}')
+            items = self.__soup.select(selector=f'.{name}')
 
         elif by in ['id']:
             items = self.__soup.find_all(id=name)
@@ -1004,6 +937,9 @@ class Soup:
             t, c = name.split('=')
             items = self.__soup.find_all(attrs={t: c})
 
+        else:
+            items = []
+
         return [Soup(i) for i in items]
 
 class Driver:
@@ -1012,26 +948,22 @@ class Driver:
     
     Wrapper for FireFox Selenium Session
     """
-    from selenium.webdriver.remote.webelement import WebElement
 
     current_url: str
     """URL of the Current Page"""
 
-    def __init__(
-        self,
+    def __init__(self,
         headless: bool = True,
-        cookies: (list[dict] | None) = None,
-        extensions: list[str] = [],
         fast_load: bool = False,
         timeout: int = 300
-    ):
+    ) -> None:
         from selenium.webdriver import FirefoxService, FirefoxOptions, Firefox
-        from selenium.common.exceptions import InvalidCookieDomainException
+        from selenium.webdriver.firefox.options import Options
+        from selenium.webdriver.firefox.service import Service
         from subprocess import CREATE_NO_WINDOW
         from threading import Thread
         from .process import SysTask
         from .terminal import Log
-        from .file import temp
 
         Log.VERB(
             f'Starting Session\n'+ \
@@ -1040,65 +972,34 @@ class Driver:
             f'{timeout=}'
         )
 
-        service = FirefoxService()
+        service: Service = FirefoxService()
         service.creation_flags = CREATE_NO_WINDOW # Suppress Console Output
 
-        options = FirefoxOptions()
-        options.add_argument("--disable-search-engine-choice-screen")
+        options: Options = FirefoxOptions()
+        options.add_argument(argument="--disable-search-engine-choice-screen")
 
         if fast_load:
             options.page_load_strategy = 'eager'
 
         if headless:
-            options.add_argument("--headless")
+            options.add_argument(argument="--headless")
 
         # Start Chrome Session with options
-        self._drvr = Firefox(options, service)
+        self._drvr = Firefox(options=options, service=service)
 
         self.Task = SysTask(self._drvr.service.process.pid)
         """Firefox.exe PID"""
 
         # Set Timeouts
         self._drvr.command_executor.set_timeout(timeout)
-        self._drvr.set_page_load_timeout(timeout)
-        self._drvr.set_script_timeout(timeout)
-
-        # Iter through all given extension urls
-        for url in extensions:
-
-            Log.VERB(f'Installing Extension: {url}')
-            
-            # Temporary path for '.xpi' file
-            xpifile = temp('firefox-extension', 'xpi')
-            
-            # Download the '.xpi' file
-            download(
-                url = url,
-                path = xpifile
-            )
-
-            # Install the addon from the file
-            self._drvr.install_addon(
-                path = str(xpifile),
-                temporary = True
-            )
-
-        # If any cookies are given
-        if cookies:
-
-            # Iter through cookies
-            for cookie in cookies:
-                try:
-                    # Add cookie to the webdriver session
-                    self._drvr.add_cookie(cookie)
-                except InvalidCookieDomainException:
-                    pass
+        self._drvr.set_page_load_timeout(time_to_wait=timeout)
+        self._drvr.set_script_timeout(time_to_wait=timeout)
 
         Thread(
             target = self.__background
         ).start()
 
-    def reload(self):
+    def reload(self) -> None:
         """Reload the Current Page"""
         from .terminal import Log
 
@@ -1106,7 +1007,7 @@ class Driver:
 
         self._drvr.refresh()
 
-    def clear_cookies(self):
+    def clear_cookies(self) -> None:
         """Clear All Session Cookies"""
         from .terminal import Log
 
@@ -1145,7 +1046,7 @@ class Driver:
 
             raise RuntimeError(mess) from None
 
-    def __background(self):
+    def __background(self) -> None:
         from selenium.common.exceptions import WebDriverException
         from threading import main_thread
         from .terminal import Log
@@ -1176,7 +1077,7 @@ class Driver:
         by: Literal['class', 'id', 'xpath', 'name', 'attr'],
         name: str,
         wait: bool = True
-    ) -> list[WebElement]:
+    ) -> list['WebElement']:
         """
         Get List of Elements by query
         """
@@ -1207,9 +1108,12 @@ class Driver:
                 name = f"a[{name}']"
                 BY = By.CSS_SELECTOR
 
+            case _:
+                raise TypeError(f'"{by}" is an invalid method')
+
         while True:
 
-            elements = self._drvr.find_elements(BY, name)
+            elements: list['WebElement'] = self._drvr.find_elements(by=BY, value=name)
 
             # If at least 1 element was found
             if (len(elements) > 0) or (not wait):
@@ -1218,7 +1122,7 @@ class Driver:
 
                 return elements
 
-    def html(self):
+    def html(self) -> str | None:
         from selenium.common.exceptions import WebDriverException
 
         try:
@@ -1240,13 +1144,10 @@ class Driver:
 
         Log.VERB(f"Opening Page: {url=}")
 
-        # Focus on the first tab
-        self._drvr.switch_to.window(self._drvr.window_handles[0])
-
         # Open the url
         while True:
             try:
-                self._drvr.get(url)
+                self._drvr.get(url=url)
                 return
             except WebDriverException, ReadTimeoutError:
                 Log.WARN('Failed to open url', exc_info=True)
@@ -1266,19 +1167,10 @@ class Driver:
         except InvalidSessionIdException:
             pass
 
-    def soup(self) -> 'Soup':
-        """
-        Get a soup of the current page
-        """
-        return Soup(
-            self._drvr.page_source
-        )
-
 def download(
     url: str,
     path: 'Path',
-    show_progress: bool = True,
-    cookies = None
+    show_progress: bool = True
 ) -> None:
     """
     Download file to disk
@@ -1292,12 +1184,11 @@ def download(
         # Stream the url
         r = get(
             url = url,
-            stream = True,
-            cookies = cookies
+            stream = True
         )
 
         # Open the destination file
-        file = path.open('wb')
+        file = path.open(mode='wb')
 
         # Create a new progress bar
         pbar = tqdm(
@@ -1307,10 +1198,10 @@ def download(
         )
 
         # Iter through all data in stream
-        for data in r.iter_content(1024):
+        for data in r.iter_content(chunk_size=1024):
 
             # Update the progress bar
-            pbar.update(len(data))
+            pbar.update(n=len(data))
 
             # Write the data to the dest file
             file.write(data)
@@ -1318,19 +1209,19 @@ def download(
     else:
 
         # Download directly to the desination file
-        urlretrieve(url, str(path))
+        urlretrieve(url=url, filename=str(path))
 
 class FirewallException:
 
     def __init__(self,
         name: str
-    ):
+    ) -> None:
         """
         Windows Defender Inbound Port Exception
         """
-        self.name = name
+        self.name: str = name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'FirewallException({self.name})'
 
     def exists(self) -> bool:
@@ -1339,7 +1230,7 @@ class FirewallException:
         """
         from .process import RunHidden
 
-        p = RunHidden(['netsh', 'advfirewall', 'firewall', 'show', 'rule', f'name={self.name}'])
+        p = RunHidden(args=['netsh', 'advfirewall', 'firewall', 'show', 'rule', f'name={self.name}'])
 
         return ("No rules match the specified criteria." not in p.output())
     

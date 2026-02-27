@@ -1,17 +1,22 @@
-from typing import Literal, Self, Generator, TYPE_CHECKING
+from typing import Literal, Self, Generator, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .time import from_stamp
+    from pathlib import Path as libPath, PurePath
 
-from socket import gethostname as NAME
+from socket import gethostname as NAME # pyright: ignore[reportUnusedImport]
 
 #========================================================
 
 from os import name as __name
-OS: Literal['windows', 'unix'] = {
-    True: 'windows',
-    False: 'unix'
-} [__name == 'nt']
+
+match __name:
+
+    case 'nt':
+        OS = 'unix'
+    
+    case _: 
+        OS = 'windows'
 
 #========================================================
 
@@ -20,7 +25,9 @@ class Path:
     File/Folder
     """
 
-    def __init__(self, *input):
+    def __init__(self,
+        *input: 'Path|str|PurePath|libPath'
+    ) -> None:
         from pathlib import Path as libPath, PurePath
         from os import path
 
@@ -33,23 +40,22 @@ class Path:
         elif isinstance(input[0], Path):
             self.path = input[0].path
 
-        elif isinstance(input[0], str):
+        elif isinstance(input[0], (PurePath, libPath)):
+            self.path = input[0].as_posix()
+
+        else:
             self.path = libPath(input[0]).absolute().as_posix()
 
-            if input[0][-1] == '/':                
-                self.path += '/'
-
-        elif isinstance(input[0], PurePath):
-            self.path = input[0].as_posix()
-
-        elif isinstance(input[0], libPath):
-            self.path = input[0].as_posix()
-
         # ==================================
-
         # Declare path string
+
+        if input[0][-1] == '/':                
+            self.path += '/'
+
         self.path: str = self.path.replace('\\', '/').replace('//', '/')
         """File Path with forward slashes"""
+
+        # ==================================
 
         # Declare 'pathlib.Path' attribute
         self._libPath = libPath(self.path)
@@ -65,15 +71,15 @@ class Path:
         """Check if path is a folder"""
 
         # Declare 'set_access'
-        self.set_access = _set_access(self)
+        self.set_access = _set_access(path=self)
         """Filesystem Access"""
 
         # Declare 'mtime'
-        self.mtime = _mtime(self)
+        self.mtime = _mtime(path=self)
         """Modified Time"""
 
         # Declare 'visibility'
-        self.visibility = _visibility(self)
+        self.visibility = _visibility(path=self)
         """Visibility"""
 
         # ==================================
@@ -148,13 +154,13 @@ class Path:
 
         return any([PARENT, CHILD, SAME])
 
-    def resolute(self) -> Self:
+    def resolute(self) -> Path:
         """
         Get path with Symbolic Links Resolved
         """
-        return Path(self._libPath.resolve(True))
+        return Path(self._libPath.resolve(strict=True))
     
-    def child(self, *name:str) -> Self:
+    def child(self, *name:str) -> Path:
         """
         Get child of path
         
@@ -178,10 +184,12 @@ class Path:
 
     __repr__ = __str__
     
-    def __format__(self, spec):
+    def __format__(self, spec:str) -> str:
         return f'{self.path:{spec}}'
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self,
+        other: Path|Any
+    ) -> bool:
 
         if isinstance(other, Path):
             return (self.path == other.path)
@@ -208,7 +216,7 @@ class Path:
         else:
             raise TypeError("Cannot get size of a folder")
 
-    def children(self) -> Generator[Self]:
+    def children(self) -> Generator[Path]:
         """
         Get children of current directory
 
@@ -220,7 +228,7 @@ class Path:
         for p in self._libPath.iterdir():
             yield Path(p)
 
-    def descendants(self) -> Generator[Self]:
+    def descendants(self) -> Generator[Path]:
         """
         Get descendants of current directory
 
@@ -236,29 +244,32 @@ class Path:
             for item in (dirs + files):
                 yield Path(root, item)
 
-    def isempty(self):
+    def isempty(self) -> bool:
         
         if self.isfile():
             raise TypeError('Cannot get children of a file')
         
         else:
-            for p in self.children():
-                return False
-            return True
 
-    def parent(self) -> Self:
+            item = next(self.children(), None)
+
+            return bool(item)
+
+    def parent(self) -> Path:
         """
         Get parent of current path
         """ 
         return Path(self._libPath.parent.as_posix() + '/')
 
-    def var(self, name:str, default=None) -> '_var':
+    def var(self,
+        name: str
+    ) -> '_var':
         """
         Get Variable Object for storing custom metadata
         """
-        return _var(self, name, default)
+        return _var(file=self, title=name)
     
-    def sibling(self, item) -> Self:
+    def sibling(self, item:str) -> Path:
         """
         Get sibling of current path
 
@@ -274,7 +285,7 @@ class Path:
         Get file extension of path
         """
 
-        seg = self.seg()
+        seg: str = self.seg()
 
         if '.' in seg:
 
@@ -314,7 +325,7 @@ class Path:
             delete(self.path)
 
     def rename(self,
-        dst,
+        dst: Path|str,
         overwrite: bool = True
     ) -> None:
         """
@@ -373,20 +384,20 @@ class Path:
         """
         
         if self.path[-1] == '/':
-            path = self.path[:-1]
+            path: str = self.path[:-1]
         else:
             path = self.path
         
-        return path.split('/') [i]
+        return path.split(sep='/') [i]
 
     def copy(
         self,
         dst: 'Path'
-    ) -> 'Path':
+    ) -> None:
         """
         Copy the path to another location
         """
-        from shutil import copyfile, copytree
+        from shutil import copyfile
         from .terminal import Log
 
         Log.VERB(
@@ -395,9 +406,9 @@ class Path:
             f'{dst=}'
         )
 
-        try:
+        files: list[dict[Literal['src', 'dst'], Path]] = []
 
-            files: list[dict[Literal['src', 'dst'], Path]]
+        try:
 
             # If the source is a directory
             if self.isdir():
@@ -477,17 +488,19 @@ class Path:
         else:
             return False
 
-    def open(self, mode='r'):
+    def open(self,
+        mode: Literal['r', 'w', 'a', 'rb', 'wb', '+'] = 'r'
+    ):
         """
         Open the current file
 
         Works the same as: open(self.Path)
         """
-        return open(self.path, mode)
+        return open(file=self.path, mode=mode)
 
     def relative(self, ancestor:Path) -> str:
 
-        relpath = self._libPath.relative_to(ancestor.path)
+        relpath = self._libPath.relative_to(other=ancestor.path)
         
         return relpath.as_posix()
 
@@ -574,14 +587,12 @@ class _var:
 
     def __init__(self,
         file: Path,
-        title: str,
-        default = None
+        title: str
     ):
         from .text import hex
 
         self.file = file
         self.title = title
-        self.default = default
 
         self.path = file.path + ':' + hex.encode(title)
 
@@ -596,18 +607,18 @@ class _var:
         except OSError:
             return self.default
         
-    def save(self, value):
+    def save(self, value:Any):
         from .text import hex
         
         try:
 
             m = _mtime(self.file).get()
 
-            open(self.path, 'w').write(
+            open(file=self.path, mode='w').write(
                 hex.encode(value)
             )
 
-            _mtime(self.file).set(m)
+            _mtime(path=self.file).set(mtime=m)
         
         except OSError as e:
 
@@ -698,13 +709,13 @@ class _visibility:
 
 #========================================================
 
-def script_dir(__file__) -> 'Path':
+def script_dir(__file__:str) -> 'Path':
     """
     Get the directory of the current script
     """
     from os import path
 
-    return Path(path.abspath(__file__)).parent()
+    return Path(path.abspath(path=__file__)).parent()
 
 def cwd() -> Path:
     """

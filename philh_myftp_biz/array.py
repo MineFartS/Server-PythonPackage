@@ -1,4 +1,4 @@
-from typing import Callable, Self, Any, Iterator
+from typing import Callable, Any, Iterator
 
 #========================================================
 
@@ -13,7 +13,6 @@ class List[V]:
         a: Iterator[V] | list[V] | tuple[V] = []
     ):
         from .file import PKL, temp
-        from .classOBJ import path
 
         if isinstance(a, List):
             self.var = a.var
@@ -21,14 +20,11 @@ class List[V]:
         elif hasattr(a, 'read') and hasattr(a, 'save'):
             self.var = a
 
-        elif isinstance(a, (Iterator, list, tuple)):
+        else:
             self.var = PKL(
-                temp('array', 'pkl'),
+                path = temp('array', 'pkl'),
                 default = list(a)
             )
-
-        else:
-            raise TypeError(path(a))
         
         self.read: Callable[[], list[V]] = self.var.read
         """Read Data"""
@@ -37,7 +33,7 @@ class List[V]:
         """Save Data"""
     
     def rm_duplicates(self):
-        data = self.read()
+        data: list[V] = self.read()
         data_ = []
         for item in data:
             if item not in data_:
@@ -50,14 +46,16 @@ class List[V]:
     def __len__(self) -> int:
         return len(self.read())
     
-    def __getitem__(self, key:int) -> V|List[V]:
+    def __getitem__(self,
+        key: int|slice
+    ) -> V | List[V]:
 
-        data = self.read()[key]
+        data: list[V] = self.read()[key]
 
         if isinstance(key, slice):
             return List(data)
         else:
-            return data
+            return data[key]
 
     def __setitem__(self,
         key: int,
@@ -102,7 +100,7 @@ class List[V]:
 
     def sorted(self,
         func: Callable[[V], Any] = lambda x: x
-    ) -> Self[V]:
+    ) -> List[V]:
         
         data = self.read()
 
@@ -123,12 +121,22 @@ class List[V]:
     def max(self,
         func: Callable[[V], Any] = lambda x: x
     ) -> None | V:
+        
         if len(self) > 0:
-            return self.sorted(func)[-1]
+
+            try:
+            
+                return max(
+                    self.read(),
+                    key = func
+                )
+            
+            except ValueError:
+                return None
     
     def filtered(self,
         func: Callable[[V], Any] = lambda x: x
-    ) -> Self[V]:
+    ) -> List[V]:
         from builtins import filter
 
         return List(filter(func, self.read()))
@@ -137,7 +145,7 @@ class List[V]:
         func: Callable[[V], Any] = lambda x: x
     ) -> None:
         
-        l = self.filtered(func)
+        l: List[V] = self.filtered(func=func)
 
         self.save(l.read())
 
@@ -163,7 +171,7 @@ class List[V]:
         if len(data) > 0:
             return choice(data)
 
-    def shuffled(self) -> Self[V]:
+    def shuffled(self) -> List[V]:
         from random import shuffle
 
         data = self.read()
@@ -195,7 +203,7 @@ def _copy(
     if isinstance(array, list):
         return array.copy()
     
-    elif isinstance(array, tuple):
+    else:
         return list(array[:])
 
 def stringify(array:list) -> list[str]:
@@ -227,10 +235,10 @@ def auto_convert(array:list):
     return array
 
 def priority(
-    _1: int,
-    _2: int,
+    _1: int|None,
+    _2: int|None,
     reverse: bool = False
-):  
+) -> float:  
     
     if _1 is None:
         _1 = 0
@@ -238,7 +246,7 @@ def priority(
     if _2 is None:
         _2 = 0
 
-    p = _1 + (_2 / (1000**1000))
+    p: float = _1 + (_2 / (1000**1000))
     
     if reverse:
         p *= -1

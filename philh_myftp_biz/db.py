@@ -17,7 +17,7 @@ class MimeType:
 
         if ext:
 
-            dbfile = temp('filetypes', 'json', '0')
+            dbfile: 'Path' = temp(name='filetypes', ext='json', id='0')
 
             if not dbfile.exists():
                 download(
@@ -26,7 +26,7 @@ class MimeType:
                     show_progress = False
                 )
 
-            db = Dict(JSON(dbfile))
+            db: Dict[str] = Dict(JSON(path=dbfile))
 
             # Get the extension as lowercase
             return db[ext.lower()]
@@ -62,7 +62,7 @@ class Size:
     Type hint for keys in size.conv_factors
     """
 
-    conv_factors = {
+    conv_factors: dict[str, int] = {
         'B' : 1,
         'KB': 1024,
         'MB': 1024**2,
@@ -77,7 +77,7 @@ class Size:
     size.conv_factors['KB'] -> 1024
     """
 
-    def to_bytes(string:str) -> int:
+    def to_bytes(string:str) -> float:
         """
         Convert Size String to bytes
 
@@ -88,8 +88,8 @@ class Size:
         from re import search
 
         match = search(
-            r"(\d+(\.\d+)?)\s*([a-zA-Z]+)",
-            string.strip()
+            pattern = r"(\d+(\.\d+)?)\s*([a-zA-Z]+)",
+            string = string.strip()
         )
 
         value = float(match.group(1))
@@ -97,7 +97,7 @@ class Size:
         unit = match.group(3).upper()
         unit = unit[0] + unit[-1]
 
-        return value * Size.conv_factors[unit]
+        return (value * Size.conv_factors[unit])
 
     def from_bytes(
         value: int | float,
@@ -115,15 +115,15 @@ class Size:
             ndigits = ndigits
         )
 
-        if unit:
-            return str(format(unit)) + ' ' + unit
-        
-        else:
-            r = 0
+        if unit is None:
+                        
             for unit in reversed(Size.conv_factors):
-                r = format(unit)
-                if r >= 1:            
-                    return str(r) + ' ' + unit
+                
+                if format(unit) >= 1:            
+                   
+                   break
+                
+        return f'{format(unit=unit)} {unit}'
 
 #========================================================
 
@@ -177,13 +177,14 @@ class Ring:
     def __init__(self, name:str):
         from .text import hex
 
-        self.name = 'philh.myftp.biz/' + hex.encode(name)
+        self.name: str = 'philh.myftp.biz/' + hex.encode(value=name)
 
-    def Key(self, name:str, default=None) -> 'Key':
+    def Key(self, name:str) -> 'Key':
         """
         Get Key in Ring by name
         """
-        return Key(self, name)
+
+        return Key(ring=self, name=name)
 
 class Key[T]:
     """
@@ -193,16 +194,14 @@ class Key[T]:
     
     def __init__(self,
         ring: Ring,
-        name: str,
-        default = None
-    ):
+        name: str
+    ) -> None:
         from .text import hex
         
-        self.ring = ring
-        self.name = hex.encode(name)
-        self.__default = default
+        self.ring: Ring = ring
+        self.name: str = hex.encode(value=name)
 
-    def save(self, value:T):
+    def save(self, value:T) -> None:
         """
         Save value to Key
 
@@ -214,17 +213,17 @@ class Key[T]:
         set_password(
             service_name = self.ring.name,
             username = self.name,
-            password = hex.encode(value)            
+            password = hex.encode(value=value)            
         )
         
-    def read(self) -> T:
+    def read(self) -> None | T:
         """
         Read value from key
         """
-        from .text import hex
         from keyring import get_password
+        from .text import hex
 
-        rvalue = get_password(
+        rvalue: str | None = get_password(
             service_name = self.ring.name,
             username = self.name
         )
@@ -232,6 +231,6 @@ class Key[T]:
         try:
             return hex.decode(rvalue)
         except TypeError:
-            return self.__default
+            return None
         
 #========================================================

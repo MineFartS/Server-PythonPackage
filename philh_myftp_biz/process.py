@@ -1,7 +1,6 @@
 from typing import Literal, TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
-    from threading import Thread
     from .pc import Path
 
 #========================================================
@@ -13,9 +12,9 @@ class thread:
 
     def __init__(self,
         func: Callable,
-        *args,
-        **kwargs
-    ) -> 'Thread':
+        *args: str,
+        **kwargs: str
+    ) -> None:
         from threading import Thread
 
         # Create new thread
@@ -42,9 +41,9 @@ class Sleeper:
 
     def __init__(self,
         func: Callable,
-        *args,
-        **kwargs
-    ) -> 'Thread':
+        *args: str,
+        **kwargs: str
+    ) -> None:
         from threading import Thread
 
         self.func = func
@@ -79,11 +78,11 @@ class SubProcess:
     running = lambda: False
 
     def __init__(self,
-        args: list,
+        args: list|tuple|str,
         terminal: Literal['cmd', 'ps', 'psfile', 'py', 'pym', 'vbs', 'ext'] | None = 'cmd',
-        dir: 'str|Path' = None,
-        timeout: int | None = None
-    ):
+        dir: 'str|Path|None' = None,
+        timeout: int|None = None
+    ) -> None:
         from .array import stringify
         from .pc import Path, cwd
         from sys import executable
@@ -92,25 +91,25 @@ class SubProcess:
 
         self.__timeout = timeout
 
-        if dir is None:
-            self.__dir = cwd()
-
-        elif isinstance(dir, str):
+        if isinstance(dir, str):
             self.__dir = Path(dir)
 
         elif isinstance(dir, Path):
             self.__dir = dir
+
+        else:
+            self.__dir = cwd()
                     
         # =====================================   
 
         if isinstance(args, (tuple, list)):
             args = stringify(args)
         else:
-            args = [str(args)]
+            args = [args]
 
         if terminal == 'ext':
 
-            exts = {
+            exts: dict[str, str] = {
                 'ps1' : 'psfile',
                 'py'  : 'py',
                 'exe' : 'cmd',
@@ -315,9 +314,9 @@ class SubProcess:
         from .text import hex
         from . import json
 
-        stream: str = getattr(self, 'std'+stream)
+        _stream: str = getattr(self, 'std'+stream)
 
-        output = stream.encode().strip()
+        output = _stream.encode().strip()
 
         if format == 'json':
             return json.loads(output)
@@ -371,15 +370,16 @@ class SysTask:
             except NoSuchProcess:
                 pass
 
-        elif isinstance(self.id, str):
+        else:
 
             for proc in process_iter():
             
                 if proc.name().lower() == self.id.lower():
             
-                    main = Process(proc.pid)
+                    main = Process(pid=proc.pid)
             
                     break
+
 
         if main:
 
@@ -387,7 +387,7 @@ class SysTask:
 
             try:
 
-                for child in main.children(True):
+                for child in main.children(recursive=True):
                 
                     processes += [child]
 
@@ -403,28 +403,6 @@ class SysTask:
             reversed(processes)
         )
 
-    def cores(self, *cores:int) -> bool:
-        """
-        Set CPU Affinity
-
-        Returns True upon success, and false upon failure
-
-        Ex: Task.cores(0, 2, 4) -> Process will only use CPU cores 0, 2, & 4
-        """
-        from psutil import NoSuchProcess, AccessDenied
-
-        for p in self:
-            
-            try:
-            
-                p.cpu_affinity(cores)
-            
-                return True
-            
-            except (NoSuchProcess, AccessDenied):
-            
-                return False
-
     def stop(self) -> None:
         """
         Stop Process and all of it's children
@@ -439,11 +417,5 @@ class SysTask:
         Check if the process is running
         """        
         return len(list(self)) > 0
-
-    def PIDs(self):
-        
-        for process in self:
-
-            yield process.pid
 
 #========================================================

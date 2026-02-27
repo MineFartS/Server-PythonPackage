@@ -52,9 +52,9 @@ def __FFMPEG(name:str):
 
     return exe
 
-FFMPEG  = lambda: __FFMPEG('ffmpeg')
+FFMPEG  = lambda: __FFMPEG(name='ffmpeg')
 
-FFPROBE = lambda: __FFMPEG('ffprobe')
+FFPROBE = lambda: __FFMPEG(name='ffprobe')
 
 #=================================
 
@@ -64,18 +64,18 @@ def COOKIES() -> 'Path':
     from .file import temp
 
     # Declare 'cookies.txt' location
-    Cookies = temp('cookies', 'txt', 'latest')
+    Cookies = temp(name='cookies', ext='txt', id='latest')
     """Cookies.txt"""
 
     # Check if 'cookies.txt' does not exist
     if not Cookies.exists():
 
         # Create Empty CookieJar
-        CJ = MozillaCookieJar(str(Cookies))
+        CJ = MozillaCookieJar(filename=str(Cookies))
 
         # Populate the CookieJar with cookies from FireFox
         for cookie in firefox():
-            CJ.set_cookie(cookie)
+            CJ.set_cookie(cookie=cookie)
 
         # Save the cookies to 'cookies.txt'
         CJ.save()

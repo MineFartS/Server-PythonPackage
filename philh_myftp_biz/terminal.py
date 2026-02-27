@@ -1,5 +1,5 @@
 from typing import Literal, TYPE_CHECKING, Callable, Any
-from sys import stdout, stderr
+from sys import stdout, stderr # pyright: ignore[reportUnusedImport]
 
 if TYPE_CHECKING:
     from .db import Color
@@ -48,7 +48,7 @@ def elevate() -> None:
 #========================================================
 
 def write(
-    text,
+    text: str,
     stream: Literal['out', 'err'] = 'out',
     flush: bool = True
 ) -> None:
@@ -58,15 +58,15 @@ def write(
     from io import StringIO
     import sys
     
-    stream: StringIO = getattr(sys, 'std'+stream)
+    _stream: StringIO = getattr(sys, 'std'+stream)
     
-    stream.write(text)
+    _stream.write(text)
 
     if flush:
-        stream.flush()
+        _stream.flush()
 
 def print(
-    *args,
+    *args:str,
     pause: bool = False,
     color: 'Color.names' = 'DEFAULT',
     sep: str = ' ',
@@ -89,9 +89,9 @@ def print(
     message = message[:-1] + Color.values['DEFAULT'] + end
 
     if pause:
-        input(message)
+        input(prompt=message)
     else:
-        write(message)
+        write(text=message)
 
 #========================================================
 
@@ -121,7 +121,7 @@ def input[D] (
     else:
         return input(prompt)
 
-def pause():
+def pause() -> None:
     """
     Pause the execution and wait for user input
     """

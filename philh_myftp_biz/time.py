@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Self, SupportsFloat, SupportsInt, Callable, Any
 
 #====================================================
 # Time Zone
@@ -95,24 +95,34 @@ class Stopwatch:
         
         return self
 
-    def __int__(self):
+    def __int__(self) -> int:
         return int(self.elapsed())
     
     __float__ = elapsed
 
-    def __gt__(self, other):
+    def __gt__(self, 
+        other: SupportsFloat|SupportsInt
+    ) -> bool:
         return self.elapsed() > other
 
-    def __ge__(self, other):
+    def __ge__(self, 
+        other: SupportsFloat|SupportsInt
+    ) -> bool:
         return self.elapsed() >= other
 
-    def __lt__(self, other):
+    def __lt__(self, 
+        other: SupportsFloat|SupportsInt
+    ) -> bool:
         return self.elapsed() < other
     
-    def __le__(self, other):
+    def __le__(self, 
+        other: SupportsFloat|SupportsInt
+    ) -> bool:
         return self.elapsed() <= other
     
-    def __eq__(self, other):
+    def __eq__(self, 
+        other: SupportsFloat|SupportsInt
+    ) -> bool:
         return self.elapsed() == other
 
 class from_stamp:
@@ -120,7 +130,7 @@ class from_stamp:
     Handler for a unix time stamp
     """
 
-    def __init__(self, stamp:int):
+    def __init__(self, stamp:int) -> None:
         from datetime import datetime
         from functools import partial
 
@@ -129,68 +139,72 @@ class from_stamp:
             tz = TIMEZONE
         )
 
-        self.year = dt.year
+        self.year: int = dt.year
         """Year (####)"""
 
-        self.month = dt.month
+        self.month: int = dt.month
         """Month (1-12)"""
         
-        self.day = dt.day
+        self.day: int = dt.day
         """Day of the Month (1-31)"""
         
-        self.hour = dt.hour
+        self.hour: int = dt.hour
         """Hour (0-23)"""
         
-        self.minute = dt.minute
+        self.minute: int = dt.minute
         """Minute (0-59)"""
         
-        self.second = dt.second
+        self.second: int = dt.second
         """Second (0-59)"""
 
-        self.decisecond = (dt.microsecond // 100000)
+        self.decisecond: int = (dt.microsecond // 100000)
         """Decisecond (0-9)"""
 
-        self.centisecond = (dt.microsecond // 10000)
+        self.centisecond: int = (dt.microsecond // 10000)
         """Centisecond (0-99)"""
 
-        self.millisecond = (dt.microsecond // 1000)
+        self.millisecond: int = (dt.microsecond // 1000)
         """Millisecond (0-999)"""
 
-        self.microsecond = dt.microsecond
+        self.microsecond: int = dt.microsecond
         """Microsecond (0-999999)"""
 
-        self.unix = stamp
+        self.unix: int = stamp
         """Unix Time Stamp"""
 
-        self.stamp = partial(
+        self.stamp: Callable[[], str] = partial(
             dt.strftime,
             format = "%Y-%m-%d %H:%M:%S"
         )
         """Get Formatted Time Stamp"""
 
-        self.ISO = dt.isoformat()
+        self.ISO: str = dt.isoformat()
         """ISO format string"""
 
-    def __int__(self):
+    def __int__(self) -> int:
         return int(self.unix)
     
     def __float__(self):
         return float(self.unix)
     
-    def __repr__(self):
+    def __repr__(self) -> str:
         from .text import abbreviate
         from .classOBJ import loc
 
         return f"<from_stamp '{abbreviate(30, self.ISO)}' @{loc(self)}>"
 
-    def __eq__(self, other):
+    def __eq__(self,
+        other: Any|SupportsFloat
+    ) -> bool:
 
         if isinstance(other, (from_stamp, int, float)):
             return (self.unix == float(other))
         else:
             return False
         
-    def __lt__(self, other):
+    def __lt__(self,
+        other: Any|SupportsFloat
+    ) -> bool:
         from .classOBJ import path
 
         if isinstance(other, (from_stamp, int, float)):
@@ -199,7 +213,9 @@ class from_stamp:
         else:
             raise TypeError(path(other))
         
-    def __gt__(self, other):
+    def __gt__(self, 
+        other: Any|SupportsFloat
+    ) -> bool:
         from .classOBJ import path
 
         if isinstance(other, (from_stamp, int, float)):
@@ -214,7 +230,7 @@ def now() -> from_stamp:
     """
     from time import time
 
-    return from_stamp(time())
+    return from_stamp(stamp=time())
 
 def from_string(
     string: str
@@ -249,12 +265,12 @@ def from_ymdhms(
     from datetime import datetime
 
     t = datetime(
-        year,
-        month,
-        day,
-        hour,
-        minute,
-        second
+        year=year,
+        month=month,
+        day=day,
+        hour=hour,
+        minute=minute,
+        second=second
     )
 
-    return from_stamp(t.timestamp())
+    return from_stamp(stamp=t.timestamp())

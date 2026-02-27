@@ -1,7 +1,7 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Generator
 
 if TYPE_CHECKING:
-    from .db import colors
+    from .db import Color
 
 #========================================================
 
@@ -11,10 +11,10 @@ class attr:
     """
 
     def __init__(self,
-        parent,
+        parent: Any,
         name: str
-    ):
-        self.name = name
+    ) -> None:
+        self.name: str = name
         self.parent = parent
 
         #========================================================
@@ -73,14 +73,16 @@ class attr:
 
 #========================================================
 
-def attrs(obj):
+def attrs(obj:Any) -> Generator[attr, Any, None]:
     """
     Get all attributes of an instance or object
     """
-    for name in dir(obj):
-        yield attr(obj, name)
 
-def path(obj) -> str:
+    for name in dir(obj):
+
+        yield attr(parent=obj, name=name)
+
+def path(obj:Any) -> str:
     """
     Get Full path of instance
 
@@ -89,7 +91,7 @@ def path(obj) -> str:
 
     return obj.__class__.__module__ + '.' + obj.__class__.__qualname__
 
-def loc(obj) -> str:
+def loc(obj:Any) -> str:
     """
     Get the hexadecimal location of an instance in memory
     """
@@ -97,7 +99,7 @@ def loc(obj) -> str:
 
 #========================================================
 
-def stringify(obj) -> str:
+def stringify(obj:Any) -> str:
     """
     Creates a string containing a table of all attributes of an instance
     (for debugging)
@@ -121,13 +123,13 @@ def stringify(obj) -> str:
     return IO.getvalue()
 
 def log(
-    obj,
-    color: 'colors.names' = 'DEFAULT'
+    obj: Any,
+    color: 'Color.names' = 'DEFAULT'
 ) -> None:
     """
     Print all attributes of the instance to the terminal
     """
-    from .terminal import Log, print as __print
+    from .terminal import print as __print
     
     #========================
     # PRINT
@@ -143,15 +145,17 @@ def log(
 
 #========================================================
 
-def dictify(obj) -> dict:
+def dictify(obj:Any) -> dict:
     """
     Convert an instance to a dictionary
     """
 
-    json_obj = {}
+    json_obj: dict[str, Any] = {}
 
     for c in attrs(obj):
+
         if not (c.private or c.callable):
+        
             json_obj[c.name] = c.value
 
     return json_obj

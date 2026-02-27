@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Generator, Callable, Any, Literal
+from typing import TYPE_CHECKING, Generator, Callable, Any
 
 if TYPE_CHECKING:
     from .pc import Path
@@ -29,8 +29,8 @@ class _Template:
 
     def __init__(self,
         path: 'Path',
-        default = ''
-    ):
+        default: Any = ''
+    ) -> None:
         from .pc import mkdir
 
         self._default = default
@@ -88,11 +88,13 @@ class PKL(_Template):
         except:
             return self._default
 
-    def save(self, value) -> None:
+    def save(self,
+        value: Any
+    ) -> None:
         from dill import dump
         
-        with self._path.open('wb') as f:
-            dump(value, f)
+        with self._path.open(mode='wb') as f:
+            dump(obj=value, file=f)
 
 class VHDX:
     """
@@ -101,12 +103,12 @@ class VHDX:
 
     __via_with = False
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self.__via_with = True
         if not self.mount():
             return
 
-    def __exit__(self, *_):
+    def __exit__(self, *_) -> None:
         if self.__via_with:
             self.dismount()
 
@@ -115,13 +117,13 @@ class VHDX:
         MNT: 'Path',
         timeout: int = 30,
         ReadOnly: bool = False
-    ):
+    ) -> None:
         self.VHD = VHD
         self.MNT = MNT
-        self.__timeout = timeout
-        self.__readonly = ReadOnly
+        self.__timeout: int = timeout
+        self.__readonly: bool = ReadOnly
 
-    def mount(self):
+    def mount(self) -> None:
         from .__init__ import run
 
         run(
@@ -166,16 +168,16 @@ class JSON(_Template):
         from json import load
 
         try:
-            return load(self._path.open())
+            return load(fp=self._path.open())
         except:
             return self._default
 
-    def save(self, data):
+    def save(self, data: dict) -> None:
         from json import dump
 
         dump(
             obj = data,
-            fp = self._path.open('w'),
+            fp = self._path.open(mode='w'),
             indent = 3
         )
 
@@ -193,7 +195,7 @@ class INI(_Template):
         except:
             return self._default
     
-    def save(self, data):
+    def save(self, data:dict) -> None:
         from configobj import ConfigObj
 
         obj = ConfigObj(str(self._path))
@@ -214,7 +216,7 @@ class YAML(_Template):
         try:
 
             with self._path.open() as f:
-                data = safe_load(f)
+                data = safe_load(stream=f)
 
             if data:
                 return data
@@ -224,12 +226,12 @@ class YAML(_Template):
         except:
             return self._default
     
-    def save(self, data):
+    def save(self, data:dict) -> None:
         from yaml import dump
 
         dump(
             data = data, 
-            stream = self._path.open('w'),
+            stream = self._path.open(mode='w'),
             default_flow_style = False,
             sort_keys = False
         )
@@ -244,15 +246,15 @@ class TXT(_Template):
         Read data from the txt file
         """
         try:
-            return self._path.open('r').read()
+            return self._path.open(mode='r').read()
         except:
             return self._default
     
-    def save(self, data):
+    def save(self, data:str) -> None:
         """
         Save data to the txt file
         """
-        self._path.open('w').write(str(data))
+        self._path.open(mode='w').write(str(data))
 
 class ZIP:
     """
@@ -333,7 +335,7 @@ class CSV(_Template):
         except:
             return self._default
 
-    def save(self, data) -> None:
+    def save(self, data:list[list]) -> None:
         from csv import writer
 
         with self._path.open('w') as csvfile:
@@ -353,7 +355,7 @@ class TOML(_Template):
         except:
             return self._default
         
-    def save(self, data) -> None:
+    def save(self, data:dict) -> None:
         from tomli_w import dump
 
         with self._path.open('wb') as f:

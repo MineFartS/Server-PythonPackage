@@ -1,6 +1,8 @@
-from sys import maxsize as maxint
-from math import trunc, floor
-from typing import Literal
+from sys import maxsize as maxint # pyright: ignore[reportUnusedImport]
+from math import trunc, floor # pyright: ignore[reportUnusedImport]
+from random import randint, randrange # pyright: ignore[reportUnusedImport]
+
+from typing import Literal, SupportsInt, SupportsFloat
 
 #========================================================
 
@@ -99,11 +101,11 @@ def nearest_multiple(
     ```
     """
 
-    return x//multiple_of * multiple_of
+    return int(x//multiple_of) * multiple_of
 
 #========================================================
 
-def is_int(num) -> bool:
+def is_int(num:SupportsInt) -> bool:
     """
     Check if number is a valid integer
     """
@@ -113,7 +115,7 @@ def is_int(num) -> bool:
     except ValueError:
         return False
 
-def is_float(num) -> bool:
+def is_float(num:SupportsFloat) -> bool:
     """
     Check if a number is a valid float
     """
@@ -123,12 +125,14 @@ def is_float(num) -> bool:
     except ValueError:
         return False
 
-def is_prime(num) -> bool:
+def is_prime(
+    num: SupportsInt|SupportsFloat
+) -> bool:
     """
     Check if a number is a prime number
     """
 
-    pre = {
+    pre: dict[int, bool] = {
         0: False,
         1: False,
         2: True
@@ -139,10 +143,11 @@ def is_prime(num) -> bool:
 
     else:
 
-        if digit(num, -1) in [0, 2, 4, 5, 6, 8]:
+        if digit(num=num, i=-1) in [0, 2, 4, 5, 6, 8]:
             return False
         
         else:
+            
             for i in range(2, num):
                 if (num % i) == 0:
                     return False

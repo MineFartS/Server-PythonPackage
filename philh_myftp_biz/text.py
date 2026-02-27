@@ -47,7 +47,7 @@ class contains:
     Functions to check if text contains value(s) with list as input
     """
 
-    def any (
+    def any(
         string: str,
         values: list[str]
     ) -> bool:
@@ -67,7 +67,7 @@ class contains:
         # If no values are matched, then return False
         return False
     
-    def all (
+    def all(
         string: str,
         values: list[str]
     ) -> bool:
@@ -195,7 +195,7 @@ def ends_with_any (
 def rm_emojis(
     text: str,
     sub: str = ''
-):
+) -> str:
     """
     Remove all emojis from a string
     """
@@ -248,7 +248,7 @@ def abbreviate(
     else:
         return string[:num] + end
 
-def from_function(func: Callable):
+def from_function(func: Callable) -> str:
     from ast import parse, walk, Lambda, unparse
     from inspect import getsourcelines
     from .classOBJ import path

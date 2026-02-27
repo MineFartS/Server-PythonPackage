@@ -1,9 +1,9 @@
-from json import load, loads, dump, dumps
+from json import load, loads, dump, dumps # pyright: ignore[reportUnusedImport]
 from typing import Any, ItemsView
 
 #========================================================
 
-def valid(value:str):
+def valid(value:str) -> bool:
     """
     Check if a string contains valid json data
     """
@@ -29,7 +29,7 @@ class Dict[V]:
 
     def __init__(self,
         t: RAW|OUT|Any = {}
-    ):
+    ) -> None:
         from .file import PKL, temp
         from .classOBJ import path
 
@@ -65,7 +65,7 @@ class Dict[V]:
     def __len__(self) -> int:
         return len(self.read().keys())
     
-    def __getitem__(self, key) -> None | V:
+    def __getitem__(self, key:str) -> None | V:
         try:
             return self.read()[key]
         except KeyError:
