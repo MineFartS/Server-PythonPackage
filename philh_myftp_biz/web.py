@@ -495,6 +495,7 @@ class api:
         def _get(self,
             magnet: Magnet
         ):
+
             for t in self._client().torrents_info():
                 
                 #
@@ -839,16 +840,16 @@ class Magnet(api.qBitTorrent):
         
         # The hash follows 'urn:btih:' or 'urn:btmh:'
         if XT.startswith('urn:btih:'):
-            self.hash = XT[len('urn:btih:'):]
+            self.hash = XT[len('urn:btih:'):].lower()
         
         elif XT.startswith('urn:btmh:'): # for v2 magnets
-            self.hash = XT[len('urn:btmh:'):]
+            self.hash = XT[len('urn:btmh:'):].lower()
             
         self.title: str = title.lower()
         self.leechers: int = leechers
         self.seeders: int = seeders
-        self.url: str = url
         self.size: str = size
+        self.url: str = url
 
         self.quality = 0
         for term in self.__qualities:
