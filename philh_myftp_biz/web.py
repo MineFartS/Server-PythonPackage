@@ -568,8 +568,7 @@ class api:
 
         def start(self,
             magnet: 'Magnet',
-            path: 'Path' = None,
-            tags: list[str] = []
+            path: 'str|Path' = None
         ) -> None:
             """
             Start Downloading a Magnet
@@ -584,17 +583,16 @@ class api:
                 f'{path=}'
             )
 
+            if path:
+                path = str(path)
+
             if t:
-
                 t.start()
-
-                self.reannounce(magnet=magnet)
             
             else:
                 self._client().torrents_add(
-                    urls = [magnet.url],
-                    save_path = str(path),
-                    tags = [magnet.url, *tags]
+                    urls = magnet.url,
+                    save_path = path
                 )
 
         def reannounce(self,
@@ -627,7 +625,7 @@ class api:
 
         def files(self,
             magnet: 'Magnet'            
-        ):
+        ) -> list[File]:
             """
             List all files in Magnet Download
 
@@ -670,9 +668,7 @@ class api:
 
                 t.setForceStart(False)
 
-                for f in t.files:
-
-                    yield self.File(t, f)
+                return [self.File(t,f) for f in t.files]
 
         def stop(self,
             magnet: 'Magnet',
@@ -950,7 +946,7 @@ class Magnet(api.qBitTorrent):
         from .text import abbreviate
         from .classOBJ import loc
 
-        return f"<Magnet '{abbreviate(30, self.title)}' @{loc(self)}>"
+        return f"<Magnet '{abbreviate(30, self.title.strip())}' @{loc(self)}>"
 
 class Soup:
     """
