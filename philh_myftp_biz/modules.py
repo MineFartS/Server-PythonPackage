@@ -243,8 +243,7 @@ class Service(Path):
 
         #==============================
 
-    def _run(self, name:str):
-        from .process import RunHidden
+    def _file(self, name:str):
 
         # Iter through all children of the service path
         for p in self.children():
@@ -254,16 +253,18 @@ class Service(Path):
             
             if ISFILE and NAMEEQ:
 
-                # Grant full access to file
-                p.set_access.full()
-
-                # Run the file
-                return RunHidden(
-                    args = [p, *self.args],
-                    terminal = 'ext'
-                )
+                return p
 
         raise FileNotFoundError(f'{self.path}{name}.*')
+
+    def _run(self, name:str):
+        from .process import RunHidden
+
+        # Run the file
+        return RunHidden(
+            args = [self._file(name), *self.args],
+            terminal = 'ext'
+        )
 
     def Start(self):
         """
