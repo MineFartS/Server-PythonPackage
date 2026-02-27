@@ -2,7 +2,7 @@ from typing import Literal, Self, Generator, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .time import from_stamp
-    from pathlib import Path as libPath, PurePath
+    from pathlib import PurePath
 
 from socket import gethostname as NAME # pyright: ignore[reportUnusedImport]
 
@@ -26,9 +26,9 @@ class Path:
     """
 
     def __init__(self,
-        *input: 'Path|str|PurePath|libPath'
+        *input: 'str|PurePath'
     ) -> None:
-        from pathlib import Path as libPath, PurePath
+        from pathlib import Path as libPath
         from os import path
 
         # ==================================
@@ -40,7 +40,7 @@ class Path:
         elif isinstance(input[0], Path):
             self.path = input[0].path
 
-        elif isinstance(input[0], (PurePath, libPath)):
+        elif hasattr(input[0], 'as_posix'):
             self.path = input[0].as_posix()
 
         else:
@@ -49,7 +49,7 @@ class Path:
         # ==================================
         # Declare path string
 
-        if input[0][-1] == '/':                
+        if self.path[0][-1] == '/':                
             self.path += '/'
 
         self.path: str = self.path.replace('\\', '/').replace('//', '/')

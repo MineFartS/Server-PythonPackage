@@ -352,9 +352,9 @@ class SysTask:
     Wrapper for psutil.Process
     """
 
-    def __init__(self, id:str|int):
+    def __init__(self, id:str|int) -> None:
 
-        self.id = id
+        self.id: str | int = id
         """PID / IM"""
 
     def __iter__(self):
@@ -398,10 +398,10 @@ class SysTask:
 
             processes = []
 
-        return filter(
+        return iter(filter(
             lambda p: p.is_running(),    
             reversed(processes)
-        )
+        ))
 
     def stop(self) -> None:
         """
@@ -412,10 +412,16 @@ class SysTask:
             
             p.terminate()
 
-    def exists(self):
+    def exists(self) -> bool:
         """
         Check if the process is running
         """        
         return len(list(self)) > 0
+    
+    def PIDs(self):
+        
+        for process in self:
+
+            yield process.pid
 
 #========================================================
