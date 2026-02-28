@@ -16,6 +16,8 @@ class attr:
 
     callable: bool
 
+    null: bool
+
     parent: Any
 
     name: str
@@ -70,21 +72,25 @@ class attr:
             case 'callable':
                 return callable(self.value)
             
+            case 'null':
+                return (self.value is None)
+            
             case _:
                 raise AttributeError(f"type object '{path(self)}' has no attribute '{name}'")
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Get the value of the attribute as a string
 
         Formats with json.dumps
         """
-        from .json import dumps
+        from .json import dumps, StringEncoder
 
         try:
             return dumps(
                 obj = self.value,
-                indent = 2
+                indent = 2,
+                cls = StringEncoder
             )
         except TypeError:
             return str(self.value)
@@ -133,11 +139,7 @@ def stringify(obj:Any) -> str:
 
     for c in attrs(obj):
 
-        PRIVATE = c.private
-        CALLABLE = c.callable
-        NONE = (c.value is None)
-
-        if not (PRIVATE or CALLABLE or NONE):
+        if not (c.private or c.callable or c.null):
 
             IO.write(c.name)
             IO.write(' = ')
@@ -221,3 +223,80 @@ class SharedBuffer:
             del self.entries[0]
 
             return entry
+
+
+def initPartialClass(
+    super: Any,
+    self: Any,
+    key: str,
+    value: Any
+) -> None:
+    """
+
+    #### Copies all methods from parent class and replaces the child method with a partial function
+
+    ### EXAMPLE:
+    ```
+    class Parent:
+    
+        def __init__(self):
+            pass
+            
+        def test_1(self, hi:str):
+            return f'{hi} world'
+
+        def test_2(self):
+            return 'hello world'
+
+    class Child(Parent):
+    
+        def __init__(self):
+            
+            initPartialClass(
+                super = Parent,
+                self = self,
+                key = 'hi',
+                value = 'hello'
+            )
+
+    >>> p = Parent()
+
+    >>> p.test_1()
+    TypeError: test_1() missing 1 required positional argument: 'hi'
+
+    >>> p.test_1('hello')
+    'hello world'
+
+    >>> c = Child()
+    
+    >>> c.test_1()
+    'hello world'
+
+    >>> c.test_1('hi')
+    'hi world'
+    ```
+    """
+    from inspect import signature
+    from functools import partial
+
+    for _key, _value in vars(super).items():
+
+        _params: list[str] = signature(value).parameters
+        
+        CALLABLE: bool = callable(value)
+
+        PUBLIC: bool = ('_' not in _key)
+
+        HASKEY: bool = (CALLABLE and (_key in _params))
+
+        if CALLABLE and PUBLIC and HASKEY:
+
+            setattr(
+                obj = self,
+                name = _key,
+                value = partial(
+                    func = _value, 
+                    self = self,
+                    **{key: value}
+                )
+            )
