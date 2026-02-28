@@ -273,4 +273,9 @@ def from_ymdhms(
         second=second
     )
 
-    return from_stamp(stamp=t.timestamp())
+    try:
+
+        return from_stamp(stamp=t.timestamp())
+    
+    except OSError as e:
+        raise TypeError(*e.args)
