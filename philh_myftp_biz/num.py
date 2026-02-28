@@ -105,6 +105,13 @@ def nearest_multiple(
 
 #========================================================
 
+def is_num(num:SupportsFloat|SupportsInt) -> bool:
+    """
+    Check if number is a valid integer or float
+    """
+
+    return (is_int(num) or is_float(num))
+
 def is_int(num:SupportsInt) -> bool:
     """
     Check if number is a valid integer
