@@ -831,8 +831,9 @@ class Magnet(api.qBitTorrent):
         size: str = -1,
         qbit: api.qBitTorrent = None
     ) -> None:
-        from .classOBJ import initPartialClass
         from urllib.parse import urlparse, parse_qs
+        from functools import partial
+        from inspect import signature
 
         # Get the value of the 'xt' parameter (it's a list, so take the first element)
         XT: str = parse_qs(urlparse(url).query)['xt'][0]
@@ -843,9 +844,6 @@ class Magnet(api.qBitTorrent):
         
         elif XT.startswith('urn:btmh:'): # for v2 magnets
             self.hash = XT[len('urn:btmh:'):].lower()
-
-        else:
-            self.hash = None
             
         self.title: str = title.lower()
         self.leechers: int = leechers
@@ -865,14 +863,22 @@ class Magnet(api.qBitTorrent):
                     getattr(qbit, name)
                 )
 
-        initPartialClass(
-            super = api.qBitTorrent,
-            self = self,
-            key = 'magnet',
-            value = self
-        )
+        for name, value in vars(api.qBitTorrent).items():
 
-    def __repr__(self) -> str:
+            CALLABLE = callable(value)
+
+            PUBLIC = ('_' not in name)
+
+            MAGNETPARAM = (CALLABLE and ('magnet' in signature(value).parameters))
+
+            if CALLABLE and PUBLIC and MAGNETPARAM:
+
+                setattr(
+                    self, name,
+                    partial(value, self=self, magnet=self)
+                )
+
+    def __repr__(self):
         from .text import abbreviate
         from .classOBJ import loc
 
