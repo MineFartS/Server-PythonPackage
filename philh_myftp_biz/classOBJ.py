@@ -10,6 +10,16 @@ class attr:
     Attribute of Instance/Object
     """
 
+    private: bool
+
+    value: Any
+
+    callable: bool
+
+    parent: Any
+
+    name: str
+
     def __init__(self,
         parent: Any,
         name: str
@@ -17,43 +27,51 @@ class attr:
         self.name: str = name
         self.parent = parent
 
-        #========================================================
-        # PRIVATE
-
-        self.private = False
-
-        if self.name.startswith('__'):
-            self.private = True
+    def __getattr__(self, name:str):
         
-        elif hasattr(self.parent, '__name__') and (self.name.startswith(f'_{self.parent.__name__}__')):
-            self.private = True
-        
-        elif (self.name.startswith(f'_{self.parent.__class__.__name__}__')):
-            self.private = True
+        match name:
 
-        else:
+            case 'name':
+                return self.__dict__['name']
             
-            for base in self.parent.__class__.__bases__:
+            case 'parent':
+                return self.__dict__['parent']
 
-                if self.name.startswith(f'_{base.__name__}__'):
-                
-                    self.private = True
-                    break
+            case 'private':
 
-        #========================================================
-        # VALUE
+                if self.name.startswith('__'):
+                    return True
+        
+                elif hasattr(self.parent, '__name__') and (self.name.startswith(f'_{self.parent.__name__}__')):
+                    return True
+        
+                elif (self.name.startswith(f'_{self.parent.__class__.__name__}__')):
+                    return True
 
-        if self.private:
-            self.value = None
-        else:
-            self.value = getattr(self.parent, self.name)
+                else:
+                    
+                    for base in self.parent.__class__.__bases__:
 
-        #========================================================
-        # CALLABLE
+                        if self.name.startswith(f'_{base.__name__}__'):
+                        
+                            return True
+                        
+                return False
+            
+            case 'value':
 
-        self.callable = callable(self.value)
+                if not self.private:
 
-        #========================================================
+                    try:
+                        return getattr(self.parent, self.name)
+                    except:
+                        pass
+
+            case 'callable':
+                return callable(self.value)
+            
+            case _:
+                raise AttributeError(f"type object '{path(self)}' has no attribute '{name}'")
 
     def __str__(self):
         """
@@ -68,7 +86,7 @@ class attr:
                 obj = self.value,
                 indent = 2
             )
-        except:
+        except TypeError:
             return str(self.value)
 
 #========================================================
@@ -114,7 +132,13 @@ def stringify(obj:Any) -> str:
     IO.write(' ---\n')
 
     for c in attrs(obj):
-        if not (c.private or c.callable or (c.value is None)):
+
+        PRIVATE = c.private
+        CALLABLE = c.callable
+        NONE = (c.value is None)
+
+        if not (PRIVATE or CALLABLE or NONE):
+
             IO.write(c.name)
             IO.write(' = ')
             IO.write(str(c))
