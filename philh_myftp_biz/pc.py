@@ -10,6 +10,8 @@ from socket import gethostname as NAME # pyright: ignore[reportUnusedImport]
 
 from os import name as __name
 
+OS: Literal['windows', 'unix']
+
 match __name:
 
     case 'nt':
