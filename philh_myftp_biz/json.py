@@ -127,3 +127,18 @@ class Dict[V]:
         )
 
 #========================================================
+
+from json import JSONEncoder as __JSONEncoder
+
+class StringEncoder(__JSONEncoder):
+
+    def default(self, obj:Any):
+
+        try:
+            return super().default(obj)
+        
+        except TypeError:
+            
+            string = str(obj)
+
+            return super().default(string)
