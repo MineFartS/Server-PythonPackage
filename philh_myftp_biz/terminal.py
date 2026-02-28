@@ -223,7 +223,7 @@ class ProgressBar:
         self.clear = self._tqdm.clear
         self.flush = self._tqdm.refresh
 
-        self.total = self._tqdm.total
+        self.total: int|float = self._tqdm.total
 
         sys.stdout = self.Pipe(pbar=self)
 
@@ -251,6 +251,9 @@ class ProgressBar:
             
             # Update the timer
             self._tqdm.refresh()
+
+            # Sync the total
+            self._tqdm.total = self.total
 
             if lastval != self._tqdm.n:
 
