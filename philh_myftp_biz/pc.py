@@ -783,14 +783,14 @@ def relscan(
         'dst': Path('D:/Child1')
     }]
     """
+    from .classOBJ import SharedBuffer
     from shutil import copytree
     from .process import thread
-    from .classOBJ import EventListener
 
-    el = EventListener()
+    buff = SharedBuffer()
     
     # Copytree dry run
-    thread(
+    t = thread(
 
         func = copytree,
 
@@ -800,13 +800,15 @@ def relscan(
         dirs_exist_ok = True,
         
         # Append paths to list instead of directly copying
-        copy_function = lambda s, d, **_: el.add({
+        copy_function = lambda s, d, **_: buff.add({
             'src': Path(s), 
             'dst': Path(d)
         })
 
     )
 
-    yield from el
+    buff.stop_when = lambda: not t.running()
+
+    yield from buff
 
 #========================================================

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING, Any, Generator, Callable
 
 if TYPE_CHECKING:
     from .db import Color
@@ -162,34 +162,38 @@ def dictify(obj:Any) -> dict:
 
 #========================================================
 
-class EventListener:
+class SharedBuffer:
+
+    stop_when: Callable[[], bool] = lambda: False
+    """
+    Is called before each iteration
+    Will stop iteration if returns True 
+    """
 
     def __init__(self) -> None:
         
-        self.events = []
+        self.entries = []
 
-        self.__iadd__ = self.events.append
+        self.__iadd__ = self.entries.append
 
-        self.add = self.events.append
-
-        self.running: bool = False
+        self.add = self.entries.append
 
     def __iter__(self):
-
-        self.running = True
-        
         return self
 
     def __next__(self):
 
-        if not self.running:
+        if self.stop_when():
+
             raise StopIteration()
+        
+        else:
 
-        while len(self.events) == 0:
-            pass
+            while len(self.entries) == 0:
+                pass
 
-        event = self.events[0]
+            entry = self.entries[0]
 
-        del self.events[0]
+            del self.entries[0]
 
-        return event
+            return entry
