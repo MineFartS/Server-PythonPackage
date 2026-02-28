@@ -159,3 +159,37 @@ def dictify(obj:Any) -> dict:
             json_obj[c.name] = c.value
 
     return json_obj
+
+#========================================================
+
+class EventListener:
+
+    def __init__(self) -> None:
+        
+        self.events = []
+
+        self.__iadd__ = self.events.append
+
+        self.add = self.events.append
+
+        self.running: bool = False
+
+    def __iter__(self):
+
+        self.running = True
+        
+        return self
+
+    def __next__(self):
+
+        if not self.running:
+            raise StopIteration()
+
+        while len(self.events) == 0:
+            pass
+
+        event = self.events[0]
+
+        del self.events[0]
+
+        return event

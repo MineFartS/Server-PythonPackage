@@ -768,7 +768,7 @@ def temp() -> Path:
 def relscan(
     src: Path,
     dst: Path
-) -> list[dict[Literal['src', 'dst'], Path]]:
+) -> Generator[dict[Literal['src', 'dst'], Path]]:
     """
     Relatively Scan two directories
 
@@ -784,11 +784,15 @@ def relscan(
     }]
     """
     from shutil import copytree
+    from .process import thread
+    from .classOBJ import EventListener
 
-    items = []
+    el = EventListener()
     
     # Copytree dry run
-    copytree(
+    thread(
+
+        func = copytree,
 
         src = str(src),
         dst = str(dst), 
@@ -796,13 +800,13 @@ def relscan(
         dirs_exist_ok = True,
         
         # Append paths to list instead of directly copying
-        copy_function = lambda s, d, **_: items.append({
+        copy_function = lambda s, d, **_: el.add({
             'src': Path(s), 
             'dst': Path(d)
         })
 
     )
 
-    return items
+    yield from el
 
 #========================================================
