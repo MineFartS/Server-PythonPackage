@@ -301,6 +301,13 @@ class Path:
 
         return MimeType.Path(self)
 
+    def ismedia(self) -> bool:
+        """
+        Checks if the current path is an image, video, or audio file
+        """
+
+        return (self.type() in ['image', 'video', 'audio'])
+
     def delete(self) -> None:
         """
         Delete the current path
