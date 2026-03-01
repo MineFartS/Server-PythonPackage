@@ -194,16 +194,25 @@ class Path:
     ) -> bool:
 
         if isinstance(other, Path):
-            return (self.path == other.path)
+            testp = other.path
+
+        elif hasattr(other, 'as_posix'):
+            testp = other.as_posix()
+        
         else:
-            return False
+            testp = str(other)
+        
+        return (self.path == testp)
 
     def islink(self) -> bool:
         """
         Check if path is Symbolic Link or Directory Junction
         """
 
-        return (self._libPath.is_symlink() or self._libPath.is_junction())
+        SYMLINK : bool = self._libPath.is_symlink()
+        JUNCTION: bool = self._libPath.is_junction()
+
+        return (SYMLINK or JUNCTION)
 
     def size(self) -> int:
         """
@@ -221,41 +230,51 @@ class Path:
     def children(self) -> Generator[Path]:
         """
         Get children of current directory
-
+        ```
         Curdir - |
                  | - Child
                  |
                  | - Child
+        ```
         """
-        for p in self._libPath.iterdir():
-            yield Path(p)
+
+        if self.isfile():
+
+            raise TypeError('Cannot get children of a file')
+
+        else:
+
+            for p in self._libPath.iterdir():
+                
+                yield Path(p)
 
     def descendants(self) -> Generator[Path]:
         """
         Get descendants of current directory
-
+        ```
         Curdir - |           | - Descendant
                  | - Child - |
                  |           |
                  |           | - Descendant
-                 |
+                 |           
                  | - Child - |
                              | - Descendant
+        ```
         """
         for root, dirs, files in self._libPath.walk():
+
             for item in (dirs + files):
+            
                 yield Path(root, item)
 
     def isempty(self) -> bool:
-        
-        if self.isfile():
-            raise TypeError('Cannot get children of a file')
-        
-        else:
+        """
+        Check if the current directory has any children
+        """
 
-            item = next(self.children(), None)
+        item: Path|None = next(self.children(), None)
 
-            return bool(item)
+        return (item is None)
 
     def parent(self) -> Path:
         """
