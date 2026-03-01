@@ -174,8 +174,8 @@ class SubProcess:
     def __monitor(self) -> None:
         from .terminal import _cls_cmd, cls, write
 
-        stdout = iter(self._process.stdout)
-        stderr = iter(self._process.stderr)
+        stdout = iter(self._process.stdout.read, -1)
+        stderr = iter(self._process.stderr.read, -1)
 
         while self.running() and Alive():
 
@@ -202,9 +202,9 @@ class SubProcess:
                 if not self._hide:
                     write(outline, 'out')
 
-            errline = next(stderr, None)
+            errline = next(stderr, '')
 
-            if errline:
+            if len(errline) > 0:
 
                 self.stderr += errline
                 self.stdcomb += errline
