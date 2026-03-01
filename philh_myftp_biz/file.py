@@ -39,31 +39,20 @@ class _Template:
         # Make the parent dir of the output path
         path.parent().mkdir()
 
-    read = Callable[[], Any]
-    """
-    Read data from the file
-    """
+    _read: Callable[[], Any]
 
     save = Callable[[Any], None]
-    """
-    Read data from the file
-    """
+    """Write data to the file"""
 
-    def __getattr__(self, name:str):
-        
-        match name:
+    def read(self):
+        """Read data from the file"""
 
-            case 'read':
-                
-                value = self.__dict__['read']()
+        value = self._read()
 
-                if value:
-                    return lambda: value
-                else:
-                    return lambda: self.__dict__['_default']
-
-            case _:
-                return self.__dict__[name]
+        if value:
+            return value
+        else:
+            return self.default
 
 #========================================================
 
@@ -72,7 +61,7 @@ class XML(_Template):
     .XML File
     """
 
-    def read(self) -> dict:
+    def _read(self) -> dict:
         from xmltodict import parse
 
         with self.path.open() as f:
@@ -95,7 +84,7 @@ class PKL(_Template):
     .PKL File
     """
 
-    def read(self):
+    def _read(self):
         from dill import load
         
         try:
@@ -168,7 +157,7 @@ class JSON(_Template):
     .JSON File
     """
 
-    def read(self):
+    def _read(self):
         from json import load
 
         try:
@@ -190,7 +179,7 @@ class INI(_Template):
     .INI/.PROPERTIES File
     """
     
-    def read(self):
+    def _read(self):
         from configobj import ConfigObj
         
         try:
@@ -214,7 +203,7 @@ class YAML(_Template):
     .YML/.YAML File
     """
     
-    def read(self):
+    def _read(self):
         from yaml import safe_load
 
         try:
@@ -243,7 +232,7 @@ class TXT(_Template):
     .TXT File
     """
     
-    def read(self):
+    def _read(self):
         """
         Read data from the txt file
         """
@@ -340,7 +329,7 @@ class CSV(_Template):
     .CSV File
     """
 
-    def read(self):
+    def _read(self):
         from csv import reader
 
         try:
@@ -360,7 +349,7 @@ class TOML(_Template):
     .TOML File
     """
 
-    def read(self):
+    def _read(self):
         from toml import load
 
         try:
