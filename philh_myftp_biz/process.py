@@ -5,7 +5,7 @@ if TYPE_CHECKING:
 
 #========================================================
 
-class thread:
+class Thread:
     """
     Quickly Start a Thread
     """
@@ -53,16 +53,21 @@ class Sleeper:
         # Create new thread
         Thread(self._main).start()
 
-    def _main(self):
-        from threading import main_thread
+    def _main(self) -> None:
         from time import sleep
 
-        MT = main_thread()
-
-        while MT.is_alive():
+        while Alive():
             sleep(.1)
 
         self.func(*self.args, **self.kwargs)
+
+def Alive() -> bool:
+    """
+    Check if the main thread is running
+    """
+    from threading import main_thread
+
+    return main_thread().is_alive()
 
 #========================================================
 
@@ -72,237 +77,163 @@ class SubProcess:
     """
 
     _hide: bool
-
     _wait: bool
-
-    running = lambda: False
 
     def __init__(self,
         args: list|tuple|str,
-        terminal: Literal['cmd', 'ps', 'psfile', 'py', 'pym', 'vbs', 'ext'] | None = 'cmd',
-        dir: 'str|Path|None' = None,
-        timeout: int|None = None
+        terminal: None|Literal['cmd', 'ps', 'psfile', 'py', 'pym', 'vbs'] = 'cmd',
+        dir: 'Path|None' = None
     ) -> None:
+        from subprocess import Popen, PIPE
         from .array import stringify
-        from .pc import Path, cwd
         from sys import executable
+        from .pc import Path, cwd
 
         # =====================================
 
-        self.__timeout = timeout
-
-        if isinstance(dir, str):
-            self.__dir = Path(dir)
-
-        elif isinstance(dir, Path):
-            self.__dir = dir
-
-        else:
-            self.__dir = cwd()
+        if dir is None:
+            dir = cwd()
                     
-        # =====================================   
+        # =====================================
 
         if isinstance(args, (tuple, list)):
             args = stringify(args)
         else:
             args = [args]
 
-        if terminal == 'ext':
+        if terminal is None:
 
-            exts: dict[str, str] = {
-                'ps1' : 'psfile',
-                'py'  : 'py',
-                'exe' : 'cmd',
-                'bat' : 'cmd',
-                'vbs' : 'vbs'
-            }
+            match Path(args[0]).ext():
 
-            ext = Path(args[0]).ext()
+                case 'ps1': terminal='psfile'
 
-            if ext:
-                terminal = exts[ext]
+                case 'py': terminal='py'
 
-        if terminal == 'cmd':
-            self.__args = ['cmd', '/c', *args]
+                case 'exe': terminal='cmd'
 
-        elif terminal == 'ps':
-            self.__args = ['Powershell', '-Command', *args]
+                case 'bat': terminal='cmd'
 
-        elif terminal == 'psfile':
-            self.__args = ['Powershell', '-File', *args]
+                case 'vbs': terminal='vbs'
 
-        elif terminal == 'py':
-            self.__args = [executable, *args]
+                case _: terminal='cmd'
 
-        elif terminal == 'pym':
-            self.__args = [executable, '-m', *args]
+        match terminal:
+
+            case 'cmd':
+                args = ['cmd', '/c', *args]
+
+            case 'ps':
+                args = ['Powershell', '-Command', *args]
+
+            case 'psfile':
+                args = ['Powershell', '-File', *args]
+
+            case 'py':
+                args = [executable, *args]
+
+            case 'pym':
+                args = [executable, '-m', *args]
         
-        elif terminal == 'vbs':
-            self.__args = ['wscript', *args]
-
-        else:
-            self.__args = args
+            case 'vbs':
+                args = ['wscript', *args]
 
         # =====================================
 
-        # Start the process
-        self.start()
+        self._process = Popen(
+            args = args,
+            cwd = str(dir),
+            stdout = PIPE,
+            stderr = PIPE,
+            text = True,
+            errors = 'ignore'
+        )
+
+        self._task = SysTask(self._process.pid)
+
+        self.wait = self._process.wait
+
+        self.running = self._task.exists
+
+        self.stop = self._task.stop
+
+        self.stdcomb = ''
+
+        # Start Output Stream Manager
+        Thread(self._stdout)
+
+        # Start Error Stream Manager
+        Thread(self._stderr)
+
+        # Start Status Monitor
+        Thread(self._monitor)
+
+        # Wait for process to complete if required
+        if self._wait:
+            self.wait()
 
     def _monitor(self) -> None:
         """
         Monitor the Process' status
         """
-        from threading import main_thread
         from .time import sleep
+        from .terminal import _cls_cmd, cls, write
 
-        mt = main_thread()
+        self.stdout  = ''
+        self.stderr  = ''
+        self.stdcomb = ''
+
+        stdout = iter(self._process.stdout)
+        stderr = iter(self._process.stderr)
 
         while True:
             
             sleep(.1)
 
             # If the either the main exec or the subprocess is stopped 
-            if self.finished() or self.timed_out() or (not mt.is_alive()):
+            if self.finished() or (not Alive()):
                 
                 self.stop()
                 
                 return
 
-    def _stdout(self) -> None:
-        """
-        Output Manager
-        """
-        from .terminal import cls, write
-        from .text import hex
+            outline = next(stdout, '')
 
-        self.stdout = ''
+            if _cls_cmd in outline:
 
-        cls_cmd = hex.encode('*** Clear Terminal ***')
-
-        for line in self._process.stdout:
-            
-            if cls_cmd in line:
-
-                # Reset stdout stream
+                # Reset stream buffers
                 self.stdout = ''
-
-                # Reset stderr stream
                 self.stderr = ''
-
-                # Reset combined stream
                 self.stdcomb = ''
 
                 #
                 if not self._hide:
                     cls()
 
-            elif len(line) > 0:
+            elif len(outline) > 0:
 
                 #
-                self.stdout += line
-
-                self.stdcomb += line
+                self.stdout += outline
+                self.stdcomb += outline
 
                 #
                 if not self._hide:
-                    write(line, 'out')
+                    write(outline, 'out')
 
-    def _stderr(self) -> None:
-        """
-        Error Manager
-        """
-        from .terminal import write
+            errline = next(stderr, None)
 
-        self.stderr = ''
+            if errline:
 
-        for line in self._process.stderr:
+                self.stderr += errline
+                self.stdcomb += errline
 
-            self.stderr += line
-
-            self.stdcomb += line
-
-            if not self._hide:
-                write(line, 'err')
-
-    def start(self) -> None:
-        """
-        Start the subprocess
-        """
-        from subprocess import Popen, PIPE
-        from .time import Stopwatch
-       
-        #
-        self._process = Popen(
-            args = self.__args,
-            cwd = self.__dir.path,
-            stdout = PIPE,
-            stderr = PIPE,
-            text = True,
-            #bufsize = 1,
-            errors = 'ignore'
-        )
-
-        self.wait = self._process.wait
-
-        self._task = SysTask(self._process.pid)
-        """Process Task"""
-
-        self.running = self._task.exists
-
-        self._stopwatch = Stopwatch()
-        """Process Runtime"""
-        self._stopwatch.start()
-
-        #
-        self.stdcomb = ''
-
-        # Start Output Manager
-        thread(self._stdout)
-
-        # Start Error Manager
-        thread(self._stderr)
-
-        # Start Status Monitor
-        thread(self._monitor)
-
-        # Wait for process to complete if required
-        if self._wait:
-            self.wait()
+                if not self._hide:
+                    write(errline, 'err')
 
     def finished(self) -> bool:
         """
         Check if the subprocess is finished
         """
-        return (not self._task.exists())
-    
-    def restart(self) -> None:
-        """
-        Restart the Subprocess
-        """
-        self.stop()
-        self.start()
-
-    def timed_out(self) -> bool | None:
-        """
-        Check if the Subprocess timed out
-        """
-
-        # If a timeout value was given
-        if self.__timeout:
-
-            # Return whether the runtime exceeds the timeout
-            return (self._stopwatch.elapsed() >= self.__timeout)
-
-    def stop(self) -> None:
-        """
-        Stop the Subprocess
-        """
-
-        # Kill the process and its children
-        self._task.stop()
-
-        # Pause the runtime stopwatch
-        self._stopwatch.stop()
+        return (not self.running())
 
     def output(self,
         format: Literal['json', 'hex'] = None,

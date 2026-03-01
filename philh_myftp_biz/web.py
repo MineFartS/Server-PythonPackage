@@ -1,30 +1,23 @@
 from typing import Literal, Generator, TYPE_CHECKING, Callable
+from functools import partial
 
 if TYPE_CHECKING:
     from qbittorrentapi import Client, TorrentDictionary, TorrentFile
     from selenium.webdriver.remote.webelement import WebElement
     from paramiko.channel import ChannelFile, ChannelStderrFile
     from requests import Response
-    from bs4 import BeautifulSoup
     from .time import from_stamp
     from .pc import Path
 
-def IP(
-    method: Literal['local', 'public'] = 'local'
-) -> str | None:
-    """
-    Get the IP Address of the local computer
-    """
-    from socket import gethostname, gethostbyname
+class IP:
 
-    if method == 'local':
+    def LAN() -> str:
+        from socket import gethostname, gethostbyname
+
         return gethostbyname(gethostname())
     
-    elif online():
+    def WAN() -> str:
         return get('https://api.ipify.org').text
-
-online: Callable[[], bool] = lambda: ping('1.1.1.1')
-"""Check if the local computer is connected to the internet"""
 
 def ping(
     addr: str,
@@ -60,6 +53,9 @@ def ping(
     
     except OSError:
         return False
+
+is_online: partial[bool] = partial(ping, '1.1.1.1')
+"""Check if the local computer is connected to the internet"""
 
 class Port:
     """
@@ -103,7 +99,7 @@ class Port:
     def __repr__(self) -> str:
         return f"Port({self.port})"
 
-class ssh:
+class SSH:
     """
     SSH Client
 
@@ -115,7 +111,8 @@ class ssh:
         def __init__(self,
             stdout: 'ChannelFile',
             stderr: 'ChannelStderrFile'
-        ):
+        ) -> None:
+            
             self.output: str = stdout.read().decode()
             """stdout"""
 
@@ -146,7 +143,7 @@ class ssh:
         self.close: Callable[[], None] = self.__client.close
         """Close the connection to the remote computer"""
 
-    def run(self, command:str) -> ssh.Response:
+    def run(self, command:str) -> SSH.Response:
         """
         Send a command to the remote computer
         """
@@ -352,7 +349,7 @@ class api:
             def __init__(self,
                 torrent: 'TorrentDictionary',
                 file: 'TorrentFile'
-            ):
+            ) -> None:
                 from .pc import Path
                 
                 self.path = Path(f'{torrent.save_path}/{file.name}')
@@ -433,7 +430,7 @@ class api:
 
             def __repr__(self) -> str:
                 from .text import abbreviate
-                from .classOBJ import loc
+                from .classtools import loc
 
                 return f"<File '{abbreviate(num=30, string=self.title)}' @{loc(obj=self)}>"
 
@@ -878,70 +875,11 @@ class Magnet(api.qBitTorrent):
                     partial(value, self=self, magnet=self)
                 )
 
-    def __repr__(self):
-        from .text import abbreviate
-        from .classOBJ import loc
+    def __repr__(self) -> str:
+        from .classtools import loc
+        from .text import abbr
 
-        return f"<Magnet '{abbreviate(30, self.title.strip())}' @{loc(self)}>"
-
-class Soup:
-    """
-    Wrapper for bs4.BeautifulSoup
-
-    Uses 'html.parser'
-    """
-
-    def __init__(self,
-        soup: 'str | BeautifulSoup | bytes'
-    ):
-        from lxml.etree import _Element, HTML
-        from bs4 import BeautifulSoup
-
-        if isinstance(soup, BeautifulSoup):
-            self.__soup = soup
-        
-        elif isinstance(soup, (str, bytes)):
-            self.__soup = BeautifulSoup(
-                markup=soup,
-                features='html.parser'
-            )
-
-        self.select = self.__soup.select
-        """Perform a CSS selection operation on the current element."""
-
-        self.select_one = self.__soup.select_one
-        """Perform a CSS selection operation on the current element."""
-
-        self.__dom: _Element = HTML(str(soup))
-
-    def element(self,
-        by: Literal['class', 'id', 'xpath', 'name', 'attr'],
-        name: str
-    ) -> list[Soup]:
-        """
-        Get List of Elements by query
-        """
-
-        if by in ['class', 'classname', 'class_name']:
-            items = self.__soup.select(selector=f'.{name}')
-
-        elif by in ['id']:
-            items = self.__soup.find_all(id=name)
-
-        elif by in ['xpath']:
-            items = self.__dom.xpath(name)
-
-        elif by in ['name']:
-            items = self.__soup.find_all(name=name)
-
-        elif by in ['attr', 'attribute']:
-            t, c = name.split('=')
-            items = self.__soup.find_all(attrs={t: c})
-
-        else:
-            items = []
-
-        return [Soup(i) for i in items]
+        return f"<Magnet '{abbr(30, self.title.strip())}' @{loc(self)}>"
 
 class Driver:
     """
@@ -950,55 +888,49 @@ class Driver:
     Wrapper for FireFox Selenium Session
     """
 
-    current_url: str
+    URL: str|None
     """URL of the Current Page"""
+
+    HTML: str|None
+    """HTML of the Current Page"""
 
     def __init__(self,
         headless: bool = True,
-        fast_load: bool = False,
+        eager: bool = False,
         timeout: int = 300
     ) -> None:
-        from selenium.webdriver import FirefoxService, FirefoxOptions, Firefox
+        from selenium.webdriver import FirefoxOptions, Firefox
         from selenium.webdriver.firefox.options import Options
-        from selenium.webdriver.firefox.service import Service
-        from subprocess import CREATE_NO_WINDOW
-        from threading import Thread
-        from .process import SysTask
+        from .process import SysTask, Sleeper
         from .terminal import Log
 
         Log.VERB(
             f'Starting Session\n'+ \
             f'{headless=}\n'+ \
-            f'{fast_load=}\n'+ \
+            f'{eager=}\n'+ \
             f'{timeout=}'
         )
 
-        service: Service = FirefoxService()
-        service.creation_flags = CREATE_NO_WINDOW # Suppress Console Output
-
         options: Options = FirefoxOptions()
-        options.add_argument(argument="--disable-search-engine-choice-screen")
 
-        if fast_load:
+        if eager:
             options.page_load_strategy = 'eager'
 
         if headless:
-            options.add_argument(argument="--headless")
+            options.add_argument("--headless")
 
         # Start Chrome Session with options
-        self._drvr = Firefox(options=options, service=service)
+        self._drvr = Firefox(options=options)
 
         self.Task = SysTask(self._drvr.service.process.pid)
-        """Firefox.exe PID"""
 
         # Set Timeouts
         self._drvr.command_executor.set_timeout(timeout)
         self._drvr.set_page_load_timeout(time_to_wait=timeout)
         self._drvr.set_script_timeout(time_to_wait=timeout)
 
-        Thread(
-            target = self.__background
-        ).start()
+        # Close the session if the main thread ends
+        Sleeper(func=self.close())
 
     def reload(self) -> None:
         """Reload the Current Page"""
@@ -1007,14 +939,6 @@ class Driver:
         Log.VERB(f'Reloading Page: {self.current_url=}')
 
         self._drvr.refresh()
-
-    def clear_cookies(self) -> None:
-        """Clear All Session Cookies"""
-        from .terminal import Log
-
-        Log.INFO('Clearing Session Cookies')
-
-        self._drvr.delete_all_cookies()
 
     def run(self, code:str):
         """Run JavaScript Code on the Current Page"""
@@ -1046,33 +970,6 @@ class Driver:
             mess = mess[:mess.find('\nStacktrace:')]
 
             raise RuntimeError(mess) from None
-
-    def __background(self) -> None:
-        from selenium.common.exceptions import WebDriverException
-        from threading import main_thread
-        from .terminal import Log
-        from time import sleep
-
-        while True:
-
-            sleep(.25)
-
-            try:
-                # Update the current url value
-                self.current_url = self._drvr.current_url
-            
-            # Stop if the session is closed
-            except WebDriverException:
-                return
-
-            # Close session if the main thread is terminated
-            if not main_thread().is_alive():
-
-                Log.WARN('Closing Session: Main Thread Terminated')
-
-                self._drvr.quit()
-
-                return
 
     def element(self,
         by: Literal['class', 'id', 'xpath', 'name', 'attr'],
@@ -1123,14 +1020,6 @@ class Driver:
 
                 return elements
 
-    def html(self) -> str | None:
-        from selenium.common.exceptions import WebDriverException
-
-        try:
-            return self._drvr.page_source
-        except WebDriverException:
-            return None
-
     def open(self,
         url: str
     ) -> None:
@@ -1167,6 +1056,27 @@ class Driver:
             self._drvr.quit()
         except InvalidSessionIdException:
             pass
+
+    def __getattr__(self, name:str):
+        from selenium.common.exceptions import WebDriverException
+
+        match name:
+
+            case 'HTML':
+                try:
+                    return self._drvr.page_source
+                except WebDriverException:
+                    return None
+                
+            case 'URL':
+                try:
+                    return self._drvr.current_url
+                except WebDriverException:
+                    return None
+            
+            case _:
+
+                return self.__dict__[name]
 
 def download(
     url: str,

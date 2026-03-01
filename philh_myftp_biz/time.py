@@ -189,7 +189,7 @@ class from_stamp:
     
     def __repr__(self) -> str:
         from .text import abbreviate
-        from .classOBJ import loc
+        from .classtools import loc
 
         return f"<from_stamp '{abbreviate(30, self.ISO)}' @{loc(self)}>"
 
@@ -205,7 +205,7 @@ class from_stamp:
     def __lt__(self,
         other: Any|SupportsFloat
     ) -> bool:
-        from .classOBJ import path
+        from .classtools import path
 
         if isinstance(other, (from_stamp, int, float)):
             return (self.unix < float(other))
@@ -216,7 +216,7 @@ class from_stamp:
     def __gt__(self, 
         other: Any|SupportsFloat
     ) -> bool:
-        from .classOBJ import path
+        from .classtools import path
 
         if isinstance(other, (from_stamp, int, float)):
             return (self.unix > float(other))
@@ -239,8 +239,8 @@ def from_string(
     Get details of time string
     """
     from dateutil.parser._parser import ParserError
+    from .classtools import classpath
     from dateutil import parser
-    from .classOBJ import path
 
     try:
     
@@ -249,7 +249,7 @@ def from_string(
     
     except OSError, ParserError:
     
-        raise TypeError(path(string))
+        raise TypeError(classpath(string))
 
 def from_ymdhms(
     year:   int = 0,

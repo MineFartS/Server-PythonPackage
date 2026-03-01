@@ -6,12 +6,12 @@ if TYPE_CHECKING:
 
 class ServiceDisabledError(Exception):
 
-    def __init__(self, serv:'Service'):
+    def __init__(self, serv:'Service') -> None:
         super().__init__(str(serv.path))
 
 class Repo:
 
-    def __init__(self, path:Path):
+    def __init__(self, path:Path) -> None:
         from git import Repo
         
         self._repo = Repo(str(path))
@@ -71,13 +71,13 @@ class Module(Path):
 
     def __init__(self,
         module: 'str | Path'
-    ):
+    ) -> None:
         from .file import YAML
 
         #====================================================
         # INIT
 
-        Path.__init__(self, module)
+        super().__init__(module)
 
         #====================================================
         # LOAD CONFIGURATION

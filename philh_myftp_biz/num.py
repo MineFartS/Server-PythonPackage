@@ -1,8 +1,12 @@
-from sys import maxsize as maxint # pyright: ignore[reportUnusedImport]
-from math import trunc, floor # pyright: ignore[reportUnusedImport]
-from random import randint, randrange # pyright: ignore[reportUnusedImport]
-
 from typing import Literal, SupportsInt, SupportsFloat
+
+#========================================================
+
+from sys import maxsize as maxint # pyright: ignore[reportUnusedImport]
+
+from math import trunc, floor # pyright: ignore[reportUnusedImport]
+
+from random import randint, randrange # pyright: ignore[reportUnusedImport]
 
 #========================================================
 
@@ -14,21 +18,6 @@ def digit(num:int, i:int) -> int:
     """
 
     return int( str(num) [i] )
-
-def shuffle_range(
-    MIN: int,
-    MAX: int
-):
-    """
-    Get a range of numbers, but shuffled
-    """
-    from .array import List
-
-    ordered = List(range(MIN, MAX+1))
-
-    ordered.shuffle()
-
-    return ordered
 
 def clamp(
     x:   int|float,

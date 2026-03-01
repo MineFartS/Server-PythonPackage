@@ -1,11 +1,12 @@
 from typing import TYPE_CHECKING
+from functools import partial
 
 if TYPE_CHECKING:
     from .pc import Path
 
 #=================================
 
-def __FFMPEG(name:str):
+def __FFMPEG(name:str) -> 'Path':
     from .file import temp, ZIP
     from .web import download
     from .terminal import Log
@@ -52,9 +53,9 @@ def __FFMPEG(name:str):
 
     return exe
 
-FFMPEG  = lambda: __FFMPEG(name='ffmpeg')
+FFMPEG : partial[Path] = partial(__FFMPEG, 'ffmpeg')
 
-FFPROBE = lambda: __FFMPEG(name='ffprobe')
+FFPROBE: partial[Path] = partial(__FFMPEG, 'ffprobe')
 
 #=================================
 
@@ -64,14 +65,13 @@ def COOKIES() -> 'Path':
     from .file import temp
 
     # Declare 'cookies.txt' location
-    Cookies = temp(name='cookies', ext='txt', id='latest')
-    """Cookies.txt"""
+    CookiesTXT = temp(name='cookies', ext='txt', id='0')
 
     # Check if 'cookies.txt' does not exist
-    if not Cookies.exists():
+    if not CookiesTXT.exists():
 
         # Create Empty CookieJar
-        CJ = MozillaCookieJar(filename=str(Cookies))
+        CJ = MozillaCookieJar(filename=str(CookiesTXT))
 
         # Populate the CookieJar with cookies from FireFox
         for cookie in firefox():
@@ -80,6 +80,6 @@ def COOKIES() -> 'Path':
         # Save the cookies to 'cookies.txt'
         CJ.save()
 
-    return Cookies
+    return CookiesTXT
 
 #=================================

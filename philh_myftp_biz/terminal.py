@@ -5,6 +5,12 @@ if TYPE_CHECKING:
     from .db import Color
     from .pc import Path
 
+#========================================================
+
+_cls_cmd = '8005951a000000000000008c162a2a2a20436c656172205465726d696e616c202a2a2a942e'
+
+#========================================================
+
 def width() -> int:
     """
     Get the # of columns in the terminal
@@ -153,11 +159,10 @@ def cls() -> None:
 
     (Prints a hexidecimal value so the philh.myftp.biz.run can send the signal up from a subprocess)
     """
-    from .text import hex
     from os import system
     from .pc import OS
 
-    print(hex.encode('*** Clear Terminal ***'))
+    print(_cls_cmd)
     
     if OS == 'windows':
         system('cls')

@@ -24,7 +24,7 @@ def int_stripper(string:str) -> None | int:
     """
     Remove all non-numerical characters from an alphanumeric string
     """
-    from .num import valid
+    from .num import is_int
 
     # Copy the string
     string = str(string)
@@ -33,7 +33,7 @@ def int_stripper(string:str) -> None | int:
     for char in string:
 
         # If the character is not an integer
-        if not valid.int(char):
+        if not is_int(char):
 
             # Remove the character from the string
             string = string.replace(char, '')
@@ -173,25 +173,6 @@ def random(length:int) -> str:
         k = length
     ))
 
-def starts_with_any (
-    text: str,
-    values: list[str]
-) -> bool:
-    """
-    Check if string starts with any of values
-    """
-    return any([text.startswith(v) for v in values])
-
-def ends_with_any (
-    text: str,
-    values: list[str]
-) -> bool:
-    """
-    Check if string ends with any of values
-    """
-
-    return any([text.endswith(v) for v in values])
-
 def rm_emojis(
     text: str,
     sub: str = ''
@@ -229,7 +210,7 @@ def similarity(
 
     return SequenceMatcher(None, str(a), str(b)).ratio()
 
-def abbreviate(
+def abbr(
     num: int,
     string: str,
     inclusive: bool = True,
@@ -251,7 +232,7 @@ def abbreviate(
 def from_function(func: Callable) -> str:
     from ast import parse, walk, Lambda, unparse
     from inspect import getsourcelines
-    from .classOBJ import path
+    from .classtools import path
 
     source = ''.join(getsourcelines(func)[0])
 

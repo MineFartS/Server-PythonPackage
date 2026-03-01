@@ -1,5 +1,5 @@
 from json import load, loads, dump, dumps # pyright: ignore[reportUnusedImport]
-from typing import Any, ItemsView
+from typing import Any, ItemsView, Callable
 
 #========================================================
 
@@ -19,42 +19,36 @@ def valid(value:str) -> bool:
 
 class Dict[V]:
     """
-    Dict/Json Wrapper
+    Dict Wrapper
 
     Stores data to the local disk instead of memory
     """
 
-    type RAW = dict[str, V]
-    type OUT = Dict[V]
+    read: Callable[[], dict[str, V]]
+    """Read Data"""
+
+    save: Callable[[dict[str, V]], None]
+    """Save Data"""
 
     def __init__(self,
-        t: RAW|OUT|Any = {}
+        t: Dict | dict[str,V] | Any = {}
     ) -> None:
         from .file import PKL, temp
-        from .classOBJ import path
 
         if isinstance(t, Dict):
-            self._var = t._var
+            self.var = t.var
 
         elif hasattr(t, 'read') and hasattr(t, 'save'):
-            self._var = t
+            self.var = t
 
-        elif isinstance(t, dict):
-            self._var = PKL(
+        else:
+            self.var = PKL(
                 path = temp('table', 'json'),
                 default = t
             )
 
-        else:
-            raise TypeError(path(t))
-
-    def read(self) -> RAW:
-        """Read Data"""
-        return self._var.read()
-    
-    def save(self, data:RAW) -> None:
-        """Save Data"""
-        return self._var.save(data)
+        self.read = self.var.read
+        self.save = self.var.save
 
     def items(self) -> ItemsView[str, V]:
         return self.read().items()
@@ -77,7 +71,7 @@ class Dict[V]:
     ) -> None:
 
         # Get the raw dictionary
-        data = self.read()
+        data: dict[str, V] = self.read()
 
         # Update the key with the value
         data[key] = value
@@ -88,7 +82,7 @@ class Dict[V]:
     def __delitem__(self, key:str) -> None:
         
         # Get the raw dictionary
-        arr = self.read()
+        arr: dict[str, V] = self.read()
         
         # Remove the key
         del arr[key]
@@ -96,49 +90,18 @@ class Dict[V]:
         # Save the dictionary
         self.save(arr)
 
-    def __contains__(self, value:V):
-        return (value in self.read())
+    def __contains__(self, key:V) -> bool:
+
+        keys = self.read().keys()
+
+        return (key in keys)
     
-    def __iadd__(self,
-        dict: RAW
-    ) -> OUT:
-        """
-        Append another dictionary
-        """
-
-        # Get the raw dictionary
-        data = self.read()
-        
-        # Iter through all keys
-        for name in dict:
-            
-            # Set the key to the value of the input dictionary
-            data[name] = dict[name]
-        
-        # Save the data
-        self.save(data)
-
-        return self
-
     def __str__(self) -> str:
         return dumps(
             obj = self.read(),
             indent = 2
         )
+    
+    __repr__ = __str__
 
 #========================================================
-
-from json import JSONEncoder as __JSONEncoder
-
-class StringEncoder(__JSONEncoder):
-
-    def default(self, obj:Any):
-
-        try:
-            return super().default(obj)
-        
-        except TypeError:
-            
-            string = str(obj)
-
-            return super().default(string)

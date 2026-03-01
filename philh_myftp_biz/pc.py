@@ -583,11 +583,20 @@ class Path:
     def mkdir(self) -> None:
         """
         Make this directory
+        (will make parent directory if file)
         """
         from os import makedirs
 
+        if self.isfile():
+
+            folder = self.parent().path
+
+        else:
+
+            folder = self.path
+
         makedirs(
-            name = self.path,
+            name = folder,
             exist_ok = True
         )
 
@@ -820,7 +829,7 @@ def relscan(
         'dst': Path('D:/Child1')
     }]
     """
-    from .classOBJ import SharedBuffer
+    from .classtools import SharedBuffer
     from shutil import copytree
     from .process import thread
 

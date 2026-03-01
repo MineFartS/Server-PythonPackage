@@ -1,4 +1,4 @@
-from typing import Callable, Any, Iterator
+from typing import Callable, Any, Iterator, Self
 
 #========================================================
 
@@ -9,9 +9,15 @@ class List[V]:
     Stores data to the local disk instead of memory
     """
 
+    read: Callable[[], list[V]]
+    """Read Data"""
+
+    save: Callable[[list[V]], None]
+    """Save Data"""
+
     def __init__(self,
         a: Iterator[V] | list[V] | tuple[V] = []
-    ):
+    ) -> None:
         from .file import PKL, temp
 
         if isinstance(a, List):
@@ -26,21 +32,10 @@ class List[V]:
                 default = list(a)
             )
         
-        self.read: Callable[[], list[V]] = self.var.read
-        """Read Data"""
+        self.read = self.var.read
+        self.save = self.var.save
 
-        self.save: Callable[[list[V]], None] = self.var.save
-        """Save Data"""
-    
-    def rm_duplicates(self):
-        data: list[V] = self.read()
-        data_ = []
-        for item in data:
-            if item not in data_:
-                data_.append(item)
-        self.save(data_)
-
-    def __iter__(self):
+    def __iter__(self) -> Iterator[V]:
         return iter(self.read())
 
     def __len__(self) -> int:
@@ -60,8 +55,9 @@ class List[V]:
     def __setitem__(self,
         key: int,
         value: V
-    ):
-        data = self.read()
+    ) -> None:
+        
+        data: list[V] = self.read()
 
         data[key] = value
         
@@ -69,15 +65,15 @@ class List[V]:
 
     def __delitem__(self, key:int) -> None:
         
-        data = self.read()
+        data: list[V] = self.read()
 
         del data[key]
 
         self.save(data)
 
-    def __iadd__(self, value:V):
+    def __iadd__(self, value:V) -> Self:
         
-        data = self.read()
+        data: list[V] = self.read()
         
         data.append(value)
         
@@ -85,9 +81,9 @@ class List[V]:
 
         return self
     
-    def __isub__(self, value:V):
+    def __isub__(self, value:V) -> Self:
 
-        data = self.read()
+        data: list[V] = self.read()
         
         data.remove(value)
         
@@ -95,26 +91,24 @@ class List[V]:
 
         return self
 
-    def __contains__(self, value:V):
+    def __contains__(self, value:V) -> bool:
         return (value in self.read())
 
     def sorted(self,
         func: Callable[[V], Any] = lambda x: x
     ) -> List[V]:
         
-        data = self.read()
+        data: list[V] = self.read()
 
-        data = sorted(data, key=func)
+        sdata = sorted(data, key=func)
 
-        return List(data)
+        return List(sdata)
 
     def sort(self,
         func: Callable[[V], Any] = lambda x: x
     ) -> None:
         
-        data = self.read()
-
-        data = sorted(data, key=func)
+        data: list[V] = self.sorted().read()
 
         self.save(data)
 
@@ -124,34 +118,30 @@ class List[V]:
         
         if len(self) > 0:
 
-            try:
-            
-                return max(
-                    self.read(),
-                    key = func
-                )
-            
-            except ValueError:
-                return None
+            return max(
+                self.read(),
+                key = func
+            )
     
     def filtered(self,
         func: Callable[[V], Any] = lambda x: x
     ) -> List[V]:
-        from builtins import filter
 
-        return List(filter(func, self.read()))
+        filtered: filter[V] = filter(func, self.read())
+
+        return List(filtered)
     
     def filter(self,
         func: Callable[[V], Any] = lambda x: x
     ) -> None:
         
-        l: List[V] = self.filtered(func=func)
+        data: list[V] = self.filtered(func=func).read()
 
-        self.save(l.read())
+        self.save(data)
 
-    def reversed(self):
+    def reversed(self) -> List[V]:
 
-        data = self.read()
+        data: list[V] = self.read()
 
         data.reverse()
 
@@ -159,14 +149,14 @@ class List[V]:
     
     def reverse(self):
 
-        l = self.reversed()
+        data: list[V] = self.reversed().read()
 
-        self.save(l)
+        self.save(data)
 
     def random(self) -> None | V:
         from random import choice
 
-        data = self.read()
+        data: list[V] = self.read()
 
         if len(data) > 0:
             return choice(data)
@@ -174,7 +164,7 @@ class List[V]:
     def shuffled(self) -> List[V]:
         from random import shuffle
 
-        data = self.read()
+        data: list[V] = self.read()
 
         shuffle(data)
 
@@ -182,9 +172,9 @@ class List[V]:
 
     def shuffle(self) -> None:
 
-        l = self.shuffled()
+        data: list[V] = self.shuffled().read()
 
-        self.save(l)
+        self.save(data)
 
     def __str__(self) -> str:
         from .json import dumps
@@ -193,10 +183,12 @@ class List[V]:
             obj = self.read(),
             indent = 2
         )
+    
+    __repr__ = __str__
 
 #========================================================
 
-def _copy(
+def copy(
     array: list|tuple
 ) -> list:
     
@@ -208,7 +200,7 @@ def _copy(
 
 def stringify(array:list) -> list[str]:
 
-    array = _copy(array)
+    array = copy(array)
 
     for x, item in enumerate(array):
         array[x] = str(item)
@@ -217,40 +209,11 @@ def stringify(array:list) -> list[str]:
 
 def intify(array:list) -> list[int]:
 
-    array = _copy(array)
+    array = copy(array)
 
     for x, item in enumerate(array):
         array[x] = int(item)
 
     return array
-
-def auto_convert(array:list):
-    from .text import auto_convert
-
-    array = _copy(array)
-
-    for x, a in enumerate(array):
-        array[x] = auto_convert(a)
-
-    return array
-
-def priority(
-    _1: int|None,
-    _2: int|None,
-    reverse: bool = False
-) -> float:  
-    
-    if _1 is None:
-        _1 = 0
-
-    if _2 is None:
-        _2 = 0
-
-    p: float = _1 + (_2 / (1000**1000))
-    
-    if reverse:
-        p *= -1
-
-    return p
 
 #========================================================

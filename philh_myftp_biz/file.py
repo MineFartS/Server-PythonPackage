@@ -101,59 +101,47 @@ class VHDX:
     .VHDX File
     """
 
-    __via_with = False
-
-    def __enter__(self) -> None:
-        self.__via_with = True
-        if not self.mount():
-            return
-
-    def __exit__(self, *_) -> None:
-        if self.__via_with:
-            self.dismount()
-
     def __init__(self,
         VHD: 'Path',
         MNT: 'Path',
         timeout: int = 30,
-        ReadOnly: bool = False
+        readonly: bool = False
     ) -> None:
+        
         self.VHD = VHD
         self.MNT = MNT
-        self.__timeout: int = timeout
-        self.__readonly: bool = ReadOnly
+        
+        self.timeout: int = timeout
+        
+        self.readonly: bool = readonly
 
     def mount(self) -> None:
-        from .__init__ import run
+        from .process import RunHidden
 
-        run(
+        RunHidden(
             args = [
                 f'Mount-VHD',
                 '-Path', self.VHD,
                 '-NoDriveLetter',
                 '-Passthru',
-                {True:'-ReadOnly', False:''} [self.__readonly],
+                ('-ReadOnly' if self.readonly else ''),
                 '| Get-Disk | Get-Partition | Add-PartitionAccessPath',
                 '-AccessPath', self.MNT
             ],
-            wait = True,
-            terminal = 'pscmd',
-            hide = True,
-            timeout = self.__timeout
+            terminal = 'ps',
+            timeout = self.timeout
         )
 
-    def dismount(self):
-        from .__init__ import run
+    def dismount(self) -> None:
+        from .process import RunHidden
         
-        run(
+        RunHidden(
             args = [
                 f'Dismount-DiskImage',
                 '-ImagePath', self.VHD
             ],
-            wait = True,
-            terminal = 'pscmd',
-            hide = True,
-            timeout = self.__timeout
+            terminal = 'ps',
+            timeout = self.timeout
         )
 
         # Delete the mounting directory
@@ -261,65 +249,77 @@ class ZIP:
     .ZIP File
     """
 
-    def __init__(self, zipfile:'Path'):
+    def __init__(self,
+        path: 'Path'
+    ) -> None:
         from zipfile import ZipFile
 
-        self.zipfile = zipfile
-        self.__zip = ZipFile(str(zipfile))
-        self.files = self.__zip.namelist()
+        self.path = path
 
-    def search(self, term:str) -> Generator[str]:
+        self._zip = ZipFile(str(path))
+        
+        self.files: Callable[[], list[str]] = self._zip.namelist
+
+    def search(self,
+        term: str
+    ) -> Generator[str]:
         """
         Search for files in the archive
 
         Ex: ZIP.search('test123') -> 'test123.json'
         """
-        for f in self.files:
+
+        for f in self.files():
+            
             if term in f:
+                
                 yield f
 
-    def extractFile(self, file:str, path:'Path') -> None:
+    def extractFile(self,
+        file: str, 
+        savepath: 'Path'
+    ) -> None:
         """
         Extract a single file from the zip archive
         """
-        from zipfile import BadZipFile
-        from .terminal import warn
 
         folder = temp('extract', 'zip')
 
-        try:
-            self.__zip.extract(file, str(folder))
+        self._zip.extract(file, str(folder))
 
-            for p in folder.descendants():
-                if p.isfile():
-                   p.move(path)
-                   folder.delete()
-                   break 
-
-        except BadZipFile as e:
-            warn(e)
+        for p in folder.descendants():
+            
+            if p.isfile():
+                
+                p.move(savepath)
+                
+                folder.delete()
+                
+                break 
 
     def extractAll(self,
         dst: 'Path',
         show_progress: bool = True
-    ):
+    ) -> None:
         """
         Extract all files from the zip archive
         """
         from tqdm import tqdm
-        from .pc import mkdir
 
-        mkdir(dst)
+        dst.mkdir()
 
         if show_progress:
             
             with tqdm(total=len(self.files), unit=' file') as pbar:
-                for file in self.files:
+                
+                for file in self.files():
+                    
                     pbar.update(1)
+
                     self.extractFile(file, str(dst))
 
         else:
-            self.__zip.extractall(str(dst))
+            self._zip.extractall(str(dst))
 
 class CSV(_Template):
     """
