@@ -831,12 +831,12 @@ def relscan(
     """
     from .classtools import SharedBuffer
     from shutil import copytree
-    from .process import thread
+    from .process import Thread
 
     buff = SharedBuffer()
     
     # Copytree dry run
-    t = thread(
+    t = Thread(
 
         func = copytree,
 
