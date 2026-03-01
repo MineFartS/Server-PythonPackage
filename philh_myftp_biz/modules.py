@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 from .pc import Path
 
 if TYPE_CHECKING:
+    from philh_myftp_biz.process import RunHidden
     from .process import SubProcess
 
 class ServiceDisabledError(Exception):
@@ -86,7 +87,7 @@ class Module(Path):
 
         if configFile.exists():
 
-            config = YAML(configFile).read()
+            config: dict = YAML(configFile).read()
 
             self.packages: list[str] = config['packages']
 
@@ -95,16 +96,29 @@ class Module(Path):
 
         #====================================================
 
+    def __run(self,
+        func:'SubProcess',
+        args: tuple[str]
+    ) -> 'SubProcess':
+
+        largs: list[str] = list(args)
+        
+        file: Path = self.file(args[0])
+
+        largs[0] = str(file)
+
+        return func(
+            args = largs, 
+            terminal = None
+        )
+
     def run(self, *args:str) -> 'SubProcess':
         """
         Execute a new Process and wait for it to finish
         """
         from .process import Run
 
-        args = list(args)
-        args[0] = str(self.file(args[0]))
-
-        return Run(args=args, terminal='ext')
+        return self.__run(Run, args)
     
     def runH(self, *args:str) -> 'SubProcess':
         """
@@ -112,10 +126,7 @@ class Module(Path):
         """
         from .process import RunHidden
 
-        args = list(args)
-        args[0] = str(self.file(args[0]))
-
-        return RunHidden(args, terminal='ext')
+        return self.__run(RunHidden, args)
 
     def start(self, *args:str) -> 'SubProcess':
         """
@@ -123,21 +134,15 @@ class Module(Path):
         """
         from .process import Start
 
-        args = list(args)
-        args[0] = str(self.file(args[0]))
-
-        return Start(args, terminal='ext')
+        return self.__run(Start, args)
     
     def startH(self, *args:str) -> 'SubProcess':
         """
         Execute a new hidden Process simultaneously with the current execution
         """
-        from .process import Run
+        from .process import StartHidden
 
-        args = list(args)
-        args[0] = str(self.file(args[0]))
-
-        return Run(args, terminal='ext')
+        return self.__run(StartHidden, args)
     
     def cap(self, *args:str):
         """
@@ -225,25 +230,21 @@ class Service(Path):
     def __init__(self,
         path: 'str | Path',
         *args: str
-    ):
+    ) -> None:
         from .array import stringify
 
         #==============================
         # INIT
 
-        Path.__init__(self, path)
+        super().__init__(path)
 
         self.args = stringify(args)
-        
-        #==============================
 
-        self.__lockfile = self.child('__pycache__/lock.ini')
-
-        self.Enable = self.__lockfile.delete
+        self._lockfile = self.child('__pycache__/lock.ini')
 
         #==============================
 
-    def _file(self, name:str):
+    def _file(self, name:str) -> Path:
 
         # Iter through all children of the service path
         for p in self.children():
@@ -257,22 +258,28 @@ class Service(Path):
 
         raise FileNotFoundError(f'{self.path}{name}.*')
 
-    def _run(self, name:str):
+    def _run(self, name:str) -> 'RunHidden':
         from .process import RunHidden
 
         # Run the file
         return RunHidden(
-            args = [self._file(name), *self.args],
-            terminal = 'ext'
+
+            args = [
+                self._file(name), 
+                *self.args
+            ],
+            
+            terminal = None
+        
         )
 
-    def Start(self):
+    def Start(self) -> None:
         """
         Start the Service
         """
         from .terminal import Log
 
-        Log.VERB(f"Starting Service: {self.path=}")
+        Log.VERB(f"Starting Service: {self.path}")
 
         # Raise error if this serivce is disabled
         if self.Enabled():
@@ -307,33 +314,33 @@ class Service(Path):
         """
         from .terminal import Log
 
-        Log.VERB(f"Stopping Service: {self.path=}")
+        Log.VERB(f"Stopping Service: {self.path}")
 
         self._run('Stop')
 
-    def Enabled(self) -> bool:
-        """
-        """
+    def Enabled(self) -> bool:        
+        return (not self._lockfile.exists())
+
+    def Enable(self) -> None:
         from .terminal import Log
 
         Log.VERB(f"Enabling Service: {self.path=}")
-        
-        return (not self.__lockfile.exists())
+
+        # delete the lockfile
+        self._lockfile.delete()
 
     def Disable(self,
         stop: bool = True
     ) -> None:
-        """"""
         from .terminal import Log
-        from .pc import mkdir
 
         Log.VERB(f"Disabling Service: {self.path=}")
 
         #
-        mkdir(self.__lockfile.parent())
+        self._lockfile.parent().mkdir()
 
         # Create the lock file
-        self.__lockfile.open('w')
+        self._lockfile.open('w')
         
         if stop:
             self.Stop()

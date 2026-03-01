@@ -94,10 +94,6 @@ class Path:
         self.isdir = self._pure.is_dir
         """Check if path is a folder"""
 
-        # str() & repr()
-        self.__str__ = lambda: self.path
-        self.__repr__ = self.__str__
-
         # Declare 'set_access'
         self.set_access = _set_access(path=self)
         """Filesystem Access"""
@@ -111,6 +107,10 @@ class Path:
         """Visibility"""
 
         # ==================================
+
+    def __str__(self):
+        return self.path
+    __repr__ = __str__
 
     def chext(self, ext:str):
         """
@@ -707,26 +707,26 @@ class _set_access:
         yield self.path
 
         if self.path.isdir():
-            for path in self.path.descendants():
-                yield path
+
+            yield from self.path.descendants()
     
-    def readonly(self):
+    def readonly(self) -> None:
         from .terminal import Log
         from os import chmod
 
+        Log.VERB(f'Updating Access [READ ONLY]: {self.path}')
+
         for path in self.__paths():
 
-            Log.VERB(f'Updating Access [READ ONLY]: {path}')
-            
             chmod(str(path), 0o644)
 
-    def full(self):
+    def full(self) -> None:
         from .terminal import Log
         from os import chmod
 
-        for path in self.__paths():
+        Log.VERB(f'Updating Access [FULL ACCESS]: {self.path}')
 
-            Log.VERB(f'Updating Access [FULL ACCESS]: {path}')
+        for path in self.__paths():
 
             chmod(str(path), 0o777)
 

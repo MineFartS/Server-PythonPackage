@@ -156,45 +156,28 @@ class SubProcess:
 
         self.stop = self._task.stop
 
-        self.stdcomb = ''
-
-        # Start Output Stream Manager
-        Thread(self._stdout)
-
-        # Start Error Stream Manager
-        Thread(self._stderr)
-
-        # Start Status Monitor
-        Thread(self._monitor)
-
-        # Wait for process to complete if required
-        if self._wait:
-            self.wait()
-
-    def _monitor(self) -> None:
-        """
-        Monitor the Process' status
-        """
-        from .time import sleep
-        from .terminal import _cls_cmd, cls, write
+        # =====================================
 
         self.stdout  = ''
         self.stderr  = ''
         self.stdcomb = ''
 
+        # Start Status Monitor
+        Thread(self.__monitor)
+
+        # =====================================
+
+        # Wait for process to complete if required
+        if self._wait:
+            self.wait()
+
+    def __monitor(self) -> None:
+        from .terminal import _cls_cmd, cls, write
+
         stdout = iter(self._process.stdout)
         stderr = iter(self._process.stderr)
 
-        while True:
-            
-            sleep(.1)
-
-            # If the either the main exec or the subprocess is stopped 
-            if self.finished() or (not Alive()):
-                
-                self.stop()
-                
-                return
+        while self.running() and Alive():
 
             outline = next(stdout, '')
 
@@ -228,6 +211,9 @@ class SubProcess:
 
                 if not self._hide:
                     write(errline, 'err')
+
+        #
+        self.stop()
 
     def finished(self) -> bool:
         """

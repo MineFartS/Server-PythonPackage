@@ -29,15 +29,15 @@ class _Template:
 
     def __init__(self,
         path: 'Path',
-        default: Any = ''
+        default: Any = None
     ) -> None:
-        from .pc import mkdir
 
-        self._default = default
-        self._path    = path
+        self.path    = path
+
+        self.default = default
 
         # Make the parent dir of the output path
-        mkdir(path.parent())
+        path.parent().mkdir()
 
     read = Callable[[], Any]
     """
@@ -48,6 +48,22 @@ class _Template:
     """
     Read data from the file
     """
+
+    def __getattr__(self, name:str):
+        
+        match name:
+
+            case 'read':
+                
+                value = self.__dict__['read']()
+
+                if value:
+                    return value
+                else:
+                    return self.__dict__['_default']
+
+            case _:
+                return self.__dict__[name]
 
 #========================================================
 
@@ -83,17 +99,17 @@ class PKL(_Template):
         from dill import load
         
         try:
-            with self._path.open('rb') as f:
+            with self.path.open('rb') as f:
                 return load(f)
         except:
-            return self._default
+            pass
 
     def save(self,
         value: Any
     ) -> None:
         from dill import dump
         
-        with self._path.open(mode='wb') as f:
+        with self.path.open(mode='wb') as f:
             dump(obj=value, file=f)
 
 class VHDX:
@@ -156,16 +172,16 @@ class JSON(_Template):
         from json import load
 
         try:
-            return load(fp=self._path.open())
+            return load(fp=self.path.open())
         except:
-            return self._default
+            pass
 
     def save(self, data: dict) -> None:
         from json import dump
 
         dump(
             obj = data,
-            fp = self._path.open(mode='w'),
+            fp = self.path.open(mode='w'),
             indent = 3
         )
 
@@ -178,15 +194,15 @@ class INI(_Template):
         from configobj import ConfigObj
         
         try:
-            obj = ConfigObj(str(self._path))
+            obj = ConfigObj(str(self.path))
             return obj.dict()
         except:
-            return self._default
+            pass
     
     def save(self, data:dict) -> None:
         from configobj import ConfigObj
 
-        obj = ConfigObj(str(self._path))
+        obj = ConfigObj(str(self.path))
 
         for name in data:
             obj[name] = data[name]
@@ -203,23 +219,21 @@ class YAML(_Template):
 
         try:
 
-            with self._path.open() as f:
+            with self.path.open() as f:
                 data = safe_load(stream=f)
 
             if data:
                 return data
-            else:
-                return self._default
 
         except:
-            return self._default
+            pass
     
     def save(self, data:dict) -> None:
         from yaml import dump
 
         dump(
             data = data, 
-            stream = self._path.open(mode='w'),
+            stream = self.path.open(mode='w'),
             default_flow_style = False,
             sort_keys = False
         )
@@ -234,15 +248,15 @@ class TXT(_Template):
         Read data from the txt file
         """
         try:
-            return self._path.open(mode='r').read()
+            return self.path.open(mode='r').read()
         except:
-            return self._default
+            pass
     
     def save(self, data:str) -> None:
         """
         Save data to the txt file
         """
-        self._path.open(mode='w').write(str(data))
+        self.path.open(mode='w').write(str(data))
 
 class ZIP:
     """
@@ -330,15 +344,15 @@ class CSV(_Template):
         from csv import reader
 
         try:
-            with self._path.open() as csvfile:
+            with self.path.open() as csvfile:
                 return reader(csvfile)
         except:
-            return self._default
+            pass
 
     def save(self, data:list[list]) -> None:
         from csv import writer
 
-        with self._path.open('w') as csvfile:
+        with self.path.open('w') as csvfile:
             writer(csvfile).writerows(data)
 
 class TOML(_Template):
@@ -350,15 +364,15 @@ class TOML(_Template):
         from toml import load
 
         try:
-            with self._path.open() as f:
+            with self.path.open() as f:
                 return load(f)
         except:
-            return self._default
+            pass
         
     def save(self, data:dict) -> None:
         from tomli_w import dump
 
-        with self._path.open('wb') as f:
+        with self.path.open('wb') as f:
             dump(data, f, indent=2)
 
 #========================================================

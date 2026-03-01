@@ -930,7 +930,7 @@ class Driver:
         self._drvr.set_script_timeout(time_to_wait=timeout)
 
         # Close the session if the main thread ends
-        Sleeper(func=self.close())
+        Sleeper(func=self.close)
 
     def reload(self) -> None:
         """Reload the Current Page"""
