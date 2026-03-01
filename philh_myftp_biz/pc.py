@@ -1,8 +1,9 @@
-from typing import Literal, Self, Generator, TYPE_CHECKING, Any
+from typing import Literal, Self, Generator, TYPE_CHECKING, Any, Callable
+from dataclasses import dataclass
 
 if TYPE_CHECKING:
     from .time import from_stamp
-    from pathlib import PurePath
+    from pathlib import PurePath as __PurePath
 
 from socket import gethostname as NAME # pyright: ignore[reportUnusedImport]
 
@@ -22,21 +23,42 @@ match __name:
 
 #========================================================
 
+@dataclass
+class PathPair:
+
+    src: Path
+    dst: Path
+
+    def __getattr__(self, key:str) -> 'Path':
+        
+        value = self.__dict__[key]
+
+        if isinstance(value, Path):
+            return value
+        else:
+            return Path(value)
+        
+    __getitem__ = __getattr__
+
 class Path:
     """
     File/Folder
     """
 
+    exists: Callable[[], bool]
+    isdir: Callable[[], bool]
+    isfile: Callable[[], bool]
+    
     def __init__(self,
-        *input: 'str|PurePath'
+        *input: 'str|__PurePath'
     ) -> None:
-        from pathlib import Path as libPath
-        from os import path
+        from pathlib import Path as _Path
+        from os import path as _path
 
         # ==================================
 
         if len(input) > 1:
-            joined: str = path.join(*input)
+            joined: str = _path.join(*input)
             self.path = joined.replace('\\', '/')
 
         elif isinstance(input[0], Path):
@@ -46,31 +68,35 @@ class Path:
             self.path = input[0].as_posix()
 
         else:
-            self.path = libPath(input[0]).absolute().as_posix()
+            self.path = _Path(input[0]).absolute().as_posix()
 
         # ==================================
-        # Declare path string
 
-        if self.path[0][-1] == '/':                
+        # Append trailing slash
+        if _path.isdir(self.path) and (self.path[-1] != '/'):
             self.path += '/'
 
+        # Replace backslashes with forward slashes
         self.path: str = self.path.replace('\\', '/').replace('//', '/')
-        """File Path with forward slashes"""
 
         # ==================================
 
         # Declare 'pathlib.Path' attribute
-        self._libPath = libPath(self.path)
+        self._pure = _Path(self.path)
 
-        # Link 'exists', 'isfile', & 'isdir' functions from 'self._libPath'
-        self.exists = self._libPath.exists
+        # Link 'exists', 'isfile', & 'isdir' functions from 'self._pure'
+        self.exists = self._pure.exists
         """Check if path exists"""
 
-        self.isfile = self._libPath.is_file
+        self.isfile = self._pure.is_file
         """Check if path is a file"""
         
-        self.isdir = self._libPath.is_dir
+        self.isdir = self._pure.is_dir
         """Check if path is a folder"""
+
+        # str() & repr()
+        self.__str__ = lambda: self.path
+        self.__repr__ = self.__str__
 
         # Declare 'set_access'
         self.set_access = _set_access(path=self)
@@ -83,12 +109,6 @@ class Path:
         # Declare 'visibility'
         self.visibility = _visibility(path=self)
         """Visibility"""
-
-        # ==================================
-
-        # Add trailing '/'
-        if (not self.path.endswith('/')) and self.isdir():
-            self.path += '/'
 
         # ==================================
 
@@ -128,7 +148,7 @@ class Path:
         """
         
         try:
-            return self._libPath.is_relative_to(str(parent))
+            return self._pure.is_relative_to(str(parent))
         
         except ValueError:
             return False
@@ -139,7 +159,7 @@ class Path:
         """
         return child.ischild(self)
 
-    def isrelated(self, path:Path):
+    def isrelated(self, path:Path) -> bool:
         """
         Check if this path is related to another
         
@@ -160,7 +180,7 @@ class Path:
         """
         Get path with Symbolic Links Resolved
         """
-        return Path(self._libPath.resolve(strict=True))
+        return Path(self._pure.resolve(strict=True))
     
     def child(self, *name:str) -> Path:
         """
@@ -180,11 +200,6 @@ class Path:
             
         else:
             return Path(self.path + name[0])
-
-    def __str__(self) -> str:
-        return self.path
-
-    __repr__ = __str__
     
     def __format__(self, spec:str) -> str:
         return f'{self.path:{spec}}'
@@ -209,8 +224,8 @@ class Path:
         Check if path is Symbolic Link or Directory Junction
         """
 
-        SYMLINK : bool = self._libPath.is_symlink()
-        JUNCTION: bool = self._libPath.is_junction()
+        SYMLINK : bool = self._pure.is_symlink()
+        JUNCTION: bool = self._pure.is_junction()
 
         return (SYMLINK or JUNCTION)
 
@@ -244,7 +259,7 @@ class Path:
 
         else:
 
-            for p in self._libPath.iterdir():
+            for p in self._pure.iterdir():
                 
                 yield Path(p)
 
@@ -261,9 +276,10 @@ class Path:
                              | - Descendant
         ```
         """
-        for root, dirs, files in self._libPath.walk():
 
-            for item in (dirs + files):
+        for root, dirs, files in self._pure.walk():
+
+            for item in (*dirs, *files):
             
                 yield Path(root, item)
 
@@ -280,16 +296,8 @@ class Path:
         """
         Get parent of current path
         """ 
-        return Path(self._libPath.parent.as_posix() + '/')
+        return Path(self._pure.parent.as_posix() + '/')
 
-    def var(self,
-        name: str
-    ) -> '_var':
-        """
-        Get Variable Object for storing custom metadata
-        """
-        return _var(file=self, title=name)
-    
     def sibling(self, item:str) -> Path:
         """
         Get sibling of current path
@@ -319,13 +327,6 @@ class Path:
         from .db import MimeType
 
         return MimeType.Path(self)
-
-    def ismedia(self) -> bool:
-        """
-        Checks if the current path is an image, video, or audio file
-        """
-
-        return (self.type() in ['image', 'video', 'audio'])
 
     def delete(self) -> None:
         """
@@ -388,7 +389,7 @@ class Path:
         Ex: 'C:/example.txt' -> 'example' 
         """
 
-        name = self._libPath.name
+        name = self._pure.name
 
         # Check if file has ext
         if self.ext():
@@ -399,24 +400,29 @@ class Path:
             # Return filename
             return name
 
-    def seg(self, i:int=-1) -> str:
+    def seg(self,
+        i: int = -1
+    ) -> str:
         """
         Returns segment of path split by '/'
-        (Ignores last slash on paths)
+        (Ignores last slash)
 
         EXAMPLES:
-        
-            Path('C:/example/test.log').seg(-1) -> 'test.log'
+        ```
+        >>> Path('C:/example/test.log').seg(-1)
+        'test.log'
 
-            Path('C:/example/').seg(-1) -> 'example'
+        >>> Path('C:/example/').seg(-1)
+        'example'
+        ```
         """
         
         if self.path[-1] == '/':
-            path: str = self.path[:-1]
+            path = self.path[:-1]
         else:
             path = self.path
         
-        return path.split(sep='/') [i]
+        return path.split(sep='/')[i]
 
     def copy(
         self,
@@ -434,7 +440,7 @@ class Path:
             f'{dst=}'
         )
 
-        files: list[dict[Literal['src', 'dst'], Path]] = []
+        files: list[PathPair] = []
 
         try:
 
@@ -445,37 +451,37 @@ class Path:
 
             # If the source is file and destination is folder 
             elif dst.isdir():
-                files = [{
-                    'src': self, 
-                    'dst': dst.child(self.seg())
-                }]
+                files = [PathPair(
+                    src = self, 
+                    dst = dst.child(self.seg())
+                )]
                 
             # If both the source and destination are files
             else:
-                files = [{
-                    'src': self, 
-                    'dst': dst
-                }]
+                files = [PathPair(
+                    src = self, 
+                    dst = dst
+                )]
 
             # Iter through source and destination pairs
             for file in files:
 
                 Log.VERB(
                     f'Copying File\n'+ \
-                    f'{file['src']=}\n'+ \
-                    f'{file['dst']=}'
+                    f'{file.src=}\n'+ \
+                    f'{file.dst=}'
                 )
 
                 # Delete destination file
-                file['dst'].delete()
+                file.dst.delete()
 
                 # Create the parent folder of the destination file
-                mkdir(file['dst'].parent())
+                file.dst.parent().mkdir()
 
                 # Copy the source file to the destination
                 copyfile(
-                    src = str(file['src']),
-                    dst = str(file['dst'])
+                    src = str(file.src),
+                    dst = str(file.dst)
                 )
 
             Log.VERB(
@@ -528,9 +534,80 @@ class Path:
 
     def relative(self, ancestor:Path) -> str:
 
-        relpath = self._libPath.relative_to(other=ancestor.path)
+        relpath = self._pure.relative_to(other=ancestor.path)
         
         return relpath.as_posix()
+
+    def __setitem__(self,
+        key: Any, 
+        value: Any
+    ) -> None:
+        from .text import hex
+
+        keyedpath: str = f'{self}:{hex.encode(key)}'
+
+        try:
+
+            # Store current mtime
+            og_mtime = _mtime(self).get()
+
+            with open(file=keyedpath, mode='w') as store:
+
+                edata: str = hex.encode(value)
+
+                store.write(edata)
+
+            # Restore mtime
+            _mtime(path=self).set(mtime=og_mtime)
+        
+        except OSError as e:
+
+            raise OSError(f"Error setting var '{key}' at '{self.file}'") from e
+
+    def __getitem__(self,
+        key: Any
+    ) -> None:
+        from .text import hex
+
+        keyedpath: str = f'{self}:{hex.encode(key)}'
+
+        try:
+
+            rvalue: str = open(file=keyedpath).read()
+            
+            return hex.decode(rvalue)
+        
+        except OSError:
+            pass
+
+    def mkdir(self) -> None:
+        """
+        Make this directory
+        """
+        from os import makedirs
+
+        makedirs(
+            name = self.path,
+            exist_ok = True
+        )
+
+    def link(self,
+        link: Path
+    ) -> None:
+        """
+        Create a Symbolic Link
+        """
+        from os import link as _link
+
+        if link.exists():
+            link.delete()
+
+        link.parent().mkdir()
+
+        _link(
+            src = str(self),
+            dst = str(link)
+        )
 
 class _cd:
     """
@@ -610,47 +687,6 @@ class _mtime:
         SW.start_time = self.get()
         
         return SW
-
-class _var:
-
-    def __init__(self,
-        file: Path,
-        title: str
-    ):
-        from .text import hex
-
-        self.file = file
-        self.title = title
-
-        self.path = file.path + ':' + hex.encode(title)
-
-        file.set_access.full()
-
-    def read(self):
-        from .text import hex
-
-        try:
-            value = open(self.path).read()
-            return hex.decode(value)
-        except OSError:
-            return self.default
-        
-    def save(self, value:Any):
-        from .text import hex
-        
-        try:
-
-            m = _mtime(self.file).get()
-
-            open(file=self.path, mode='w').write(
-                hex.encode(value)
-            )
-
-            _mtime(path=self.file).set(mtime=m)
-        
-        except OSError as e:
-
-            raise OSError(f"Error setting var '{self.title}' at '{self.file}'") from e
 
 class _set_access:
 
@@ -753,33 +789,6 @@ def cwd() -> Path:
 
     return Path(getcwd())
 
-def mkdir(path:Path) -> None:
-    """
-    Make a Directory
-    """
-    from os import makedirs
-
-    makedirs(
-        name = str(path),
-        exist_ok = True
-    )
-
-def link(src:Path, dst:Path) -> None:
-    """
-    Create a Symbolic Link
-    """
-    from os import link
-
-    if dst.exists():
-        dst.delete()
-
-    mkdir(dst.parent())
-
-    link(
-        src = str(src),
-        dst = str(dst)
-    )
-
 def temp() -> Path:
     from tempfile import gettempdir
 
@@ -790,13 +799,13 @@ def temp() -> Path:
     if SERVER.exists():
         return SERVER
     else:
-        mkdir(OS)
+        OS.mkdir()
         return OS
 
 def relscan(
     src: Path,
     dst: Path
-) -> Generator[dict[Literal['src', 'dst'], Path]]:
+) -> Generator[PathPair]:
     """
     Relatively Scan two directories
 
@@ -828,10 +837,7 @@ def relscan(
         dirs_exist_ok = True,
         
         # Append paths to list instead of directly copying
-        copy_function = lambda s, d, **_: buff.add({
-            'src': Path(s), 
-            'dst': Path(d)
-        })
+        copy_function = lambda s, d, **_: buff.add(PathPair(s, d))
 
     )
 
