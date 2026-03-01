@@ -58,9 +58,9 @@ class _Template:
                 value = self.__dict__['read']()
 
                 if value:
-                    return value
+                    return lambda: value
                 else:
-                    return self.__dict__['_default']
+                    return lambda: self.__dict__['_default']
 
             case _:
                 return self.__dict__[name]
@@ -75,7 +75,7 @@ class XML(_Template):
     def read(self) -> dict:
         from xmltodict import parse
 
-        with self._path.open() as f:
+        with self.path.open() as f:
 
             return parse(f.read())
 
@@ -84,7 +84,7 @@ class XML(_Template):
     ) -> None:
         from xmltodict import unparse
 
-        with self._path.open('w') as f:
+        with self.path.open('w') as f:
 
             data = unparse(data, pretty=True)
 
