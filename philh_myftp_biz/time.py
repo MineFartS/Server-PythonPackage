@@ -1,9 +1,12 @@
-from typing import Self, SupportsFloat, SupportsInt, Callable, Any
+from typing import Self, SupportsFloat, SupportsInt, Any
 
 #====================================================
 # Time Zone
+
 from pytz import timezone as __timezone
+
 TIMEZONE = __timezone('America/New_York')
+
 #====================================================
 
 def sleep(
@@ -130,12 +133,19 @@ class from_stamp:
     Handler for a unix time stamp
     """
 
-    def __init__(self, stamp:int) -> None:
+    def __init__(self,
+        stamp: SupportsFloat
+    ) -> None:
         from datetime import datetime
         from functools import partial
+        from .num import is_num
+        from .classtools import cpath
 
-        dt = datetime.fromtimestamp(
-            timestamp = stamp,
+        if not is_num(stamp):
+            raise ValueError(f'{cpath(stamp)} is not a number')
+
+        dt: datetime = datetime.fromtimestamp(
+            timestamp = float(stamp),
             tz = TIMEZONE
         )
 
@@ -172,7 +182,7 @@ class from_stamp:
         self.unix: int = stamp
         """Unix Time Stamp"""
 
-        self.stamp: Callable[[], str] = partial(
+        self.stamp: partial[str] = partial(
             dt.strftime,
             format = "%Y-%m-%d %H:%M:%S"
         )
@@ -184,14 +194,14 @@ class from_stamp:
     def __int__(self) -> int:
         return int(self.unix)
     
-    def __float__(self):
+    def __float__(self) -> float:
         return float(self.unix)
     
     def __repr__(self) -> str:
-        from .text import abbreviate
+        from .text import abbr
         from .classtools import loc
 
-        return f"<from_stamp '{abbreviate(30, self.ISO)}' @{loc(self)}>"
+        return f"<from_stamp '{abbr(30, self.ISO)}' @{loc(self)}>"
 
     def __eq__(self,
         other: Any|SupportsFloat
@@ -205,24 +215,24 @@ class from_stamp:
     def __lt__(self,
         other: Any|SupportsFloat
     ) -> bool:
-        from .classtools import path
+        from .classtools import cpath
 
         if isinstance(other, (from_stamp, int, float)):
             return (self.unix < float(other))
         
         else:
-            raise TypeError(path(other))
+            raise TypeError(cpath(other))
         
     def __gt__(self, 
         other: Any|SupportsFloat
     ) -> bool:
-        from .classtools import path
+        from .classtools import cpath
 
         if isinstance(other, (from_stamp, int, float)):
             return (self.unix > float(other))
         
         else:
-            raise TypeError(path(other))
+            raise TypeError(cpath(other))
 
 def now() -> from_stamp:
     """
@@ -239,7 +249,7 @@ def from_string(
     Get details of time string
     """
     from dateutil.parser._parser import ParserError
-    from .classtools import classpath
+    from .classtools import cpath
     from dateutil import parser
 
     try:
@@ -249,7 +259,7 @@ def from_string(
     
     except OSError, ParserError:
     
-        raise TypeError(classpath(string))
+        raise TypeError(cpath(string))
 
 def from_ymdhms(
     year:   int = 0,
