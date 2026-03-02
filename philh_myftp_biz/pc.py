@@ -349,39 +349,39 @@ class Path:
             # Update Access
             self.set_access.full()
 
-            Log.VERB(f'Deleting: {self=}')
+            Log.VERB(f'Deleting: {self}')
 
             #            
             delete(self.path)
 
     def rename(self,
-        dst: Path|str,
-        overwrite: bool = True
-    ) -> None:
+        dst: Path|str
+    ) -> Path:
         """
         Change the name of the current path
+        
+        Returns updated path
         """
         from os import rename
-
-        src = self
-        dst = Path(dst)
-
-        if dst.ext() is None:
-            dst.chext(self.ext())
+        from .terminal import Log
         
-        with src.cd():
-            
-            try:
-                rename(src.path, dst.path)
+        with self.parent().cd():
 
-            except FileExistsError:
+            dst = Path(dst)
 
-                if overwrite:
+            Log.VERB(f'Renaming:\nsrc={self}\ndst={dst}')
+
+            if self != dst:
+
+                if dst.exists():
                     dst.delete()
-                    rename(src, dst)
+                
+                rename(
+                    src = self.path, 
+                    dst = dst.path
+                )
 
-                else:
-                    raise FileExistsError(str(dst))
+        return dst
 
     def name(self) -> str:
         """
