@@ -1,5 +1,4 @@
 from typing import Literal, Self, Generator, TYPE_CHECKING, Any, Callable
-from dataclasses import dataclass
 
 if TYPE_CHECKING:
     from .time import from_stamp
@@ -23,22 +22,24 @@ match __name:
 
 #========================================================
 
-@dataclass
 class PathPair:
 
-    src: Path
-    dst: Path
+    def __init__(self,
+        src: Any,
+        dst: Any
+    ) -> None:
+        self.src: Path = src
+        self.dst: Path = dst
 
-    def __getattr__(self, key:str) -> 'Path':
-        
-        value = self.__dict__[key]
+    def __setattr__(self,
+        key: str, 
+        value: Any
+    ) -> None:
 
         if isinstance(value, Path):
-            return value
+            self.__dict__[key] = value
         else:
-            return Path(value)
-        
-    __getitem__ = __getattr__
+            self.__dict__[key] = Path(value)
 
 class Path:
     """
