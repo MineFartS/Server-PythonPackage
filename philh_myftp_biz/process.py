@@ -51,7 +51,9 @@ class Sleeper:
         self.kwargs = kwargs
 
         # Create new thread
-        Thread(self._main).start()
+        self._thread = Thread(target=self._main)
+        
+        self._thread.start()
 
     def _main(self) -> None:
         from time import sleep
