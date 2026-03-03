@@ -11,11 +11,13 @@ if TYPE_CHECKING:
 
 class IP:
 
+    @property
     def LAN() -> str:
         from socket import gethostname, gethostbyname
 
         return gethostbyname(gethostname())
     
+    @property
     def WAN() -> str:
         return get('https://api.ipify.org').text
 
@@ -71,6 +73,7 @@ class Port:
 
         self.addr: tuple[str, int] = (host, port)
 
+    @property
     def listening(self) -> bool:
         """Check if Port is listening/in use"""
 
@@ -1138,7 +1141,7 @@ class FirewallException:
         """
         from .process import RunHidden
 
-        if self.exists():
+        if self.exists:
             
             if override:
                 self.delete()

@@ -1,24 +1,29 @@
-from typing import Literal, Self, Generator, TYPE_CHECKING, Any, Callable
+from typing import Literal, Self, Generator, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .time import from_stamp
     from pathlib import PurePath as __PurePath
 
-from socket import gethostname as NAME # pyright: ignore[reportUnusedImport]
-
 #========================================================
 
-from os import name as __name
-
-OS: Literal['windows', 'unix']
-
-match __name:
-
-    case 'nt':
-        OS = 'windows'
+class INFO:
     
-    case _:
-        OS = 'unix'
+    @property
+    def NAME() -> str:
+        from socket import gethostname
+        return gethostname()
+
+    @property
+    def OS() -> Literal['windows', 'unix']: 
+        from os import name
+
+        match name:
+
+            case 'nt':
+                return 'windows'
+            
+            case _:
+                return 'unix'
 
 #========================================================
 
@@ -45,10 +50,6 @@ class Path:
     """
     File/Folder
     """
-
-    exists: Callable[[], bool]
-    isdir: Callable[[], bool]
-    isfile: Callable[[], bool]
     
     def __init__(self,
         *input: 'str|__PurePath'
@@ -83,17 +84,7 @@ class Path:
         # ==================================
 
         # Declare 'pathlib.Path' attribute
-        self._pure = _Path(self.path)
-
-        # Link 'exists', 'isfile', & 'isdir' functions from 'self._pure'
-        self.exists = self._pure.exists
-        """Check if path exists"""
-
-        self.isfile = self._pure.is_file
-        """Check if path is a file"""
-        
-        self.isdir = self._pure.is_dir
-        """Check if path is a folder"""
+        self._pure = _Path(self.path)      
 
         # Declare 'set_access'
         self.set_access = _set_access(path=self)
@@ -108,42 +99,48 @@ class Path:
         """Visibility"""
 
         # ==================================
+    
+    @property
+    def exists(self) -> bool:
+        """Check if path exists"""
+        return self._pure.exists()
+    
+    @property
+    def is_file(self) -> bool:
+        """Check if path is a file"""
+        return self._pure.is_file()
+    
+    @property
+    def is_dir(self) -> bool:
+        """Check if path is a folder"""
+        return self._pure.is_dir()
 
     def __str__(self):
         return self.path
     __repr__ = __str__
 
-    def chext(self, ext:str):
-        """
-        Returns an Path object with the same path, except with a different extension
-        """
-        if '.' in self.seg():
-            path = self.path[:self.path.rfind('.')]
-        else:
-            raise TypeError("Path does not have an existing extension")
-        
-        return Path(path+'.'+ext)
-
+    @property
     def ctime(self):
-        from os import path
         from .time import from_stamp
+        from os import path
 
         stamp = path.getctime(self.path)
 
         return from_stamp(stamp)
 
+    @property
     def cd(self) -> '_cd':
         """
         Change the working directory to path
         
         If path is a file, then it will change to the file's parent directory
         """
-        if self.isfile():
-            return _cd(self.parent())
+        if self.is_file:
+            return _cd(self.parent)
         else:
             return _cd(self)
     
-    def ischild(self, parent:Path) -> bool:
+    def is_child(self, parent:Path) -> bool:
         """
         Check if this path is a child or descendant of a parent directory
         """
@@ -154,13 +151,13 @@ class Path:
         except ValueError:
             return False
         
-    def isparent(self, child:Path) -> bool:
+    def is_parent(self, child:Path) -> bool:
         """
         Check if this path is a parent of ancestor of a path
         """
-        return child.ischild(self)
+        return child.is_child(self)
 
-    def isrelated(self, path:Path) -> bool:
+    def related_to(self, path:Path) -> bool:
         """
         Check if this path is related to another
         
@@ -171,17 +168,11 @@ class Path:
         - Is same path
         """
 
-        PARENT = self.isparent(path)
-        CHILD  = self.ischild(path)
+        PARENT = self.is_parent(path)
+        CHILD  = self.is_child(path)
         SAME   = (self == path)
 
         return any([PARENT, CHILD, SAME])
-
-    def resolute(self) -> Path:
-        """
-        Get path with Symbolic Links Resolved
-        """
-        return Path(self._pure.resolve(strict=True))
     
     def child(self, *name:str) -> Path:
         """
@@ -190,7 +181,7 @@ class Path:
         Note: Will raise TypeError if path is a file
         """
 
-        if self.isfile():
+        if self.is_file:
             raise TypeError("Parent path cannot be a file")
         
         elif len(name) > 1:
@@ -220,7 +211,8 @@ class Path:
         
         return (self.path == testp)
 
-    def islink(self) -> bool:
+    @property
+    def is_link(self) -> bool:
         """
         Check if path is Symbolic Link or Directory Junction
         """
@@ -230,6 +222,7 @@ class Path:
 
         return (SYMLINK or JUNCTION)
 
+    @property
     def size(self) -> int:
         """
         Get File Size
@@ -238,11 +231,12 @@ class Path:
         """
         from os import path
 
-        if self.isfile():
+        if self.is_file:
             return path.getsize(self.path)
         else:
             raise TypeError("Cannot get size of a folder")
 
+    @property
     def children(self) -> Generator[Path]:
         """
         Get children of current directory
@@ -254,7 +248,7 @@ class Path:
         ```
         """
 
-        if self.isfile():
+        if self.is_file:
 
             raise TypeError('Cannot get children of a file')
 
@@ -264,6 +258,7 @@ class Path:
                 
                 yield Path(p)
 
+    @property
     def descendants(self) -> Generator[Path]:
         """
         Get descendants of current directory
@@ -284,15 +279,17 @@ class Path:
             
                 yield Path(root, item)
 
-    def isempty(self) -> bool:
+    @property
+    def is_empty(self) -> bool:
         """
         Check if the current directory has any children
         """
 
-        item: Path|None = next(self.children(), None)
+        item: Path|None = next(self.children, None)
 
         return (item is None)
 
+    @property
     def parent(self) -> Path:
         """
         Get parent of current path
@@ -308,8 +305,9 @@ class Path:
         Sibling - |
                   |
         """
-        return self.parent().child(item)
+        return self.parent.child(item)
     
+    @property
     def ext(self) -> str|None:
         """
         Get file extension of path
@@ -321,6 +319,7 @@ class Path:
 
             return seg[seg.rfind('.')+1:].lower()
 
+    @property
     def type(self) -> None | str:
         """
         Get mime type of path
@@ -336,7 +335,7 @@ class Path:
         from .terminal import Log
 
         # If path is a directory
-        if self.isdir():
+        if self.is_dir:
             from shutil import rmtree as delete
         
         # If path is a file
@@ -344,7 +343,7 @@ class Path:
             from os import remove as delete
 
         # If the path exists
-        if self.exists():
+        if self.exists:
 
             # Update Access
             self.set_access.full()
@@ -365,7 +364,7 @@ class Path:
         from os import rename
         from .terminal import Log
         
-        with self.parent().cd():
+        with self.parent.cd:
 
             dst = Path(dst)
 
@@ -373,7 +372,7 @@ class Path:
 
             if self != dst:
 
-                if dst.exists():
+                if dst.exists:
                     dst.delete()
                 
                 rename(
@@ -383,6 +382,7 @@ class Path:
 
         return dst
 
+    @property
     def name(self) -> str:
         """
         Get the name of the current path
@@ -393,7 +393,7 @@ class Path:
         name = self._pure.name
 
         # Check if file has ext
-        if self.ext():
+        if self.ext:
             # Return name without ext
             return name[:name.rfind('.')]
 
@@ -440,12 +440,12 @@ class Path:
         try:
 
             # If the source is a directory
-            if self.isdir():
+            if self.is_dir:
 
                 files = relscan(self, dst)
 
             # If the source is file and destination is folder 
-            elif dst.isdir():
+            elif dst.is_dir:
                 files = [PathPair(
                     src = self, 
                     dst = dst.child(self.seg())
@@ -471,7 +471,7 @@ class Path:
                 file.dst.delete()
 
                 # Create the parent folder of the destination file
-                file.dst.parent().mkdir()
+                file.dst.parent.mkdir()
 
                 # Copy the source file to the destination
                 copyfile(
@@ -483,7 +483,7 @@ class Path:
 
             # Delete destination paths
             for file in files:
-                file['dst'].delete()
+                file.dst.delete()
 
             raise OSError(f'Failed to copy \n"{self}" \nto \n"{dst}" ') from e
 
@@ -496,13 +496,14 @@ class Path:
         self.copy(dst)
         self.delete()
 
-    def inuse(self) -> bool:
+    @property
+    def in_use(self) -> bool:
         """
         Check if path is in use by another process
         """
         from os import rename
 
-        if self.exists():
+        if self.exists:
             try:
                 rename(self.path, self.path)
                 return False
@@ -520,12 +521,6 @@ class Path:
         Works the same as: open(self.Path)
         """
         return open(file=self.path, mode=mode)
-
-    def relative(self, ancestor:Path) -> str:
-
-        relpath = self._pure.relative_to(other=ancestor.path)
-        
-        return relpath.as_posix()
 
     def __setitem__(self,
         key: Any, 
@@ -576,9 +571,9 @@ class Path:
         """
         from os import makedirs
 
-        if self.isfile():
+        if self.is_file:
 
-            folder = self.parent().path
+            folder = self.parent.path
 
         else:
 
@@ -597,10 +592,10 @@ class Path:
         """
         from os import link as _link
 
-        if link.exists():
+        if link.exists:
             link.delete()
 
-        link.parent().mkdir()
+        link.parent.mkdir()
 
         _link(
             src = str(self),
@@ -669,7 +664,8 @@ class _mtime:
             now = now().unix
             utime(self.path.path, (now, now))
 
-    def get(self):
+    @property
+    def current(self):
         from .time import from_stamp
         from os import path
 
@@ -682,7 +678,7 @@ class _mtime:
 
         SW = Stopwatch()
 
-        SW.start_time = self.get()
+        SW.start_time = self.current
         
         return SW
 
@@ -695,9 +691,9 @@ class _set_access:
 
         yield self.path
 
-        if self.path.isdir():
+        if self.path.is_dir:
 
-            yield from self.path.descendants()
+            yield from self.path.descendants
     
     def readonly(self) -> None:
         from .terminal import Log
@@ -761,6 +757,7 @@ class _visibility:
         except error as e:
             raise PermissionError(*e.args)
 
+    @property
     def hidden(self) -> bool:
         from win32con import FILE_ATTRIBUTE_HIDDEN
         from win32file import GetFileAttributes
@@ -777,7 +774,7 @@ def script_dir(__file__:str) -> 'Path':
     """
     from os import path
 
-    return Path(path.abspath(path=__file__)).parent()
+    return Path(path.abspath(path=__file__)).parent
 
 def cwd() -> Path:
     """
@@ -794,7 +791,7 @@ def temp() -> Path:
 
     OS = Path(gettempdir() + '/philh_myftp_biz/')
 
-    if SERVER.exists():
+    if SERVER.exists:
         return SERVER
     else:
         OS.mkdir()
@@ -839,7 +836,7 @@ def relscan(
 
     )
 
-    buff.stop_when = lambda: not t.running()
+    buff.stop_when = lambda: not t.running
 
     yield from buff
 

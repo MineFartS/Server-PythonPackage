@@ -105,7 +105,7 @@ class SubProcess:
 
         if terminal is None:
 
-            match Path(args[0]).ext():
+            match Path(args[0]).ext:
 
                 case 'ps1': terminal='psfile'
 
@@ -154,8 +154,6 @@ class SubProcess:
 
         self.wait = self._process.wait
 
-        self.running = self._task.exists
-
         self.stop = self._task.stop
 
         # =====================================
@@ -179,7 +177,7 @@ class SubProcess:
         stdout = iter(self._process.stdout.read, -1)
         stderr = iter(self._process.stderr.read, -1)
 
-        while self.running() and Alive():
+        while self.running and Alive():
 
             outline = next(stdout, '')
 
@@ -221,7 +219,7 @@ class SubProcess:
         """
         Check if the subprocess is finished
         """
-        return (not self.running())
+        return (not self.running)
 
     def output(self,
         format: Literal['json', 'hex'] = None,
@@ -245,6 +243,10 @@ class SubProcess:
         
         else:
             return output.decode()
+
+    @property
+    def running(self) -> bool:
+        return self._task.exists
 
 class Run(SubProcess):
     _hide = False
@@ -293,7 +295,7 @@ class SysTask:
 
             for proc in process_iter():
             
-                if proc.name().lower() == self.id.lower():
+                if proc.name.lower() == self.id.lower():
             
                     main = Process(pid=proc.pid)
             
@@ -331,6 +333,7 @@ class SysTask:
             
             p.terminate()
 
+    @property
     def exists(self) -> bool:
         """
         Check if the process is running

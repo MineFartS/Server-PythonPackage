@@ -131,9 +131,9 @@ def pause() -> None:
     Pause the execution and wait for user input
     """
     from os import system
-    from .pc import OS
+    from .pc import INFO
 
-    if OS == 'windows':
+    if INFO.OS == 'windows':
         system('pause')
     else:
         pass # TODO
@@ -156,14 +156,14 @@ def cls() -> None:
     """
     Clear the terminal window
 
-    (Prints a hexidecimal value so the philh.myftp.biz.run can send the signal up from a subprocess)
+    (Prints a hexidecimal value so it can be detected from a subprocess)
     """
     from os import system
-    from .pc import OS
+    from .pc import INFO
 
     print(_cls_cmd)
     
-    if OS == 'windows':
+    if INFO.OS == 'windows':
         system('cls')
     else:
         system('clear')
@@ -189,13 +189,13 @@ class ProgressBar:
 
         def __init__(self,
             pbar: 'ProgressBar'
-        ):
+        ) -> None:
             self.pbar = pbar
 
         def write(self, s:str):
             import sys
 
-            if self.pbar.finished():
+            if self.pbar.finished:
                 sys.stdout = stdout
             else:
                 self.pbar.clear()
@@ -210,8 +210,8 @@ class ProgressBar:
 
     def __init__(self,
         total: int = 0
-    ):
-        from .process import thread
+    ) -> None:
+        from .process import Thread
         from tqdm import tqdm
         import sys
 
@@ -231,8 +231,9 @@ class ProgressBar:
 
         sys.stdout = self.Pipe(pbar=self)
 
-        thread(self.__refresh)
+        Thread(self.__refresh)
 
+    @property
     def finished(self) -> bool:
 
         if self._tqdm.total == 0:
@@ -240,15 +241,16 @@ class ProgressBar:
         else:
             return (self._tqdm.n == self._tqdm.total)
 
+    @property
     def running(self):
-        return not (self.finished() or self._tqdm.disable)
+        return not (self.finished or self._tqdm.disable)
         
     def __refresh(self):
         from time import sleep
 
         lastval = None
 
-        while self.running():
+        while self.running:
 
             # Wait .3 seconds
             sleep(.3)
@@ -279,10 +281,10 @@ def Args() -> list:
     """
     Read Command Line Arguements with automatic formatting
     """
-    from .array import auto_convert
+    from .text import auto_convert
     from sys import argv
 
-    return auto_convert(argv[1:])
+    return [auto_convert(arg) for arg in argv[1:]]
 
 class ParsedArgs:
 
@@ -290,7 +292,7 @@ class ParsedArgs:
         name: str = 'Program Name',
         desc: str = 'What the program does',
         epilog: str = 'Text at the bottom of help'
-    ):
+    ) -> None:
         from argparse import ArgumentParser
         
         #
@@ -337,7 +339,7 @@ class ParsedArgs:
         letter: str = None,
         desc: str = None,
         invert: bool = False
-    ):
+    ) -> None:
         
         flags = ['--'+name]
 

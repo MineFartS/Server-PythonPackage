@@ -19,7 +19,7 @@ class MimeType:
 
             dbfile: 'Path' = temp(name='filetypes', ext='json', id='0')
 
-            if not dbfile.exists():
+            if not dbfile.exists:
                 download(
                     url = 'https://raw.githubusercontent.com/MineFartS/FileTypes/refs/heads/master/compiled.json',
                     path = dbfile,
@@ -35,7 +35,7 @@ class MimeType:
         """
         Get the mimetype from a file path
         """
-        return MimeType.Ext(path.ext())
+        return MimeType.Ext(path.ext)
     
     def Name(name:str):
         """

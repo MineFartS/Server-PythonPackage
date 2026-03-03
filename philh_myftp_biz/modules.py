@@ -85,7 +85,7 @@ class Module(Path):
 
         configFile = self.child('/module.yaml')
 
-        if configFile.exists():
+        if configFile.exists:
 
             config: dict = YAML(configFile).read()
 
@@ -174,9 +174,9 @@ class Module(Path):
         
         dir = self.child('/'.join(parts[:-1]))
 
-        for p in dir.children():
+        for p in dir.children:
             
-            if p.isfile() and ((p.name().lower()) == (parts[-1].lower())):
+            if p.is_file and ((p.name.lower()) == (parts[-1].lower())):
                 
                 return p
 
@@ -247,10 +247,10 @@ class Service(Path):
     def _file(self, name:str) -> Path:
 
         # Iter through all children of the service path
-        for p in self.children():
+        for p in self.children:
 
-            ISFILE = p.isfile()
-            NAMEEQ = (p.name().lower() == name.lower())
+            ISFILE = p.is_file
+            NAMEEQ = (p.name.lower() == name.lower())
             
             if ISFILE and NAMEEQ:
 
@@ -273,7 +273,7 @@ class Service(Path):
         
         )
 
-    def Start(self) -> None:
+    def start(self) -> None:
         """
         Start the Service
         """
@@ -282,7 +282,7 @@ class Service(Path):
         Log.VERB(f"Starting Service: {self.path}")
 
         # Raise error if this serivce is disabled
-        if self.Enabled():
+        if self.enabled:
 
             self.Stop()
             self._run('Start')
@@ -291,7 +291,8 @@ class Service(Path):
 
             raise ServiceDisabledError(self)
 
-    def Running(self) -> bool:
+    @property
+    def running(self) -> bool:
         """
         Service is running
         """
@@ -308,7 +309,7 @@ class Service(Path):
         except JSONDecodeError, AttributeError, FileNotFoundError:
             return False
     
-    def Stop(self) -> None:
+    def stop(self) -> None:
         """
         Stop the Service
         """
@@ -318,10 +319,11 @@ class Service(Path):
 
         self._run('Stop')
 
-    def Enabled(self) -> bool:        
-        return (not self._lockfile.exists())
+    @property
+    def enabled(self) -> bool:        
+        return (not self._lockfile.exists)
 
-    def Enable(self) -> None:
+    def enable(self) -> None:
         from .terminal import Log
 
         Log.VERB(f"Enabling Service: {self.path=}")
@@ -329,7 +331,7 @@ class Service(Path):
         # delete the lockfile
         self._lockfile.delete()
 
-    def Disable(self,
+    def disable(self,
         stop: bool = True
     ) -> None:
         from .terminal import Log
@@ -337,7 +339,7 @@ class Service(Path):
         Log.VERB(f"Disabling Service: {self.path=}")
 
         #
-        self._lockfile.parent().mkdir()
+        self._lockfile.parent.mkdir()
 
         # Create the lock file
         self._lockfile.open('w')

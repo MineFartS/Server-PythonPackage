@@ -37,7 +37,7 @@ class _Template:
         self.default = default
 
         # Make the parent dir of the output path
-        path.parent().mkdir()
+        path.parent.mkdir()
 
     _read: Callable[[], Any]
 
@@ -290,9 +290,9 @@ class ZIP:
 
         self._zip.extract(file, str(folder))
 
-        for p in folder.descendants():
+        for p in folder.descendants:
             
-            if p.isfile():
+            if p.is_file:
                 
                 p.move(savepath)
                 

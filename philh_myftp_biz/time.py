@@ -138,8 +138,8 @@ class from_stamp:
     ) -> None:
         from datetime import datetime
         from functools import partial
-        from .num import is_num
         from .classtools import cpath
+        from .num import is_num
 
         if not is_num(stamp):
             raise ValueError(f'{cpath(stamp)} is not a number')

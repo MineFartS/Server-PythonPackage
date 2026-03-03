@@ -19,7 +19,7 @@ def __FFMPEG(name:str) -> 'Path':
     )
 
     # Check if 'Ffmpeg.exe' does not exist
-    if exe.exists():
+    if exe.exists:
 
         Log.VERB(f'{name}.exe Exists')
 
@@ -68,7 +68,7 @@ def COOKIES() -> 'Path':
     CookiesTXT = temp(name='cookies', ext='txt', id='0')
 
     # Check if 'cookies.txt' does not exist
-    if not CookiesTXT.exists():
+    if not CookiesTXT.exists:
 
         # Create Empty CookieJar
         CJ = MozillaCookieJar(filename=str(CookiesTXT))
