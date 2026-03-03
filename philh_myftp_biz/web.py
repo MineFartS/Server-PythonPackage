@@ -429,10 +429,10 @@ class api:
                 return (self.progress() == 1)
 
             def __repr__(self) -> str:
-                from .text import abbreviate
                 from .classtools import loc
+                from .text import abbr
 
-                return f"<File '{abbreviate(num=30, string=self.title)}' @{loc(obj=self)}>"
+                return f"<File '{abbr(num=30, string=self.title)}' @{loc(obj=self)}>"
 
         def __init__(self,
             host: str,
@@ -733,16 +733,16 @@ class api:
             qbit: 'api.qBitTorrent' = None
         ) -> None:
             
-            self.__url = url
+            self.tpburl: str = (f'https://{url}' + '/search/{}/1/99/0')
             """tpb mirror url"""
 
-            self.__qbit = qbit
+            self._qbit: api.qBitTorrent = qbit
             """qBitTorrent Session"""
             
             if driver:
-                self.__driver = driver
+                self._driver: Driver = driver
             else:
-                self.__driver = Driver()
+                self._driver = Driver()
 
         def search(self,
             query: str
@@ -754,49 +754,51 @@ class api:
             for magnet in thePirateBay.search('term'):
                 magnet
             """
+            from .terminal import Log
             from .db import Size
 
             # Remove all "." & "'" from query
             query = query.replace('.', '').replace("'", '')
 
             # Open the search in a url
-            self.__driver.open(
-                url = f'https://{self.__url}/search/{query}/1/99/0'
+            self._driver.open(
+                url = self.tpburl.format(query)
             )
 
+            _run = self._driver.run
+
+            # Set driver var 'lines' to a list of lines
             try:
+                _run("window.lines = document.getElementById('searchResult').children[1].children")
+            
+            except RuntimeError as e:
+                Log.VERB('', exc_info=e)
+                return
 
-                # Set driver var 'lines' to a list of lines
-                self.__driver.run(code="window.lines = document.getElementById('searchResult').children[1].children")
+            # Iter from 0 to # of lines
+            for x in range(0, _run('return lines.length')):
 
-                # Iter from 0 to # of lines
-                for x in range(0, self.__driver.run('return lines.length')):
+                try:
 
                     # Yield a magnet instance
                     yield Magnet(
 
-                        # Raw Tttle
-                        title = self.__driver.run(f"return lines[{x}].children[1].textContent"),
+                        title = _run(f"return lines[{x}].children[1].textContent"),
 
-                        # Num of Seeders
-                        seeders = int(self.__driver.run(f"return lines[{x}].children[5].textContent")),
+                        seeders = int(_run(f"return lines[{x}].children[5].textContent")),
 
-                        # Num of leechers
-                        leechers = int(self.__driver.run(f"return lines[{x}].children[6].textContent")),
+                        leechers = int(_run(f"return lines[{x}].children[6].textContent")),
 
-                        # Magnet URL
-                        url = self.__driver.run(f"return lines[{x}].children[3].children[0].children[0].href"),
+                        url = _run(f"return lines[{x}].children[3].children[0].children[0].href"),
                         
-                        # Download Size
-                        size = Size.to_bytes(self.__driver.run(f"return lines[{x}].children[4].textContent")),
+                        size = Size.to_bytes(_run(f"return lines[{x}].children[4].textContent")),
 
-                        # qBitTorrent Session
-                        qbit = self.__qbit
+                        qbit = self._qbit
 
                     )
-            
-            except RuntimeError, KeyError:
-                pass
+
+                except KeyError as e:
+                    Log.VERB('', exc_info=e)
 
 class Magnet(api.qBitTorrent):
     """
@@ -936,20 +938,14 @@ class Driver:
         """Reload the Current Page"""
         from .terminal import Log
 
-        Log.VERB(f'Reloading Page: {self.current_url=}')
+        Log.VERB(f'Reloading Page: {self.URL=}')
 
         self._drvr.refresh()
 
     def run(self, code:str):
         """Run JavaScript Code on the Current Page"""
-        from .terminal import Log
         from selenium.common.exceptions import JavascriptException
-
-        Log.VERB(
-            f'Executing JavaScript\n'+ \
-            f'{self.current_url=}\n'+ \
-            f'{code=}'
-        )
+        from .terminal import Log
 
         try:
 
@@ -957,6 +953,8 @@ class Driver:
 
             Log.VERB(
                 f'JavaScript Executed\n'+ \
+                f'{self.URL=}\n'+ \
+                f'{code=}\n'+ \
                 f'{response=}'
             )
 
@@ -966,10 +964,12 @@ class Driver:
 
             # Truncate the Error Message
             mess: str = e.msg
-            mess = mess[mess.find(':')+2:]
-            mess = mess[:mess.find('\nStacktrace:')]
 
-            raise RuntimeError(mess) from None
+            startp: int = 2+mess.find(':')
+
+            endp  : int = 1+mess.find('\nStacktrace:')
+
+            raise RuntimeError(mess[startp:endp]) from None
 
     def element(self,
         by: Literal['class', 'id', 'xpath', 'name', 'attr'],
@@ -1033,6 +1033,10 @@ class Driver:
         from .terminal import Log
 
         Log.VERB(f"Opening Page: {url=}")
+
+        # Switch to the first tab
+        handle = self._drvr.window_handles[0]
+        self._drvr.switch_to.window(handle)
 
         # Open the url
         while True:
