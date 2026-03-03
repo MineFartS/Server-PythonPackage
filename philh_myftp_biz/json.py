@@ -47,6 +47,9 @@ class Dict[V]:
                 default = t
             )
 
+        if self.var.default is None:
+            self.var.default = {}
+
         self.read = self.var.read
         self.save = self.var.save
 

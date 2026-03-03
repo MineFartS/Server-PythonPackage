@@ -31,6 +31,9 @@ class List[V]:
                 path = temp('array', 'pkl'),
                 default = list(a)
             )
+
+        if self.var.default is None:
+            self.var.default = []
         
         self.read = self.var.read
         self.save = self.var.save

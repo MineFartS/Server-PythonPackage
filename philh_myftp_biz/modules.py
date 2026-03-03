@@ -284,7 +284,7 @@ class Service(Path):
         # Raise error if this serivce is disabled
         if self.enabled:
 
-            self.Stop()
+            self.stop()
             self._run('Start')
 
         else:
@@ -345,4 +345,4 @@ class Service(Path):
         self._lockfile.open('w')
         
         if stop:
-            self.Stop()
+            self.stop()
