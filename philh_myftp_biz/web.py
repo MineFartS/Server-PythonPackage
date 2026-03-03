@@ -361,21 +361,29 @@ class api:
                 self.title: str = file.name[file.name.find('/')+1:]
                 """File Name"""
 
-                self.__id: str = file.id
+                self._id: str = file.id
                 """File ID"""
 
-                self.__torrent = torrent
+                self._torrent = torrent
                 """Torrent"""
 
-            def _file(self) -> 'TorrentFile':
-                return self.__torrent.files[self.__id]
+            @property
+            def _file(self) -> 'None|TorrentFile':
+                from qbittorrentapi.exceptions import FileNotFoundError
 
-            def progress(self) -> float:
-                return self._file().progress
+                try:
+                    return self._torrent.files[self._id]
+                
+                except FileNotFoundError:
+                    pass
+
+            def progress(self) -> None | float:
+                if self._file:
+                    return self._file.progress
 
             def start(self,
                 force: bool = False
-            ):
+            ) -> None:
                 """
                 Start downloading the file
                 """
@@ -383,22 +391,23 @@ class api:
 
                 Log.VERB(f'Downloading File: {force=} | {self}]')
 
-                self.__torrent.file_priority(
-                    file_ids = self.__id,
+                self._torrent.file_priority(
+                    file_ids = self._id,
                     priority = (7 if force else 1)
                 )
 
             def enabled(self) -> bool:
-                """
-                """
 
-                priority: int = self._file().priority
+                if self._file:
 
-                return (priority > 0)
+                    priority: int = self._file.priority
+
+                    return (priority > 0)
+                
+                else:
+                    return False
 
             def downloading(self) -> bool:
-                """
-                """
 
                 return (self.enabled() and (not self.finished()))
 
@@ -414,8 +423,8 @@ class api:
                 Log.VERB(f'Stopping File: {self}')
 
                 try:
-                    self.__torrent.file_priority(
-                        file_ids = self.__id,
+                    self._torrent.file_priority(
+                        file_ids = self._id,
                         priority = 0
                     )
                 except NotFound404Error:
@@ -425,7 +434,6 @@ class api:
                 """
                 Check if the file is finished downloading
                 """
-
                 return (self.progress() == 1)
 
             def __repr__(self) -> str:
