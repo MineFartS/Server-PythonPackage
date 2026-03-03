@@ -369,15 +369,17 @@ class api:
 
             @property
             def _file(self) -> 'None|TorrentFile':
-                from qbittorrentapi.exceptions import FileNotFoundError
+                from qbittorrentapi.exceptions import TorrentFileNotFoundError
 
                 try:
                     return self._torrent.files[self._id]
                 
-                except FileNotFoundError:
+                except TorrentFileNotFoundError:
                     pass
 
+            @property
             def progress(self) -> None | float:
+
                 if self._file:
                     return self._file.progress
 
@@ -396,6 +398,7 @@ class api:
                     priority = (7 if force else 1)
                 )
 
+            @property
             def enabled(self) -> bool:
 
                 if self._file:
@@ -407,9 +410,10 @@ class api:
                 else:
                     return False
 
+            @property
             def downloading(self) -> bool:
 
-                return (self.enabled() and (not self.finished()))
+                return (self.enabled and (not self.finished))
 
             def stop(self) -> None:
                 """
@@ -430,11 +434,12 @@ class api:
                 except NotFound404Error:
                     pass
 
+            @property
             def finished(self) -> bool:
                 """
                 Check if the file is finished downloading
                 """
-                return (self.progress() == 1)
+                return (self.progress == 1)
 
             def __repr__(self) -> str:
                 from .classtools import loc
@@ -472,6 +477,7 @@ class api:
                 REQUESTS_ARGS = {'timeout': (timeout, timeout)}
             )
 
+        @property
         def _client(self) -> 'Client':
             """
             Wait for server connection, then returns qbittorrentapi.Client
@@ -497,137 +503,16 @@ class api:
                 if sw.elapsed() >= self.timeout:
                     raise TimeoutError('qBitTorrentAPI Connection Timed Out')
 
-        def _get(self,
-            magnet: Magnet
-        ):
-
-            for t in self._client().torrents_info():
-                
-                #
-                if t.hash == magnet.hash:
-
-                    return t
-
         def connected(self) -> bool:
             """
             Check if qBitTorrent is connected to the internet
             """
 
-            tinfo = self._client().transfer.info()
+            tinfo = self._client.transfer.info()
 
             conn_status = tinfo.connection_status
 
             return (conn_status == 'connected')
-
-        def start(self,
-            magnet: 'Magnet',
-            path: 'str|Path' = None
-        ) -> None:
-            """
-            Start Downloading a Magnet
-            """
-            from .terminal import Log
-
-            t = self._get(magnet)
-
-            Log.VERB(
-                f'Starting\n'+ \
-                f'{magnet=}\n'+ \
-                f'{path=}'
-            )
-
-            if path:
-                path = str(path)
-
-            if t:
-                t.start()
-            
-            else:
-                self._client().torrents_add(
-                    urls = magnet.url,
-                    save_path = path
-                )
-
-        def reannounce(self,
-            magnet: 'Magnet'
-        ) -> None:
-            """
-            """
-            from .terminal import Log
-
-            Log.VERB(f'Reannouncing: {magnet=}')
-
-            t = self._get(magnet)
-
-            if t:
-
-                t.reannounce()
-
-        def restart(self,
-            magnet: 'Magnet'
-        ) -> None:
-            """
-            Restart Downloading a Magnet
-            """
-            from .terminal import Log
-
-            Log.VERB(f'Restarting: {magnet=}')
-
-            self.stop(magnet)
-            self.start(magnet)
-
-        def files(self,
-            magnet: 'Magnet'
-        ) -> list[api.qBitTorrent.File]:
-            """
-            List all files in Magnet Download
-
-            Waits for at least one file to be found before returning
-            """
-            from .time import Stopwatch
-            from .terminal import Log
-
-            Log.VERB(f'Scanning Files: {magnet=}')
-
-            sw = Stopwatch()
-            sw.start()
-
-            t = self._get(magnet)
-
-            if t:
-
-                t.setForceStart(True)
-
-                #
-                while len(t.files) == 0:
-
-                    if sw >= self.timeout:
-
-                        raise TimeoutError()
-
-                t.setForceStart(False)
-
-                return [self.File(t,f) for f in t.files]
-            
-            else:
-                return []
-
-        def stop(self,
-            magnet: 'Magnet',
-            rm_files: bool = True
-        ) -> None:
-            """
-            Stop downloading a Magnet
-            """
-            from .terminal import Log
-            
-            t = self._get(magnet=magnet)
-
-            Log.VERB(f'Stopping: {rm_files=} | {magnet=}')
-
-            t.delete(delete_files=rm_files)
-
-            return
 
         def clear(self,
             rm_files: bool = True,
@@ -645,7 +530,7 @@ class api:
                 'func='+from_function(filter_func)
             )
 
-            for torrent in self._client().torrents_info():
+            for torrent in self._client.torrents_info():
 
                 if filter_func(torrent):
                 
@@ -653,70 +538,11 @@ class api:
                     
                     torrent.delete(rm_files)
 
-        def finished(self,
-            magnet: 'Magnet'
-        ) -> None | bool:
-            """
-            Check if a magnet is finished downloading
-            """
-            
-            t = self._get(magnet)
-            
-            if t:
-                return (t.state_enum.is_uploading or t.state_enum.is_complete)
-
-        def errored(self,
-            magnet: 'Magnet'
-        ) -> None | bool:
-            """
-            Check if a magnet is errored
-            """
-
-            t = self._get(magnet)
-
-            if t:
-                return t.state_enum.is_errored
-
-        def downloading(self,
-            magnet: 'Magnet'
-        ) -> None | bool:
-            """
-            Check if a magnet is downloading
-            """
-                        
-            t = self._get(magnet)
-            
-            if t:
-                return t.state_enum.is_downloading
-
-        def exists(self,
-            magnet: 'Magnet'
-        ) -> bool:
-            """
-            Check if a magnet is in the download queue
-            """
-            
-            t = self._get(magnet)
-            
-            return (t != None)
-
-        def stalled(self,
-            magnet: 'Magnet'
-        ) -> None | bool:
-            """
-            Check if a magnet is stalled
-            """
-                        
-            t = self._get(magnet)
-            
-            if t:
-                return (t.state_enum.value == 'stalledDL')
-
         def randomize_port(self) -> None:
             from random import randint
             
             # Update preference
-            self._client().app_setPreferences(preferences={
+            self._client.app_setPreferences(preferences={
                 'listen_port': randint(a=10000, b=60000)
             })
 
@@ -813,7 +639,7 @@ class Magnet(api.qBitTorrent):
     Handler for MAGNET URLs
     """
 
-    __qualities: dict[str, int] = {
+    _qualities: dict[str, int] = {
         'hdtv': 0,
         'tvrip': 0,
         '2160p': 2160,
@@ -839,8 +665,6 @@ class Magnet(api.qBitTorrent):
         qbit: api.qBitTorrent = None
     ) -> None:
         from urllib.parse import urlparse, parse_qs
-        from functools import partial
-        from inspect import signature
 
         # Get the value of the 'xt' parameter (it's a list, so take the first element)
         XT: str = parse_qs(urlparse(url).query)['xt'][0]
@@ -859,9 +683,11 @@ class Magnet(api.qBitTorrent):
         self.url: str = url
 
         self.quality = 0
-        for term in self.__qualities:
+        for term, quality in self._qualities.items():
+            
             if term in self.title:
-                self.quality: int = self.__qualities[term]
+                
+                self.quality: int = quality
 
         if qbit:
             for name in ['_rclient', 'timeout']:
@@ -870,20 +696,159 @@ class Magnet(api.qBitTorrent):
                     getattr(qbit, name)
                 )
 
-        for name, value in vars(api.qBitTorrent).items():
+    @property
+    def _torrent(self):
 
-            CALLABLE = callable(value)
+        for t in self._client.torrents_info():
+            
+            #
+            if t.hash == self.hash:
 
-            PUBLIC = ('_' not in name)
+                return t
 
-            MAGNETPARAM = (CALLABLE and ('magnet' in signature(value).parameters))
+    def start(self,
+        path: 'str|Path' = None
+    ) -> None:
+        """
+        Start Downloading a Magnet
+        """
+        from .terminal import Log
 
-            if CALLABLE and PUBLIC and MAGNETPARAM:
+        Log.VERB(
+            f'Starting\n'+ \
+            f'{self=}\n'+ \
+            f'{path=}'
+        )
 
-                setattr(
-                    self, name,
-                    partial(value, self=self, magnet=self)
-                )
+        if path:
+            path = str(path)
+
+        if self._torrent:
+            self._torrent.start()
+        
+        else:
+            self._client.torrents_add(
+                urls = self.url,
+                save_path = path
+            )
+
+    def reannounce(self) -> None:
+        from .terminal import Log
+
+        Log.VERB(f'Reannouncing: {self}')
+
+        if self._torrent:
+
+            self._torrent.reannounce()
+
+    def restart(self) -> None:
+        """
+        Restart Downloading a Magnet
+        """
+        from .terminal import Log
+
+        Log.VERB(f'Restarting: {self}')
+
+        self.stop()
+        self.start()
+
+    @property
+    def files(self) -> list[api.qBitTorrent.File]:
+        """
+        List of all files in Magnet Download
+
+        Waits for at least one file to be found before returning
+        """
+        from .time import Stopwatch
+        from .terminal import Log
+
+        Log.VERB(f'Scanning Files: {self}')
+
+        sw = Stopwatch()
+        sw.start()
+
+        if self._torrent:
+
+            self._torrent.setForceStart(True)
+
+            #
+            while len(self._torrent.files) == 0:
+
+                if sw >= self.timeout:
+
+                    raise TimeoutError()
+
+            self._torrent.setForceStart(False)
+
+            return [self.File(self._torrent,f) for f in self._torrent.files]
+        
+        else:
+            return []
+
+    def stop(self,
+        rm_files: bool = True
+    ) -> None:
+        """
+        Stop downloading a Magnet
+        """
+        from .terminal import Log
+
+        Log.VERB(f'Stopping: {rm_files=} | {self}')
+
+        self._torrent.delete(delete_files=rm_files)
+
+    @property
+    def finished(self,
+        magnet: 'Magnet'
+    ) -> None | bool:
+        """
+        Check if a magnet is finished downloading
+        """
+        
+        if self._torrent:
+
+            state = self._torrent.state_enum
+            
+            return (state.is_uploading or state.is_complete)
+
+    @property
+    def errored(self) -> bool:
+        """
+        Check if a magnet is errored
+        """
+
+        if self._torrent:
+            return self._torrent.state_enum.is_errored
+        else:
+            return False
+        
+    @property
+    def downloading(self) -> None | bool:
+        """
+        Check if a magnet is downloading
+        """
+        
+        if self._torrent:
+            return self._torrent.state_enum.is_downloading
+
+    @property
+    def exists(self) -> bool:
+        """
+        Check if a magnet is in the download queue
+        """
+        
+        return (self._torrent != None)
+
+    @property
+    def stalled(self) -> bool:
+        """
+        Check if a magnet is stalled
+        """
+        
+        if self._torrent:
+            return (self._torrent.state_enum.value == 'stalledDL')
+        else:
+            return False
 
     def __repr__(self) -> str:
         from .classtools import loc
