@@ -3,7 +3,6 @@ from sys import stdout, stderr # pyright: ignore[reportUnusedImport]
 
 if TYPE_CHECKING:
     from .db import Color
-    from .pc import Path
 
 #========================================================
 
@@ -385,23 +384,10 @@ class ParsedArgs:
 
 class Log:
 
-    #========================================================
-    # WRITERS
-
     from logging import debug    as VERB
     from logging import info     as INFO
     from logging import warning  as WARN
     from logging import error    as FAIL
     from logging import critical as CRIT
 
-    #========================================================
-
-    def file(path: 'Path'):
-        from logging import FileHandler, DEBUG
-
-        # Create a FileHandler
-        fh = FileHandler(str(path))
-        fh.setLevel(DEBUG) # Log all messages to the file
-        fh.setFormatter(Log.FORMATTER)
-
-    #========================================================
+#========================================================
