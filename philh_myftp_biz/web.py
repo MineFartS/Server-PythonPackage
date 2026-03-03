@@ -771,8 +771,8 @@ class api:
             try:
                 _run("window.lines = document.getElementById('searchResult').children[1].children")
             
-            except RuntimeError as e:
-                Log.VERB('', exc_info=e)
+            except RuntimeError:
+                Log.VERB('', exc_info=True)
                 return
 
             # Iter from 0 to # of lines
@@ -797,8 +797,8 @@ class api:
 
                     )
 
-                except KeyError as e:
-                    Log.VERB('', exc_info=e)
+                except KeyError, RuntimeError:
+                    Log.VERB('', exc_info=True)
 
 class Magnet(api.qBitTorrent):
     """
@@ -965,11 +965,11 @@ class Driver:
             # Truncate the Error Message
             mess: str = e.msg
 
-            startp: int = 2+mess.find(':')
+            mess = mess[2+mess.find(':'):]
 
-            endp  : int = 1+mess.find('\nStacktrace:')
+            mess = mess[:1+mess.find('\nStacktrace:')]
 
-            raise RuntimeError(mess[startp:endp]) from None
+            raise RuntimeError(mess) from None
 
     def element(self,
         by: Literal['class', 'id', 'xpath', 'name', 'attr'],
