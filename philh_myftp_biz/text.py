@@ -232,7 +232,7 @@ def abbr(
 def from_function(func: Callable) -> str:
     from ast import parse, walk, Lambda, unparse
     from inspect import getsourcelines
-    from .classtools import path
+    from .classtools import cpath
 
     source = ''.join(getsourcelines(func)[0])
 
@@ -253,4 +253,4 @@ def from_function(func: Callable) -> str:
 
         return source
     
-    raise TypeError(path(func))
+    raise TypeError(cpath(func))
