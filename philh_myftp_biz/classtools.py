@@ -7,18 +7,6 @@ class attr:
     Attribute of Instance/Object
     """
 
-    private: bool
-
-    value: Any
-
-    callable: bool
-
-    null: bool
-
-    parent: Any
-
-    name: str
-
     def __init__(self,
         parent: Any,
         name: str
@@ -26,54 +14,45 @@ class attr:
         self.name: str = name
         self.parent = parent
 
-    def __getattr__(self, name:str):
-        
-        match name:
+    @property
+    def private(self) -> bool:
 
-            case 'name':
-                return self.__dict__['name']
+        if self.name.startswith('__'):
+            return True
+
+        elif hasattr(self.parent, '__name__') and (self.name.startswith(f'_{self.parent.__name__}__')):
+            return True
+
+        elif (self.name.startswith(f'_{self.parent.__class__.__name__}__')):
+            return True
+
+        else:
             
-            case 'parent':
-                return self.__dict__['parent']
+            for base in self.parent.__class__.__bases__:
 
-            case 'private':
-
-                if self.name.startswith('__'):
+                if self.name.startswith(f'_{base.__name__}__'):
+                
                     return True
+                
+        return False
+
+    @property
+    def value(self):
         
-                elif hasattr(self.parent, '__name__') and (self.name.startswith(f'_{self.parent.__name__}__')):
-                    return True
-        
-                elif (self.name.startswith(f'_{self.parent.__class__.__name__}__')):
-                    return True
+        if not self.private:
 
-                else:
-                    
-                    for base in self.parent.__class__.__bases__:
+            try:
+                return getattr(self.parent, self.name)
+            except:
+                pass
 
-                        if self.name.startswith(f'_{base.__name__}__'):
-                        
-                            return True
-                        
-                return False
-            
-            case 'value':
-
-                if not self.private:
-
-                    try:
-                        return getattr(self.parent, self.name)
-                    except:
-                        pass
-
-            case 'callable':
-                return callable(self.value)
-            
-            case 'null':
-                return (self.value is None)
-            
-            case _:
-                raise AttributeError(f"type object '{cpath(self)}' has no attribute '{name}'")
+    @property
+    def callable(self):
+        return callable(self.value)
+    
+    @property
+    def null(self):
+        return (self.value is None)
 
     def __str__(self) -> str:
         """
@@ -81,13 +60,12 @@ class attr:
 
         Formats with json.dumps
         """
-        from .json import dumps, StringEncoder
+        from .json import dumps
 
         try:
             return dumps(
                 obj = self.value,
-                indent = 2,
-                cls = StringEncoder
+                indent = 2
             )
         except TypeError:
             return str(self.value)

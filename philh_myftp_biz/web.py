@@ -890,12 +890,6 @@ class Driver:
     Wrapper for FireFox Selenium Session
     """
 
-    URL: str|None
-    """URL of the Current Page"""
-
-    HTML: str|None
-    """HTML of the Current Page"""
-
     def __init__(self,
         headless: bool = True,
         eager: bool = False,
@@ -1061,26 +1055,25 @@ class Driver:
         except InvalidSessionIdException:
             pass
 
-    def __getattr__(self, name:str):
+    @property
+    def HTML(self) -> str | None:
+        """HTML of the Current Page"""
+        from selenium.common.exceptions import WebDriverException
+        
+        try:
+            return self._drvr.page_source
+        except WebDriverException:
+            pass
+        
+    @property
+    def URL(self) -> str | None:
+        """URL of the Current Page"""
         from selenium.common.exceptions import WebDriverException
 
-        match name:
-
-            case 'HTML':
-                try:
-                    return self._drvr.page_source
-                except WebDriverException:
-                    return None
-                
-            case 'URL':
-                try:
-                    return self._drvr.current_url
-                except WebDriverException:
-                    return None
-            
-            case _:
-
-                return self.__dict__[name]
+        try:
+            return self._drvr.current_url
+        except WebDriverException:
+            pass
 
 def download(
     url: str,
