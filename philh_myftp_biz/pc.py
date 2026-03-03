@@ -435,12 +435,6 @@ class Path:
         from shutil import copyfile
         from .terminal import Log
 
-        Log.VERB(
-            f'Initializing Copier\n'+ \
-            f'{self=}\n'+ \
-            f'{dst=}'
-        )
-
         files: list[PathPair] = []
 
         try:
@@ -484,12 +478,6 @@ class Path:
                     src = str(file.src),
                     dst = str(file.dst)
                 )
-
-            Log.VERB(
-                f'Copy Completed\n'+ \
-                f'{self=}\n'+ \
-                f'{dst=}'
-            )
 
         except Exception as e:
 
