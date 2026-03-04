@@ -1,4 +1,58 @@
-from typing import Callable, Any
+from typing import Callable, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from tkinter import Label, Button
+
+class Page:
+
+    def __init__(self,
+        gui: 'GUI'
+    ) -> None:
+        
+        self._widgets: 'list[dict[str, dict|Label|Button]]' = []
+        self.gui = gui
+
+    def Text(self,
+        text: str = '<Text>'
+    ) -> None:
+        from tkinter import Label
+
+        self._widgets += [{
+            'class': Label,
+            'kwargs': {
+                'text': text,
+                'pady': 10
+            }
+        }]
+
+    def Header(self,
+        text: str = '<Header>'
+    ) -> None:
+        from tkinter import Label
+
+        self._widgets += [{
+            'class': Label,
+            'kwargs': {
+                'text': text,
+                'font': ('TkDefaultFont', 20),
+                'pady': 15
+            }
+        }]
+
+    def Button(self,
+        text: str = '<Button>',
+        func: Callable[[], Any] = lambda:...
+    ) -> None:
+        from tkinter import Button
+        
+        self._widgets += [{
+            'class': Button,
+            'kwargs': {
+                'text': text, 
+                'command': func,
+                'pady': 5
+            }
+        }]
 
 class GUI:
 
@@ -32,6 +86,36 @@ class GUI:
         self._tk.geometry(f'{value[0]}x{value[1]}')
 
     #====================================================
+    # PAGE
+
+    @property
+    def page(self) -> None | Page:
+
+        if hasattr(self, '_page'):
+            return self._page
+
+    @page.setter
+    def page(self,
+        value: Page | None
+    ) -> None:
+        
+        self._page = value
+        
+        for widget in self._tk.winfo_children():
+            widget.destroy()
+        
+        if value:
+
+            for widget in value._widgets:
+
+                instance: 'Label|Button' = widget['class'](
+                    master = self._tk,    
+                    **widget['kwargs']
+                )
+
+                instance.pack()
+
+    #====================================================
 
     def __init__(self) -> None:
         from tkinter import Tk
@@ -40,8 +124,8 @@ class GUI:
 
         # Prevent User from resizing/maximizing window
         self._tk.resizable(width=False, height=False)
-
         self.run = self._tk.mainloop
+        self.close = self._tk.destroy
 
         self.title = 'New Window'
 
@@ -52,38 +136,6 @@ class GUI:
 
         Thread(self._tk.mainloop)
 
-    def Text(self,
-        text: str = '<Text>'
-    ) -> None:
-        from tkinter import Label
+    def Page(self) -> Page:
 
-        Label(
-            master = self._tk, 
-            text = text,
-            pady = 10
-        ).pack()
-
-    def Header(self,
-        text: str = '<Header>'
-    ) -> None:
-        from tkinter import Label
-
-        Label(
-            master = self._tk,
-            text = text,
-            font = ('TkDefaultFont', 20),
-            pady = 15
-        ).pack()
-
-    def Button(self,
-        text: str = '<Button>',
-        func: Callable[[], Any] = lambda:...
-    ) -> None:
-        from tkinter import Button
-        
-        Button(
-            master = self._tk, 
-            text = text, 
-            command = func,
-            pady = 5
-        ).pack()
+        return Page(self)
