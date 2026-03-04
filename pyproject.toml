@@ -2,7 +2,7 @@
 name = "philh_myftp_biz"
 version = "v2026.03.02"
 requires-python = ">=3.14,<4.0"
-dependencies = [ "dill", "selenium", "paramiko", "qbittorrent-api", "inputimeout", "configobj", "browser_cookie3", "elevate", "tqdm", "tomli_w", "toml", "psutil", "keyring", "ping3", "QuickSocketPY", "python-dateutil", "pytz", "xmltodict", "GitPython",]
+dependencies = [ "tk", "dill", "selenium", "paramiko", "qbittorrent-api", "inputimeout", "configobj", "browser_cookie3", "elevate", "tqdm", "tomli_w", "toml", "psutil", "keyring", "ping3", "QuickSocketPY", "python-dateutil", "pytz", "xmltodict", "GitPython",]
 
 [build-system]
 requires = [ "poetry-core>=2.0.0,<3.0.0",]
