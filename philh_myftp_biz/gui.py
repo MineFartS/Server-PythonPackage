@@ -40,19 +40,30 @@ class Page:
         }]
 
     def Button(self,
-        text: str = '<Button>',
-        func: Callable[[], Any] = lambda:...
+        text: str = '<Button>', 
+        *,
+        func: None|Callable[[], Any] = None,
+        page: None|Page = None
     ) -> None:
         from tkinter import Button
+        from functools import partial
         
-        self._widgets += [{
+        widget = {
             'class': Button,
             'kwargs': {
                 'text': text, 
-                'command': func,
+                'command': None,
                 'pady': 5
             }
-        }]
+        }
+
+        if func:
+            widget['kwargs']['command'] = func
+
+        elif page:
+            widget['kwargs']['command'] = partial(setattr, self.gui, 'page', page)
+
+        self._widgets += [widget]
 
 class GUI:
 
