@@ -47,12 +47,22 @@ class _Template:
     def read(self):
         """Read data from the file"""
 
-        value = self._read()
+        if self.path.exists:
 
-        if value:
-            return value
-        else:
-            return self.default
+            value = self._read()
+
+            if value:
+                return value
+            else:
+                return self.default
+
+    def _read_UTF8(self) -> bytes:
+
+        with self.path.open() as f:
+        
+            raw: str = f.read()
+
+            return raw.encode('utf-8')
 
 #========================================================
 
@@ -87,11 +97,8 @@ class PKL(_Template):
     def _read(self):
         from dill import load
         
-        try:
-            with self.path.open('rb') as f:
-                return load(f)
-        except:
-            pass
+        with self.path.open('rb') as f:
+            return load(f)
 
     def save(self,
         value: Any
@@ -160,10 +167,7 @@ class JSON(_Template):
     def _read(self):
         from json import load
 
-        try:
-            return load(fp=self.path.open())
-        except:
-            pass
+        return load(fp=self.path.open())
 
     def save(self, data: dict) -> None:
         from json import dump
@@ -182,12 +186,8 @@ class INI(_Template):
     def _read(self):
         from configobj import ConfigObj
         
-        try:
-            obj = ConfigObj(str(self.path))
-            return obj.dict()
-        except:
-            pass
-    
+        return ConfigObj(str(self.path)).dict()
+         
     def save(self, data:dict) -> None:
         from configobj import ConfigObj
 
@@ -206,16 +206,7 @@ class YAML(_Template):
     def _read(self):
         from yaml import safe_load
 
-        try:
-
-            with self.path.open() as f:
-                data = safe_load(stream=f)
-
-            if data:
-                return data
-
-        except:
-            pass
+        return safe_load(self._read_UTF8())
     
     def save(self, data:dict) -> None:
         from yaml import dump
@@ -236,10 +227,7 @@ class TXT(_Template):
         """
         Read data from the txt file
         """
-        try:
-            return self.path.open(mode='r').read()
-        except:
-            pass
+        return self.path.open(mode='r').read()
     
     def save(self, data:str) -> None:
         """
@@ -332,11 +320,8 @@ class CSV(_Template):
     def _read(self):
         from csv import reader
 
-        try:
-            with self.path.open() as csvfile:
-                return reader(csvfile)
-        except:
-            pass
+        with self.path.open() as csvfile:
+            return reader(csvfile)
 
     def save(self, data:list[list]) -> None:
         from csv import writer
@@ -352,11 +337,8 @@ class TOML(_Template):
     def _read(self):
         from toml import load
 
-        try:
-            with self.path.open() as f:
-                return load(f)
-        except:
-            pass
+        with self.path.open() as f:
+            return load(f)
         
     def save(self, data:dict) -> None:
         from tomli_w import dump
