@@ -1,69 +1,77 @@
-from typing import Callable, Any, TYPE_CHECKING
+from typing import Callable, Any, TYPE_CHECKING, Literal, Type, Self
 
 if TYPE_CHECKING:
     from tkinter import Label, Button
 
-class Page:
+class Widget(dict[str, Any]):
+
+    def __init__(self,
+        type: Literal['Label', 'Button']
+    ) -> None:
+        import tkinter
+
+        self.type: 'Type[Label|Button]' = getattr(tkinter, type)
+
+    def instance(self, gui:'GUI'):
+        
+        return self.type(
+            master = gui._tk,
+            **self 
+        )
+
+    @staticmethod
+    def Text(
+        text: str = '<Text>'
+    ) -> Widget:
+
+        widget = Widget('Label')
+
+        widget['text'] = text
+        widget['pady'] = 10
+
+        return widget
+
+    @staticmethod
+    def Header(
+        text: str = '<Header>'
+    ) -> Widget:
+        
+        widget = Widget('Label')
+
+        widget['text'] = text
+        widget['font'] = ('TkDefaultFont', 20)
+        widget['pady'] = 15
+
+        return widget
+
+    @staticmethod
+    def Button(
+        text: str = '<Button>', 
+        onclick: None|Page|Callable[[], Any] = None,
+    ) -> Widget:
+
+        widget = Widget('Button')
+
+        widget['text'] = text
+        widget['pady'] = 5
+
+        if callable(onclick):
+            widget['command'] = onclick
+
+        elif isinstance(onclick, Page):
+            widget['command'] = lambda: setattr(onclick.gui, 'page', onclick)
+
+        return widget
+
+class Page(list[Widget]):
 
     def __init__(self,
         gui: 'GUI'
     ) -> None:
-        
-        self._widgets: 'list[dict[str, dict|Label|Button]]' = []
         self.gui = gui
 
-    def Text(self,
-        text: str = '<Text>'
-    ) -> None:
-        from tkinter import Label
-
-        self._widgets += [{
-            'class': Label,
-            'kwargs': {
-                'text': text,
-                'pady': 10
-            }
-        }]
-
-    def Header(self,
-        text: str = '<Header>'
-    ) -> None:
-        from tkinter import Label
-
-        self._widgets += [{
-            'class': Label,
-            'kwargs': {
-                'text': text,
-                'font': ('TkDefaultFont', 20),
-                'pady': 15
-            }
-        }]
-
-    def Button(self,
-        text: str = '<Button>', 
-        *,
-        func: None|Callable[[], Any] = None,
-        page: None|Page = None
-    ) -> None:
-        from tkinter import Button
-        from functools import partial
-        
-        widget = {
-            'class': Button,
-            'kwargs': {
-                'text': text, 
-                'command': None,
-                'pady': 5
-            }
-        }
-
-        if func:
-            widget['kwargs']['command'] = func
-
-        elif page:
-            widget['kwargs']['command'] = partial(setattr, self.gui, 'page', page)
-
-        self._widgets += [widget]
+    def __iadd__(self, value: Widget) -> Self:
+        return super().__iadd__([value])
 
 class GUI:
 
@@ -117,14 +125,9 @@ class GUI:
         
         if value:
 
-            for widget in value._widgets:
+            for widget in value:
 
-                instance: 'Label|Button' = widget['class'](
-                    master = self._tk,    
-                    **widget['kwargs']
-                )
-
-                instance.pack()
+                widget.instance(gui=self).pack()
 
     #====================================================
 
