@@ -40,7 +40,7 @@ class Omdb:
 
             case _: raise KeyError()
 
-    @diskcache(expire=3600)
+    @diskcache(expire=18000)
     def movie(self,
         title: str,
         year: int
@@ -75,7 +75,7 @@ class Omdb:
 
                 return movie
 
-    @diskcache(expire=3600)
+    @diskcache(expire=18000)
     def show(self,
         title: str,
         year: int

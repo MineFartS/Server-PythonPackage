@@ -215,6 +215,7 @@ class SubProcess:
         #
         self.stop()
 
+    @property
     def finished(self) -> bool:
         """
         Check if the subprocess is finished

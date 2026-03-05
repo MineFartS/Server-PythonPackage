@@ -381,6 +381,7 @@ class Path:
             # Return filename
             return name
 
+    @cache
     def seg(self,
         i: int = -1
     ) -> str:

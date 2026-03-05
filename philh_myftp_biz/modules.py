@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING
+from functools import cache
 from .pc import Path
 
 if TYPE_CHECKING:
@@ -244,6 +245,7 @@ class Service(Path):
 
         #==============================
 
+    @cache
     def _file(self, name:str) -> Path:
 
         # Iter through all children of the service path
