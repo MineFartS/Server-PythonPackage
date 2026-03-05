@@ -3,17 +3,17 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..time import from_stamp
 
-class Movie:
+class MovieData:
     Title: str
     Year: int
     Released: 'from_stamp'
 
-class Show:
+class ShowData:
     Title: str
     Year: int
-    Seasons: dict[str, dict[str, Episode]]
+    Seasons: dict[str, dict[str, EpisodeData]]
 
-class Episode:
+class EpisodeData:
     Title: str
     Released: 'from_stamp|None'
     Number: int
@@ -40,7 +40,7 @@ class Omdb:
     def movie(self,
         title: str,
         year: int
-    ) -> None | Movie:
+    ) -> None | MovieData:
         """
         Get details of a movie
         """
@@ -63,7 +63,7 @@ class Omdb:
             
             if r['Type'] == 'movie':
 
-                movie = Movie()
+                movie = MovieData()
 
                 movie.Title = r['Title'] # pyright: ignore[reportAttributeAccessIssue]
                 movie.Year = int(r['Year'])
@@ -74,7 +74,7 @@ class Omdb:
     def show(self,
         title: str,
         year: int
-    ) -> None | Show:
+    ) -> None | ShowData:
         """
         Get details of a show
         """
@@ -105,7 +105,7 @@ class Omdb:
         elif pres['Type'] == 'series':
 
             # Create new 'Show' obj
-            show = Show()
+            show = ShowData()
 
             #
             show.Seasons = {}
@@ -134,7 +134,7 @@ class Omdb:
                 for e in pres2['Episodes']:
 
                     # Create new 'Episode' obj
-                    episode = Episode()
+                    episode = EpisodeData()
 
                     # Set attributes of 'Episode' obj
                     episode.Title = e['Title']
