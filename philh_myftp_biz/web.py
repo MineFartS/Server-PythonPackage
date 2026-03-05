@@ -160,13 +160,17 @@ def get(
     url: str,
     params: dict[str, str] = {},
     headers: dict[str, str] = {},
-    stream: bool = None
+    stream: bool = None,
+    max_tries: int = None,
+    timeout: None|int = None
 ) -> 'Response':
     """
     Wrapper for requests.get
     """
+    from requests.adapters import HTTPAdapter, Retry
+    from requests import Session
     from .terminal import Log
-    from requests import get
+    from .num import maxint    
 
     headers['User-Agent'] = 'Mozilla/5.0'
     headers['Accept-Language'] = 'en-US,en;q=0.5'
@@ -178,13 +182,28 @@ def get(
         f'{headers=}'
     )
 
-    return get(
+    retry_strategy = Retry(
+        total = (max_tries if max_tries else maxint),
+        backoff_factor = 1,
+        status_forcelist = list(range(400, 600)),
+        allowed_methods = ["GET", "POST"]
+    )
+
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+
+    session = Session()
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+
+    return session.get(
         url = url,
         params = params,
         headers = headers,
         stream = stream,
-        timeout = None
+        timeout = timeout
     )
+
+    get()
 
 class api:
     """
@@ -1109,6 +1128,7 @@ class FirewallException:
     def __repr__(self) -> str:
         return f'FirewallException({self.name})'
 
+    @property
     def exists(self) -> bool:
         """
         Check if this exception exists in Windows Defender
