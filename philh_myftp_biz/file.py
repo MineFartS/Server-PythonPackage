@@ -273,44 +273,18 @@ class ZIP:
         """
         Extract a single file from the zip archive
         """
-
-        folder = temp('extract', 'zip')
-
-        self._zip.extract(file, str(folder))
-
-        for p in folder.descendants:
-            
-            if p.is_file:
-                
-                p.move(savepath)
-                
-                folder.delete()
-                
-                break 
+        self._zip.extract(file, str(savepath))
 
     def extractAll(self,
-        dst: 'Path',
-        show_progress: bool = True
+        path: 'Path'
     ) -> None:
         """
         Extract all files from the zip archive
         """
-        from tqdm import tqdm
 
-        dst.mkdir()
+        path.mkdir()
 
-        if show_progress:
-            
-            with tqdm(total=len(self.files), unit=' file') as pbar:
-                
-                for file in self.files():
-                    
-                    pbar.update(1)
-
-                    self.extractFile(file, str(dst))
-
-        else:
-            self._zip.extractall(str(dst))
+        self._zip.extractall(str(path))
 
 class CSV(_Template):
     """
