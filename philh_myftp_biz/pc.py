@@ -1,4 +1,5 @@
 from typing import Literal, Self, Generator, TYPE_CHECKING, Any
+from functools import cached_property
 
 if TYPE_CHECKING:
     from .time import from_stamp
@@ -8,12 +9,12 @@ if TYPE_CHECKING:
 
 class INFO:
     
-    @property
+    @cached_property
     def NAME() -> str:
         from socket import gethostname
         return gethostname()
 
-    @property
+    @cached_property
     def OS() -> Literal['windows', 'unix']: 
         from os import name
 
@@ -24,6 +25,20 @@ class INFO:
             
             case _:
                 return 'unix'
+
+    @cached_property
+    def temp() -> Path:
+        from tempfile import gettempdir
+
+        SERVER = Path('E:/__temp__/')
+
+        OS = Path(gettempdir() + '/philh_myftp_biz/')
+
+        if SERVER.exists:
+            return SERVER
+        else:
+            OS.mkdir()
+            return OS
 
 #========================================================
 
@@ -783,19 +798,6 @@ def cwd() -> Path:
     from os import getcwd
 
     return Path(getcwd())
-
-def temp() -> Path:
-    from tempfile import gettempdir
-
-    SERVER = Path('E:/__temp__/')
-
-    OS = Path(gettempdir() + '/philh_myftp_biz/')
-
-    if SERVER.exists:
-        return SERVER
-    else:
-        OS.mkdir()
-        return OS
 
 def relscan(
     src: Path,
