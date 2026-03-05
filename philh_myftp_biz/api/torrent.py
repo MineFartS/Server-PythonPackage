@@ -1,7 +1,8 @@
 from typing import Literal, Generator, TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
-    from qbittorrentapi import Client, TorrentDictionary, TorrentFile
+    from qbittorrentapi import Client, TorrentDictionary
+    from qbittorrentapi import TorrentFile as __TorrentFile
     from ..web import Driver
     from ..pc import Path
 
@@ -20,14 +21,14 @@ qualities: dict[str, int] = {
 QUALITY LOOKUP TABLE
 """
 
-class ClientFile:
+class TorrentFile:
     """
     Downloading Torrent File
     """
 
     def __init__(self,
         torrent: 'TorrentDictionary',
-        file: 'TorrentFile'
+        file: '__TorrentFile'
     ) -> None:
         from ..pc import Path
         
@@ -47,7 +48,7 @@ class ClientFile:
         """Torrent"""
 
     @property
-    def _file(self) -> 'None|TorrentFile':
+    def _file(self) -> 'None|__TorrentFile':
         from qbittorrentapi.exceptions import TorrentFileNotFoundError
 
         try:
@@ -333,7 +334,7 @@ class Magnet(qBitTorrent):
         self.start()
 
     @property
-    def files(self) -> list[ClientFile]:
+    def files(self) -> list[TorrentFile]:
         """
         List of all files in Magnet Download
 
@@ -360,7 +361,7 @@ class Magnet(qBitTorrent):
 
             self._torrent.setForceStart(False)
 
-            return [ClientFile(self._torrent,f) for f in self._torrent.files]
+            return [TorrentFile(self._torrent,f) for f in self._torrent.files]
         
         else:
             return []
