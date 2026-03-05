@@ -582,6 +582,15 @@ class Path:
             dst = str(link)
         )
 
+    @cached_property
+    def hash(self) -> str:
+        """Calculate the SHA256 hash of a file."""
+        from hashlib import sha256
+        
+        with self.open("rb") as f:
+            
+            return sha256(f.read()).hexdigest()
+
 class _cd:
     """
     Advanced Options for Change Directory

@@ -1,5 +1,5 @@
 from typing import Literal, Generator, TYPE_CHECKING, Callable
-from functools import partial
+from functools import partial, cached_property
 
 if TYPE_CHECKING:
     from qbittorrentapi import Client, TorrentDictionary, TorrentFile
@@ -162,7 +162,8 @@ def get(
     headers: dict[str, str] = {},
     stream: bool = None,
     max_tries: int = None,
-    timeout: None|int = None
+    timeout: None|int = None,
+    method: Literal['GET', 'POST'] = 'GET'
 ) -> 'Response':
     """
     Wrapper for requests.get
@@ -195,15 +196,13 @@ def get(
     session.mount("http://", adapter)
     session.mount("https://", adapter)
 
-    return session.get(
+    return getattr(session, method.lower())(
         url = url,
         params = params,
         headers = headers,
         stream = stream,
         timeout = timeout
     )
-
-    get()
 
 class api:
     """
@@ -656,6 +655,52 @@ class api:
 
                 except KeyError, RuntimeError:
                     Log.VERB('', exc_info=True)
+
+    class VirusTotal:
+
+        def __init__(self):
+            
+            self.key = 'c063375af8061ad11694b15fb48327b3fd3c2a4f79cff8669f3de82143cc6562'
+
+        @cached_property
+        def client(self):
+            from vt import Client
+
+            return Client(self.key)
+
+        def scan(self,
+            file: Path
+        ):
+            """
+            Retrieve the analysis report for a file
+            """
+
+            # TODO
+            
+            """
+            self.client
+    
+                try:
+        
+                    # Check for existing report first
+                    file_obj = client.get_object(f"/files/{file_hash}")
+        
+                    return file_obj.last_analysis_stats, file_obj.permalink
+    
+                except vt.APIError as e:
+                    if e.code == 'NotFoundError':
+                        return None, None
+                    else:
+                        print(f"Error retrieving report: {e}")
+                        return None, None
+            
+            get(
+                url = 'https://www.virustotal.com/api/v3/files',
+                headers = {'x-apikey': self.key},
+                params = {}
+            )"""
+
+
 
 class Magnet(api.qBitTorrent):
     """
