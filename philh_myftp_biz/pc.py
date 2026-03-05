@@ -1,44 +1,8 @@
 from typing import Literal, Self, Generator, TYPE_CHECKING, Any
-from functools import cached_property
 
 if TYPE_CHECKING:
     from .time import from_stamp
     from pathlib import PurePath as __PurePath
-
-#========================================================
-
-class INFO:
-    
-    @cached_property
-    def NAME() -> str:
-        from socket import gethostname
-        return gethostname()
-
-    @cached_property
-    def OS() -> Literal['windows', 'unix']: 
-        from os import name
-
-        match name:
-
-            case 'nt':
-                return 'windows'
-            
-            case _:
-                return 'unix'
-
-    @cached_property
-    def temp() -> Path:
-        from tempfile import gettempdir
-
-        SERVER = Path('E:/__temp__/')
-
-        OS = Path(gettempdir() + '/philh_myftp_biz/')
-
-        if SERVER.exists:
-            return SERVER
-        else:
-            OS.mkdir()
-            return OS
 
 #========================================================
 
@@ -841,5 +805,38 @@ def relscan(
     buff.stop_when = lambda: not t.running
 
     yield from buff
+
+#========================================================
+# NAME
+
+from socket import gethostname as __gethostname
+NAME: str = __gethostname()
+
+#=================================
+# OS
+
+from os import name as __name
+OS: Literal['windows', 'unix'] 
+
+match __name:
+
+    case 'nt':
+        OS = 'windows'
+    
+    case _:
+        OS = 'unix'
+
+#=================================
+# tempdir
+
+from tempfile import gettempdir as __gettempdir
+
+__temp_SERVER = Path('E:/__temp__/')
+__temp_OS = Path(__gettempdir() + '/philh_myftp_biz/')
+
+if __temp_SERVER.exists:
+    tempdir = __temp_SERVER
+else:
+    tempdir = __temp_OS
 
 #========================================================

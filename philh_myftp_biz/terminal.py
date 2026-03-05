@@ -131,9 +131,9 @@ def pause() -> None:
     Pause the execution and wait for user input
     """
     from os import system
-    from .pc import INFO
+    from .pc import OS
 
-    if INFO.OS == 'windows':
+    if OS == 'windows':
         system('pause')
     else:
         pass # TODO
@@ -159,11 +159,11 @@ def cls() -> None:
     (Prints a hexidecimal value so it can be detected from a subprocess)
     """
     from os import system
-    from .pc import INFO
+    from .pc import OS
 
     print(_cls_cmd)
     
-    if INFO.OS == 'windows':
+    if OS == 'windows':
         system('cls')
     else:
         system('clear')
