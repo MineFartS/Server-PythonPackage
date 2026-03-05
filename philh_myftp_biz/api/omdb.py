@@ -1,5 +1,5 @@
+from ..classtools import diskcache
 from typing import TYPE_CHECKING
-from functools import cache
 
 if TYPE_CHECKING:
     from ..time import from_stamp
@@ -40,7 +40,7 @@ class Omdb:
 
             case _: raise KeyError()
 
-    @cache
+    @diskcache(expire=3600)
     def movie(self,
         title: str,
         year: int
@@ -75,7 +75,7 @@ class Omdb:
 
                 return movie
 
-    @cache
+    @diskcache(expire=3600)
     def show(self,
         title: str,
         year: int

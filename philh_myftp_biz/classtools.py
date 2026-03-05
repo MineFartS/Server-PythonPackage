@@ -1,5 +1,13 @@
 from typing import Any, Generator, Callable
-from functools import cached_property, cache
+from functools import cached_property
+
+#========================================================
+# DISK CACHE
+
+from diskcache import Cache
+from .pc import tempdir
+
+diskcache = Cache(str(tempdir)).memoize
 
 #========================================================
 
@@ -82,7 +90,6 @@ def attrs(obj:Any) -> Generator[attr, Any, None]:
 
         yield attr(parent=obj, name=name)
 
-@cache
 def cpath(obj:Any) -> str:
     """
     Get Full path of instance
@@ -92,7 +99,6 @@ def cpath(obj:Any) -> str:
 
     return obj.__class__.__module__ + '.' + obj.__class__.__qualname__
 
-@cache
 def loc(obj:Any) -> str:
     """
     Get the hexadecimal location of an instance in memory
@@ -165,3 +171,4 @@ class SharedBuffer:
             return entry
 
 #========================================================
+

@@ -233,7 +233,6 @@ def abbr(
     else:
         return string[:num] + end
 
-@cache
 def from_function(func: Callable) -> str:
     from ast import parse, walk, Lambda, unparse
     from inspect import getsourcelines

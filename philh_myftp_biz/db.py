@@ -8,7 +8,6 @@ if TYPE_CHECKING:
 
 class MimeType:
 
-    @cache
     def Ext(ext:str):
         """
         Get the mimetype from a file extension
@@ -33,14 +32,12 @@ class MimeType:
             # Get the extension as lowercase
             return db[ext.lower()]
 
-    @cache
     def Path(path:'Path'):
         """
         Get the mimetype from a file path
         """
         return MimeType.Ext(path.ext)
     
-    @cache
     def Name(name:str):
         """
         Get the mimetype from a file name
