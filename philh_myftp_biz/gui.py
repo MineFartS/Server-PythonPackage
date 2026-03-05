@@ -6,14 +6,13 @@ if TYPE_CHECKING:
 class Widget(dict[str, Any]):
 
     def __init__(self,
-        type: Literal['Label', 'Button']
+        type: Literal['Label', 'Button', 'Text']
     ) -> None:
         import tkinter
 
         self.type: 'Type[Label|Button]' = getattr(tkinter, type)
 
     def instance(self, gui:'GUI'):
-        
         return self.type(
             master = gui._tk,
             **self 
@@ -62,6 +61,12 @@ class Widget(dict[str, Any]):
             widget['command'] = lambda: setattr(onclick.gui, 'page', onclick)
 
         return widget
+
+    @staticmethod
+    def Console():
+        ...
+        #widget = Widget('Text')
+        # TODO
 
 class Page(list[Widget]):
 
