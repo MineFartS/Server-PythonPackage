@@ -182,7 +182,8 @@ def get(
         url = url,
         params = params,
         headers = headers,
-        stream = stream
+        stream = stream,
+        timeout = None
     )
 
 class api:
