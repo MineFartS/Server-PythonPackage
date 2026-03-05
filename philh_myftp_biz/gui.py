@@ -70,11 +70,6 @@ class Widget(dict[str, Any]):
 
 class Page(list[Widget]):
 
-    def __init__(self,
-        gui: 'GUI'
-    ) -> None:
-        self.gui = gui
-
     def __iadd__(self, value: Widget) -> Self:
         return super().__iadd__([value])
 
@@ -155,6 +150,5 @@ class GUI:
 
         Thread(self._tk.mainloop)
 
-    def Page(self) -> Page:
-
-        return Page(self)
+    def reload(self) -> None:
+        self.page = self.page
