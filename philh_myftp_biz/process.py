@@ -82,7 +82,7 @@ class SubProcess:
     _wait: bool
 
     def __init__(self,
-        args: list|tuple|str,
+        args: 'list|tuple|str|Path',
         terminal: None|Literal['cmd', 'ps', 'psfile', 'py', 'pym', 'vbs'] = 'cmd',
         dir: 'Path|None' = None
     ) -> None:
@@ -101,7 +101,7 @@ class SubProcess:
         if isinstance(args, (tuple, list)):
             args = stringify(args)
         else:
-            args = [args]
+            args = [str(args)]
 
         if terminal is None:
 
