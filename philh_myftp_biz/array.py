@@ -28,9 +28,9 @@ class List[V]:
 
         else:
             self.var = PKL(
-                path = temp('array', 'pkl'),
-                default = list(a)
+                path = temp('array', 'pkl')
             )
+            self.var.save(list(a))
 
         if self.var.default is None:
             self.var.default = []

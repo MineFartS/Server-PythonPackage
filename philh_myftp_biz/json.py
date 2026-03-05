@@ -43,9 +43,9 @@ class Dict[V]:
 
         else:
             self.var = PKL(
-                path = temp('table', 'json'),
-                default = t
+                path = temp('table', 'json')
             )
+            self.var.save(t)
 
         if self.var.default is None:
             self.var.default = {}
