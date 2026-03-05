@@ -1,4 +1,5 @@
 from typing import Any, Generator, Callable
+from functools import cached_property, cache
 
 #========================================================
 
@@ -14,7 +15,7 @@ class attr:
         self.name: str = name
         self.parent = parent
 
-    @property
+    @cached_property
     def private(self) -> bool:
 
         if self.name.startswith('__'):
@@ -36,7 +37,7 @@ class attr:
                 
         return False
 
-    @property
+    @cached_property
     def value(self):
         
         if not self.private:
@@ -46,11 +47,11 @@ class attr:
             except:
                 pass
 
-    @property
+    @cached_property
     def callable(self):
         return callable(self.value)
     
-    @property
+    @cached_property
     def null(self):
         return (self.value is None)
 
@@ -81,6 +82,7 @@ def attrs(obj:Any) -> Generator[attr, Any, None]:
 
         yield attr(parent=obj, name=name)
 
+@cache
 def cpath(obj:Any) -> str:
     """
     Get Full path of instance
@@ -90,6 +92,7 @@ def cpath(obj:Any) -> str:
 
     return obj.__class__.__module__ + '.' + obj.__class__.__qualname__
 
+@cache
 def loc(obj:Any) -> str:
     """
     Get the hexadecimal location of an instance in memory

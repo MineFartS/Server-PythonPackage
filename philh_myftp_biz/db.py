@@ -1,4 +1,5 @@
 from typing import Literal, TYPE_CHECKING
+from functools import cache
 
 if TYPE_CHECKING:
     from .pc import Path
@@ -7,6 +8,7 @@ if TYPE_CHECKING:
 
 class MimeType:
 
+    @cache
     def Ext(ext:str):
         """
         Get the mimetype from a file extension
@@ -31,12 +33,14 @@ class MimeType:
             # Get the extension as lowercase
             return db[ext.lower()]
 
+    @cache
     def Path(path:'Path'):
         """
         Get the mimetype from a file path
         """
         return MimeType.Ext(path.ext)
     
+    @cache
     def Name(name:str):
         """
         Get the mimetype from a file name
@@ -77,6 +81,7 @@ class Size:
     size.conv_factors['KB'] -> 1024
     """
 
+    @cache
     def to_bytes(string:str) -> float:
         """
         Convert Size String to bytes

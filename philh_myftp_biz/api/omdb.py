@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING
+from functools import cache
 
 if TYPE_CHECKING:
     from ..time import from_stamp
@@ -39,6 +40,7 @@ class Omdb:
 
             case _: raise KeyError()
 
+    @cache
     def movie(self,
         title: str,
         year: int
@@ -73,6 +75,7 @@ class Omdb:
 
                 return movie
 
+    @cache
     def show(self,
         title: str,
         year: int

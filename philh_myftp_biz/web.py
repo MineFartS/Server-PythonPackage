@@ -9,13 +9,11 @@ if TYPE_CHECKING:
 
 class IP:
 
-    @property
     def LAN() -> str:
         from socket import gethostname, gethostbyname
 
         return gethostbyname(gethostname())
     
-    @property
     def WAN() -> str:
         return get('https://api.ipify.org').text
 

@@ -1,5 +1,6 @@
 from typing import Literal, TYPE_CHECKING, Callable, Any
 from sys import stdout, stderr # pyright: ignore[reportUnusedImport]
+from functools import cache
 
 if TYPE_CHECKING:
     from .db import Color
@@ -133,7 +134,7 @@ def pause() -> None:
     from os import system
     from .pc import OS
 
-    if OS == 'windows':
+    if OS() == 'windows':
         system('pause')
     else:
         pass # TODO
@@ -163,7 +164,7 @@ def cls() -> None:
 
     print(_cls_cmd)
     
-    if OS == 'windows':
+    if OS() == 'windows':
         system('cls')
     else:
         system('clear')
@@ -277,6 +278,7 @@ class ProgressBar:
 
 #========================================================
 
+@cache
 def Args() -> list:
     """
     Read Command Line Arguements with automatic formatting
@@ -360,6 +362,7 @@ class ParsedArgs:
             self.__handlers[name] = lambda x: x
             self.__defaults[name] = False
 
+    @cache
     def __getitem__(self,
         key: str
     ):

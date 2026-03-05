@@ -1,4 +1,5 @@
 from typing import Literal, Generator, TYPE_CHECKING, Callable
+from functools import cache
 
 if TYPE_CHECKING:
     from qbittorrentapi import Client, TorrentDictionary
@@ -467,6 +468,7 @@ class thePirateBay:
         else:
             self._driver = Driver()
 
+    @cache
     def search(self,
         query: str
     ) -> None | Generator[Magnet]:

@@ -1,5 +1,5 @@
 from typing import Literal, Self, Generator, TYPE_CHECKING, Any
-from functools import cached_property
+from functools import cached_property, cache
 
 if TYPE_CHECKING:
     from .time import from_stamp
@@ -761,6 +761,7 @@ class _visibility:
 
 #========================================================
 
+@cache
 def script_dir(__file__:str) -> 'Path':
     """
     Get the directory of the current script

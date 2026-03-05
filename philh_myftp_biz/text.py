@@ -1,4 +1,5 @@
 from typing import Callable
+from functools import cache
 
 def split(
     value: str,
@@ -87,6 +88,7 @@ class contains:
         # If all values are matched, then return True
         return True
 
+@cache
 def auto_convert(string:str) -> int | float | bool | dict | str:
     """
     Automatically convert string
@@ -211,6 +213,7 @@ def similarity(
 
     return SequenceMatcher(None, str(a), str(b)).ratio()
 
+@cache
 def abbr(
     num: int,
     string: str,
@@ -230,6 +233,7 @@ def abbr(
     else:
         return string[:num] + end
 
+@cache
 def from_function(func: Callable) -> str:
     from ast import parse, walk, Lambda, unparse
     from inspect import getsourcelines
