@@ -762,15 +762,6 @@ class _visibility:
 
 #========================================================
 
-@cache
-def script_dir(__file__:str) -> 'Path':
-    """
-    Get the directory of the current script
-    """
-    from os import path
-
-    return Path(path.abspath(path=__file__)).parent
-
 def cwd() -> Path:
     """
     Get the Current Working Directory
@@ -843,7 +834,7 @@ match __name:
         OS = 'unix'
 
 #=================================
-# tempdir
+# TEMP DIR
 
 from tempfile import gettempdir as __gettempdir
 
@@ -853,5 +844,13 @@ if __temp_SERVER.exists and (NAME == 'PC-1'):
     tempdir = __temp_SERVER
 else:
     tempdir = Path(__gettempdir())
+
+#========================================================
+# SCRIPT DIR
+
+from os import path as __path
+from sys import argv as __argv
+
+scriptdir = Path( __path.dirname(__path.abspath(__argv[0])) )
 
 #========================================================
