@@ -160,4 +160,7 @@ class GUI:
         return Page(self)
     
     def reload(self) -> None:
+
         self.page = self.page
+
+        self._tk.update()
