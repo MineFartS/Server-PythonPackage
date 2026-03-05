@@ -1,4 +1,5 @@
 from typing import Literal, Self, Generator, TYPE_CHECKING, Any
+from functools import cached_property
 
 if TYPE_CHECKING:
     from .time import from_stamp
@@ -84,12 +85,12 @@ class Path:
         """Check if path exists"""
         return self._pure.exists()
     
-    @property
+    @cached_property
     def is_file(self) -> bool:
         """Check if path is a file"""
         return self._pure.is_file()
     
-    @property
+    @cached_property
     def is_dir(self) -> bool:
         """Check if path is a folder"""
         return self._pure.is_dir()
@@ -107,7 +108,7 @@ class Path:
 
         return from_stamp(stamp)
 
-    @property
+    @cached_property
     def cd(self) -> '_cd':
         """
         Change the working directory to path
@@ -268,7 +269,7 @@ class Path:
 
         return (item is None)
 
-    @property
+    @cached_property
     def parent(self) -> Path:
         """
         Get parent of current path
@@ -286,7 +287,7 @@ class Path:
         """
         return self.parent.child(item)
     
-    @property
+    @cached_property
     def ext(self) -> str|None:
         """
         Get file extension of path
@@ -298,7 +299,7 @@ class Path:
 
             return seg[seg.rfind('.')+1:].lower()
 
-    @property
+    @cached_property
     def type(self) -> None | str:
         """
         Get mime type of path
@@ -361,7 +362,7 @@ class Path:
 
         return dst
 
-    @property
+    @cached_property
     def name(self) -> str:
         """
         Get the name of the current path
@@ -685,14 +686,18 @@ class _set_access:
             chmod(str(path), 0o644)
 
     def full(self) -> None:
+        from .process import RunHidden
         from .terminal import Log
         from os import chmod
 
         Log.VERB(f'Updating Access [FULL ACCESS]: {self.path}')
 
-        for path in self.__paths():
+        if self.path.is_dir:
 
-            chmod(str(path), 0o777)
+            RunHidden(['icacls', self.path, '/grant', 'Everyone:F', '/t', '/c', '/q'])
+
+        else:
+            chmod(str(self.path), 0o777)
 
 class _visibility:
     
