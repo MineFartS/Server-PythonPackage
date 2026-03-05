@@ -18,14 +18,12 @@ class Episode:
     Released: 'from_stamp|None'
     Number: int
 
-class omdb:
+class Omdb:
     """
     OMDB API
 
     'https://www.omdbapi.com/{url}'
     """
-
-    __url: str = 'https://www.omdbapi.com/'
 
     def __init__(self,
         key: int = 0
@@ -51,7 +49,7 @@ class omdb:
         from ..web import get
 
         response = get(
-            url = self.__url,
+            url = 'https://www.omdbapi.com/',
             params = {
                 't': title,
                 'y': year,
@@ -86,7 +84,7 @@ class omdb:
 
         # Request raw list of seasons
         req = get(
-            url = self.__url,
+            url = 'https://www.omdbapi.com/',
             params = {
                 't': title,
                 'y': year,
