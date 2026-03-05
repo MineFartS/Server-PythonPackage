@@ -158,3 +158,6 @@ class GUI:
     def Page(self) -> Page:
 
         return Page(self)
+    
+    def reload(self) -> None:
+        self.page = self.page
