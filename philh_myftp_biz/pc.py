@@ -837,11 +837,10 @@ match __name:
 from tempfile import gettempdir as __gettempdir
 
 __temp_SERVER = Path('E:/__temp__/')
-__temp_OS = Path(__gettempdir() + '/philh_myftp_biz/')
 
-if __temp_SERVER.exists:
+if __temp_SERVER.exists and (NAME == 'PC-1'):
     tempdir = __temp_SERVER
 else:
-    tempdir = __temp_OS
+    tempdir = Path(__gettempdir())
 
 #========================================================
