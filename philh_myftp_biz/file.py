@@ -39,7 +39,7 @@ class _Template:
         # Make the parent dir of the output path
         path.parent.mkdir()
 
-    _read: Callable[[], Any]
+    parsed: Any
 
     save = Callable[[Any], None]
     """Write data to the file"""
@@ -49,14 +49,15 @@ class _Template:
 
         if self.path.exists:
 
-            value = self._read()
+            value = self.parsed
 
             if value:
                 return value
             else:
                 return self.default
 
-    def _read_UTF8(self) -> bytes:
+    @property
+    def raw(self) -> bytes:
 
         with self.path.open() as f:
         
@@ -71,7 +72,8 @@ class XML(_Template):
     .XML File
     """
 
-    def _read(self) -> dict:
+    @property
+    def parsed(self) -> dict:
         from xmltodict import parse
 
         with self.path.open() as f:
@@ -94,7 +96,8 @@ class PKL(_Template):
     .PKL File
     """
 
-    def _read(self):
+    @property
+    def parsed(self):
         from dill import load
         
         with self.path.open('rb') as f:
@@ -164,7 +167,8 @@ class JSON(_Template):
     .JSON File
     """
 
-    def _read(self):
+    @property
+    def parsed(self):
         from json import load
 
         return load(fp=self.path.open())
@@ -183,7 +187,8 @@ class INI(_Template):
     .INI/.PROPERTIES File
     """
     
-    def _read(self):
+    @property
+    def parsed(self):
         from configobj import ConfigObj
         
         return ConfigObj(str(self.path)).dict()
@@ -203,10 +208,11 @@ class YAML(_Template):
     .YML/.YAML File
     """
     
-    def _read(self):
+    @property
+    def parsed(self):
         from yaml import safe_load
 
-        return safe_load(self._read_UTF8())
+        return safe_load(self.raw)
     
     def save(self, data:dict) -> None:
         from yaml import dump
@@ -223,7 +229,8 @@ class TXT(_Template):
     .TXT File
     """
     
-    def _read(self):
+    @property
+    def parsed(self):
         """
         Read data from the txt file
         """
@@ -291,7 +298,8 @@ class CSV(_Template):
     .CSV File
     """
 
-    def _read(self):
+    @property
+    def parsed(self):
         from csv import reader
 
         with self.path.open() as csvfile:
@@ -308,7 +316,8 @@ class TOML(_Template):
     .TOML File
     """
 
-    def _read(self):
+    @property
+    def parsed(self):
         from toml import load
 
         with self.path.open() as f:
