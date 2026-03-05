@@ -100,12 +100,13 @@ def auto_convert(string:str) -> int | float | bool | dict | str:
         - str
     """
 
-    from . import num, json
+    from .num import is_int, is_float
+    from .json import is_json, loads
 
-    if num.is_int(string):
+    if is_int(string):
         return int(string)
     
-    elif num.is_float(string):
+    elif is_float(string):
         return float(string)
     
     elif string.lower() in ['true', 'false']:
@@ -114,8 +115,8 @@ def auto_convert(string:str) -> int | float | bool | dict | str:
     elif hex.valid(string):
         return hex.decode(string)
     
-    elif json.valid(string):
-        return json.loads(string)
+    elif is_json(string):
+        return loads(string)
  
     else:
         return string

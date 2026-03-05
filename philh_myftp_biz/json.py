@@ -3,16 +3,16 @@ from typing import Any, ItemsView, Callable
 
 #========================================================
 
-def valid(value:str) -> bool:
+def is_json(value:str) -> bool:
     """
     Check if a string contains valid json data
     """
-    from json import decoder
+    from json.decoder import JSONDecodeError
 
     try:
         loads(value)
         return True
-    except decoder.JSONDecodeError:
+    except JSONDecodeError:
         return False
 
 #========================================================
