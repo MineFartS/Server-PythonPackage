@@ -4,10 +4,10 @@ from functools import cached_property
 #========================================================
 # DISK CACHE
 
-from diskcache import Cache
-from .pc import tempdir
+from diskcache import Cache as __Cache
+from .pc import pycache as __pycache
 
-diskcache = Cache(str(tempdir)).memoize
+diskcache = __Cache(__pycache.path).memoize
 
 #========================================================
 

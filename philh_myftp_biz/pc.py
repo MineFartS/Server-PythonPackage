@@ -1,5 +1,5 @@
 from typing import Literal, Self, Generator, TYPE_CHECKING, Any
-from functools import cached_property, cache
+from functools import cached_property
 
 if TYPE_CHECKING:
     from .time import from_stamp
@@ -287,7 +287,7 @@ class Path:
         """
         return self.parent.child(item)
     
-    @cached_property
+    @property
     def ext(self) -> str|None:
         """
         Get file extension of path
@@ -381,7 +381,6 @@ class Path:
             # Return filename
             return name
 
-    @cache
     def seg(self,
         i: int = -1
     ) -> str:
@@ -852,5 +851,12 @@ from os import path as __path
 from sys import argv as __argv
 
 scriptdir = Path( __path.dirname(__path.abspath(__argv[0])) )
+
+#========================================================
+# CACHE DIR
+
+pycache = scriptdir.child('/__pycache__/')
+
+pycache.mkdir()
 
 #========================================================
