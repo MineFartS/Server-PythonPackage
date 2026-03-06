@@ -3,6 +3,8 @@ from sys import argv, stdout
 
 VERBOSE: bool = (len({'-v', '--verbose'} & set(argv)) >= 1)
 
+HELP: bool = (len({'-h', '--help'} & set(argv)) >= 1)
+
 class CustomStreamHandler(StreamHandler):
     
     class CustomFormatter(Formatter):
