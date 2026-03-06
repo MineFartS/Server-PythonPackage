@@ -263,7 +263,7 @@ class Service(Path):
         # Raise error if this service is disabled
         if self.enabled or force:
 
-            self.stop()
+            self._run('Stop')
             self._run('Start')
 
         else:
