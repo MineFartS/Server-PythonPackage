@@ -50,9 +50,7 @@ class Module(Path):
     Make sure to add a file labed 'Module.yaml' in the directory
     'Module.yaml' needs to be configured with the following syntax:
     \"""
-        enabled: False
         packages: []
-        watch_files: []
     \"""
 
     EXAMPLE:
@@ -64,7 +62,6 @@ class Module(Path):
     m.run('main')
 
     # 'E:/testmodule/sub/script.###'
-    m.run('sub', 'script')
     m.run('sub/script')
     
     ```
@@ -113,41 +110,31 @@ class Module(Path):
         )
 
     def run(self, *args:str) -> 'SubProcess':
-        """
-        Execute a new Process and wait for it to finish
-        """
+        """Execute a new Process and wait for it to finish"""
         from .process import Run
 
         return self.__run(Run, args)
     
     def runH(self, *args:str) -> 'SubProcess':
-        """
-        Execute a new hidden Process and wait for it to finish
-        """
+        """Execute a new hidden Process and wait for it to finish"""
         from .process import RunHidden
 
         return self.__run(RunHidden, args)
 
     def start(self, *args:str) -> 'SubProcess':
-        """
-        Execute a new Process simultaneously with the current execution
-        """
+        """Execute a new Process simultaneously with the current execution"""
         from .process import Start
 
         return self.__run(Start, args)
     
     def startH(self, *args:str) -> 'SubProcess':
-        """
-        Execute a new hidden Process simultaneously with the current execution
-        """
+        """Execute a new hidden Process simultaneously with the current execution"""
         from .process import StartHidden
 
         return self.__run(StartHidden, args)
     
     def cap(self, *args:str):
-        """
-        Execute a new hidden Process and capture the output as JSON
-        """
+        """Execute a new hidden Process and capture the output as JSON"""
         return self.runH(*args).output(format='json')
 
     def file(self,
@@ -185,9 +172,7 @@ class Module(Path):
     def install(self,
         show: bool = True
     ) -> None:
-        """
-        Automatically install all dependencies
-        """
+        """Automatically install all dependencies"""
         from .process import Run, RunHidden
         from shlex import split
 
@@ -212,16 +197,13 @@ class Module(Path):
 
 class Service(Path):
     """
-    Wrapper for Module Service
-
     EXAMPLE:
     
-    mod = Module('E:/module/')
-    path = '/service/'
+    ```
+    serv = Service('/service/')
+    ```
 
-    serv = Service(mod, path)
-
-    'E:/module/service/*'
+    './service/*'
         - Running.* (Outputs 'true' or 'false' whether the service is running)
         - Start.* (Starts the service)
         - Stop.* (Stops the service)
@@ -270,16 +252,16 @@ class Service(Path):
             dir = self
         )
 
-    def start(self) -> None:
-        """
-        Start the Service
-        """
+    def start(self,
+        force: bool = False    
+    ) -> None:
+        """Start the Service"""
         from .terminal import Log
 
         Log.VERB(f"Starting Service: {self.path}")
 
-        # Raise error if this serivce is disabled
-        if self.enabled:
+        # Raise error if this service is disabled
+        if self.enabled or force:
 
             self.stop()
             self._run('Start')
@@ -290,26 +272,18 @@ class Service(Path):
 
     @property
     def running(self) -> bool:
-        """
-        Service is running
-        """
+        """Service is running"""
         from json.decoder import JSONDecodeError
 
         try:
-            
-            process = self._run(name='Running')
 
-            outp: bool = process.output(format='json')
-
-            return outp
+            return self._run(name='Running').output(format='json') # pyright: ignore[reportReturnType]
         
         except JSONDecodeError, AttributeError, FileNotFoundError:
             return False
     
     def stop(self) -> None:
-        """
-        Stop the Service
-        """
+        """Stop the Service"""
         from .terminal import Log
 
         Log.VERB(f"Stopping Service: {self.path}")
@@ -317,7 +291,7 @@ class Service(Path):
         self._run('Stop')
 
     @property
-    def enabled(self) -> bool:        
+    def enabled(self) -> bool:
         return (not self._lockfile.exists)
 
     def enable(self) -> None:
