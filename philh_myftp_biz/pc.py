@@ -40,8 +40,7 @@ class Path:
         # ==================================
 
         if len(input) > 1:
-            joined: str = _path.join(*input)
-            self.path = joined.replace('\\', '/')
+            self.path = _path.join(*input)
 
         elif isinstance(input[0], Path):
             self.path = input[0].path
@@ -50,15 +49,17 @@ class Path:
             self.path = input[0].as_posix()
 
         else:
-            self.path = _Path(input[0]).absolute().as_posix()
+            self.path = input[0]
 
         # ==================================
+
+        self.path = _Path(self.path).absolute().resolve().as_posix()
 
         # Append trailing slash
         if _path.isdir(self.path) and (self.path[-1] != '/'):
             self.path += '/'
 
-        # Replace backslashes with forward slashes
+        # Replace backslashes and double slashes with forward slashes
         self.path: str = self.path.replace('\\', '/').replace('//', '/')
 
         # ==================================
@@ -190,17 +191,6 @@ class Path:
             testp = str(other)
         
         return (self.path == testp)
-
-    @property
-    def is_link(self) -> bool:
-        """
-        Check if path is Symbolic Link or Directory Junction
-        """
-
-        SYMLINK : bool = self._pure.is_symlink()
-        JUNCTION: bool = self._pure.is_junction()
-
-        return (SYMLINK or JUNCTION)
 
     @property
     def size(self) -> int:
