@@ -24,9 +24,6 @@ class Dict[V]:
     Stores data to the local disk instead of memory
     """
 
-    read: Callable[[], dict[str, V]]
-    """Read Data"""
-
     save: Callable[[dict[str, V]], None]
     """Save Data"""
 
@@ -47,11 +44,17 @@ class Dict[V]:
             )
             self.var.save(t)
 
-        if self.var.default is None:
-            self.var.default = {}
-
-        self.read = self.var.read
         self.save = self.var.save
+
+    def read(self) -> dict[str, V]:
+        """Read Data"""
+        
+        data = self.var.read()
+        
+        if data:
+            return data
+        else:
+            return {}
 
     def items(self) -> ItemsView[str, V]:
         return self.read().items()
