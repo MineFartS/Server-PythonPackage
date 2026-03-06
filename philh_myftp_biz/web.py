@@ -1,5 +1,5 @@
 from typing import Literal, TYPE_CHECKING, Callable
-from functools import partial
+from functools import partial, cache
 
 if TYPE_CHECKING:
     from selenium.webdriver.remote.webelement import WebElement
@@ -357,6 +357,7 @@ class Driver:
             except WebDriverException, ReadTimeoutError:
                 Log.WARN('Failed to open url', exc_info=True)
 
+    @cache # So it will only be executed once
     def close(self) -> None:
         """
         Close the Session
