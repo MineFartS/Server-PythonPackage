@@ -296,12 +296,11 @@ class SysTask:
 
             for proc in process_iter():
             
-                if proc.name.lower() == self.id.lower():
+                if proc.name().lower() == self.id.lower():
             
-                    main = Process(pid=proc.pid)
+                    main = proc
             
                     break
-
 
         if main:
 
@@ -341,6 +340,7 @@ class SysTask:
         """        
         return len(list(self)) > 0
     
+    @property
     def PIDs(self):
         
         for process in self:
