@@ -185,7 +185,7 @@ class qBitTorrent:
             except LoginFailed, Forbidden403Error, APIConnectionError:
                 Log.WARN('qBitTorrentAPI Connection Error')
 
-            if sw.elapsed() >= self.timeout:
+            if sw.elapsed >= self.timeout:
                 raise TimeoutError('qBitTorrentAPI Connection Timed Out')
 
     @property
