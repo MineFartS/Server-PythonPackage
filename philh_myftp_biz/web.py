@@ -395,7 +395,10 @@ def download(
 ) -> None:
     """Download file to disk"""
     from urllib.request import urlretrieve
+    from .terminal import Log
     from tqdm import tqdm
+
+    Log.VERB(f'Downloading File:\n{url=}\n{path=}')
     
     # If show_progress is True
     if show_progress:
