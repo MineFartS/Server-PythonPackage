@@ -362,7 +362,6 @@ class ParsedArgs:
             self.__handlers[name] = lambda x: x
             self.__defaults[name] = False
 
-    @cache
     def __getitem__(self,
         key: str
     ):
