@@ -134,7 +134,7 @@ def pause() -> None:
     from os import system
     from .pc import OS
 
-    if OS() == 'windows':
+    if OS == 'windows':
         system('pause')
     else:
         pass # TODO
@@ -164,7 +164,7 @@ def cls() -> None:
 
     print(_cls_cmd)
     
-    if OS() == 'windows':
+    if OS == 'windows':
         system('cls')
     else:
         system('clear')
