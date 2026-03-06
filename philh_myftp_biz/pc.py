@@ -30,6 +30,8 @@ class Path:
     """
     File/Folder
     """
+
+    path: str
     
     def __init__(self,
         *input: 'str|__PurePath'
@@ -53,19 +55,16 @@ class Path:
 
         # ==================================
 
-        self.path = _Path(self.path).absolute().resolve().as_posix()
+        self.path = _Path(self.path).absolute().as_posix().replace('//', '/')
 
         # Append trailing slash
         if _path.isdir(self.path) and (self.path[-1] != '/'):
             self.path += '/'
 
-        # Replace backslashes and double slashes with forward slashes
-        self.path: str = self.path.replace('\\', '/').replace('//', '/')
-
         # ==================================
 
         # Declare 'pathlib.Path' attribute
-        self._pure = _Path(self.path)      
+        self._pure = _Path(self.path)
 
         # Declare 'set_access'
         self.set_access = _set_access(path=self)
