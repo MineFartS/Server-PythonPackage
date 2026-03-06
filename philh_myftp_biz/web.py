@@ -1,5 +1,6 @@
 from typing import Literal, TYPE_CHECKING, Callable
-from functools import partial, cache
+from .functools import single_use
+from functools import partial
 
 if TYPE_CHECKING:
     from selenium.webdriver.remote.webelement import WebElement
@@ -273,25 +274,19 @@ class Driver:
         
         except JavascriptException as e:
 
-            # Truncate the Error Message
-            mess: str = e.msg
-
-            mess = mess[2+mess.find(':'):]
-
-            mess = mess[:1+mess.find('\nStacktrace:')]
-
-            raise RuntimeError(mess) from None
+            raise RuntimeError(e.msg) from None
 
     def element(self,
         by: Literal['class', 'id', 'xpath', 'name', 'attr'],
         name: str,
-        wait: bool = True
+        timeout: int = 30
     ) -> list['WebElement']:
-        """
-        Get List of Elements by query
-        """
+        """Get List of Elements by query"""
         from selenium.webdriver.common.by import By
         from .terminal import Log
+        from .time import Stopwatch
+
+        sw = Stopwatch().start()
 
         Log.VERB(f"Finding Element: {by=} | {name=}")
 
@@ -320,16 +315,18 @@ class Driver:
             case _:
                 raise TypeError(f'"{by}" is an invalid method')
 
-        while True:
+        while sw.elapsed < timeout:
 
             elements: list['WebElement'] = self._drvr.find_elements(by=BY, value=name)
 
             # If at least 1 element was found
-            if (len(elements) > 0) or (not wait):
+            if len(elements) > 0:
 
                 Log.VERB(f"Found Elements: {elements=}")
 
                 return elements
+            
+        return []
 
     def open(self,
         url: str
@@ -357,11 +354,9 @@ class Driver:
             except WebDriverException, ReadTimeoutError:
                 Log.WARN('Failed to open url', exc_info=True)
 
-    @cache # So it will only be executed once
+    @single_use
     def close(self) -> None:
-        """
-        Close the Session
-        """
+        """Close the Session"""
         from selenium.common.exceptions import InvalidSessionIdException
         from .terminal import Log
 
@@ -398,9 +393,7 @@ def download(
     path: 'Path',
     show_progress: bool = True
 ) -> None:
-    """
-    Download file to disk
-    """
+    """Download file to disk"""
     from urllib.request import urlretrieve
     from tqdm import tqdm
     
