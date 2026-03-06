@@ -1,6 +1,16 @@
 from functools import cached_property
 from typing import Literal
 
+class Mojang:
+
+    @cached_property
+    def javaV(self):
+        from ..web import get
+
+        request = get('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json')
+
+        return request.json()['latest']['release']
+
 class ModrinthMod:
 
     def __init__(self,
@@ -18,9 +28,11 @@ class ModrinthMod:
             }
         )
 
+        mj = Mojang()
+
         for item in request.json():
 
-            if item['version_type'] == 'release':
+            if mj.javaV in item['game_versions']:
 
                 self._data = item
 
