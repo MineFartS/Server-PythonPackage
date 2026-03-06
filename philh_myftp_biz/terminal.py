@@ -308,6 +308,8 @@ class ParsedArgs:
 
         self.__defaults: dict[str, Any] = {}
 
+        self.__cache: dict[str, Any] = {}
+
         #
         self.Flag(
             name = 'verbose',
@@ -319,13 +321,10 @@ class ParsedArgs:
         name: str,
         default: str = None,
         desc: str = None,
-        handler: None | Callable[[str], Any] = None
-    ):
+        handler: Callable[[str], Any] = lambda x: x
+    ) -> None:
         
-        if handler:
-            self.__handlers[name] = handler
-        else:
-            self.__handlers[name] = lambda x: x
+        self.__handlers[name] = handler
 
         self.__defaults[name] = default
 
@@ -365,24 +364,32 @@ class ParsedArgs:
     def __getitem__(self,
         key: str
     ):
+        
+        if key in self.__cache:
 
-        parsed = self.__parser.parse_known_args()[0]
-        
-        handler = self.__handlers[key]
+            return self.__cache[key]
 
-        rvalue = getattr(parsed, key)
-        
-        if rvalue == -1:
-            
-            value = self.__defaults[key]
-            Log.VERB(f'Parsed Arguement: {key=} | {self.__defaults[key]=}')
-        
         else:
 
-            value = handler(rvalue)
-            Log.VERB(f'Parsed Arguement: {key=} | {rvalue=} | {value=}')
+            parsed = self.__parser.parse_known_args()[0]
+            
+            handler = self.__handlers[key]
 
-        return value
+            rvalue = getattr(parsed, key)
+            
+            if rvalue == -1:
+                
+                value = self.__defaults[key]
+                Log.VERB(f'Parsed Arguement: {key=} | {self.__defaults[key]=}')
+            
+            else:
+
+                value = handler(rvalue)
+                Log.VERB(f'Parsed Arguement: {key=} | {rvalue=} | {value=}')
+
+            self.__cache[key] = value
+
+            return value
 
 #========================================================
 
