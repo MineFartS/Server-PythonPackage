@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING
-from functools import cache
 from .pc import Path
 
 if TYPE_CHECKING:
@@ -245,8 +244,7 @@ class Service(Path):
 
         #==============================
 
-    @cache
-    def _file(self, name:str) -> Path:
+    def file(self, name:str) -> Path:
 
         # Iter through all children of the service path
         for p in self.children:
@@ -262,17 +260,14 @@ class Service(Path):
 
     def _run(self, name:str) -> 'RunHidden':
         from .process import RunHidden
-
-        # Run the file
+            
         return RunHidden(
-
             args = [
-                self._file(name), 
+                self.file(name), 
                 *self.args
             ],
-            
-            terminal = None
-        
+            terminal = None,
+            dir = self
         )
 
     def start(self) -> None:
