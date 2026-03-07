@@ -802,6 +802,27 @@ def relscan(
     yield from buff
 
 #========================================================
+
+class WindowsService:
+
+    def __init__(self, name:str):
+        self.name = name
+
+        # TODO Add Logging
+
+    def stop(self) -> None:
+        from .process import RunHidden
+
+        RunHidden(['net', 'stop', self.name])
+
+    def disable(self) -> None:
+        from .process import RunHidden
+
+        self.stop()
+
+        RunHidden(['sc', 'config', self.name, 'start=disabled'])
+
+#========================================================
 # NAME
 
 from socket import gethostname as __gethostname
