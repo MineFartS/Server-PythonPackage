@@ -176,8 +176,9 @@ class Module(Path):
         from .process import Run, RunHidden
         from shlex import split
 
-        # Initialize a git repo
-        Repo(self).init()
+        # Initialize a git repo if path exists
+        if self.exists:
+            Repo(self).init()
 
         runfunc = Run if show else RunHidden
 
