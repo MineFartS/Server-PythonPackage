@@ -808,17 +808,21 @@ class WindowsService:
     def __init__(self, name:str):
         self.name = name
 
-        # TODO Add Logging
-
     def stop(self) -> None:
         from .process import RunHidden
+        from .terminal import Log
+
+        Log.VERB(f'Stopping Windows Service: {self.name}')
 
         RunHidden(['net', 'stop', self.name])
 
     def disable(self) -> None:
         from .process import RunHidden
+        from .terminal import Log
 
-        self.stop()
+        Log.VERB(f'Disabling Windows Service: {self.name}')
+
+        RunHidden(['net', 'stop', self.name])
 
         RunHidden(['sc', 'config', self.name, 'start=disabled'])
 
