@@ -2,14 +2,6 @@ from typing import Any, Generator, Callable
 from functools import cached_property
 
 #========================================================
-# DISK CACHE
-
-from diskcache import Cache as __Cache
-from .pc import pycache as __pycache
-
-diskcache = __Cache(__pycache.path).memoize
-
-#========================================================
 
 class attr:
     """

@@ -1,4 +1,4 @@
-from ..classtools import diskcache
+from ..functools import diskcache
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
