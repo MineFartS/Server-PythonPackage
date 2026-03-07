@@ -292,7 +292,7 @@ class Service(Path):
 
     @property
     def enabled(self) -> bool:
-        return (not self._lockfile.exists)
+        return ((not self._lockfile.exists) and self.exists)
 
     def enable(self) -> None:
         from .terminal import Log
