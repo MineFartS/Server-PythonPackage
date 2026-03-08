@@ -1,16 +1,23 @@
-from logging import basicConfig, StreamHandler, LogRecord, Formatter
+from logging import StreamHandler as __StreamHandler
+from logging import basicConfig as __basicConfig
+from logging import Formatter as __Formatter
 from functools import cached_property
-from sys import argv, stdout
+from typing import TYPE_CHECKING
+from sys import argv as __argv
 
-VERBOSE: bool = (len({'-v', '--verbose'} & set(argv)) >= 1)
+if TYPE_CHECKING:
+    from logging import LogRecord as __LogRecord
 
-HELP: bool = (len({'-h', '--help'} & set(argv)) >= 1)
+VERBOSE: bool = (len({'-v', '--verbose'} & set(__argv)) >= 1)
 
-class CustomFormatter(Formatter):
+HELP: bool = (len({'-h', '--help'} & set(__argv)) >= 1)
+
+class CustomFormatter(__Formatter):
 
     def __init__(self) -> None:
         from .pc import pycache
         from time import time
+        from sys import argv
         from os import path
 
         super().__init__()
@@ -22,7 +29,7 @@ class CustomFormatter(Formatter):
         return self.file.open('w')
 
     def format(self,
-        record: LogRecord
+        record: '__LogRecord'
     ) -> str:
         from traceback import print_exception
         from .classtools import stringify
@@ -120,9 +127,10 @@ class CustomFormatter(Formatter):
     
         #===============================================
 
-class CustomStreamHandler(StreamHandler):
+class CustomStreamHandler(__StreamHandler):
      
     def __init__(self) -> None:
+        from sys import stdout
 
         super().__init__(stream=stdout)
 
@@ -134,7 +142,7 @@ class CustomStreamHandler(StreamHandler):
         # No New Line
         self.terminator = ''
 
-basicConfig(
+__basicConfig(
     level = (10 if VERBOSE else 20),
     handlers = [CustomStreamHandler()]
 )
