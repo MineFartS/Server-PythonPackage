@@ -14,38 +14,76 @@ HELP: bool = (len({'-h', '--help'} & set(__argv)) >= 1)
 
 class CustomFormatter(__Formatter):
 
-    def __init__(self) -> None:
+    @cached_property
+    def _wfile(self):
         from .terminal import script_file
         from .pc import cache_dir
         from time import time
 
-        super().__init__()
+        file = cache_dir().child(f'{script_file().name}.{time():.0f}.log')
 
-        self.file = cache_dir().child(f'{script_file().name}.{time():.0f}.log')
+        file.open('w').close()
 
-    @cached_property
-    def _wfile(self):
-        return self.file.open('w')
+        return file
+    
+    def _levelname(self,
+        record: '__LogRecord'
+    ) -> str: # pyright: ignore[reportReturnType]
+        
+        match record.levelno: # pyright: ignore[reportMatchNotExhaustive]
 
-    def format(self,
+            case 10:
+                return 'VERB'
+
+            case 20: 
+                return 'INFO'
+            
+            case 25: 
+                return 'MAIN'
+            
+            case 30: 
+                return 'WARN'
+            
+            case 40: 
+                return 'FAIL'
+            
+            case 50: 
+                return 'CRIT'
+
+    def _color(self,
+        record: '__LogRecord'
+    ) -> str: # pyright: ignore[reportReturnType]
+        from .db import Color
+        
+        match record.levelno: # pyright: ignore[reportMatchNotExhaustive]
+
+            case 10:
+
+                if '\\Lib\\site-packages\\philh_myftp_biz\\' in record.pathname:
+                    return Color.values['GRAY']
+                else:
+                    return Color.values['WHITE']
+            
+            case 20: 
+                return Color.values['WHITE']
+            
+            case 25: 
+                return Color.values['YELLOW']
+            
+            case 30: 
+                return Color.values['YELLOW']
+            
+            case 40: 
+                return Color.values['RED']
+            
+            case 50: 
+                return Color.values['MAGENTA']
+
+    def _traceback(self,
         record: '__LogRecord'
     ) -> str:
         from traceback import print_exception
-        from .classtools import stringify
         from io import StringIO
-        from .db import Color
-        from .time import now
-
-        #===============================================
-
-        # If the record is from a different module
-        if record.name != 'root':
-
-            # Do Nothing
-            return ''
-
-        #===============================================
-        # PARSE: TRACE
 
         _tb = StringIO()
 
@@ -57,69 +95,64 @@ class CustomFormatter(__Formatter):
 
             _tb.write('\n')
 
-        TRACE = _tb.getvalue()
-
-        #===============================================
-        # PARSE: LEVEL & COLOR
-
-        match record.levelno:
-
-            case 10:
-
-                LEVEL = 'VERB'
-
-                if '\\Lib\\site-packages\\philh_myftp_biz\\' in record.pathname:
-                    COLOR = Color.values['GRAY']
-                else:
-                    COLOR = Color.values['WHITE']
+        return _tb.getvalue()
+    
+    def _message(self,
+        record: '__LogRecord'    
+    ) -> str:
+        from .classtools import stringify
+        from .json import dumps
+        
+        if isinstance(record.msg, (str, int, float, bool)):
             
-            case 20: 
-                COLOR = Color.values['WHITE']
-                LEVEL = 'INFO'
-            
-            case 25: 
-                COLOR = Color.values['YELLOW']
-                LEVEL = 'MAIN'
-            
-            case 30: 
-                COLOR = Color.values['YELLOW']
-                LEVEL = 'WARN'
-            
-            case 40: 
-                COLOR = Color.values['RED']
-                LEVEL = 'FAIL'
-            
-            case 50: 
-                COLOR = Color.values['MAGENTA']
-                LEVEL = 'CRIT'
+            return str(record.msg)
 
-            case _: raise KeyError()
-
-        #===============================================
-        # PARSE: MESS
-
-        if isinstance(record.msg, str):
-            MESS = record.msg
+        elif isinstance(record.msg, (tuple, list)):
+            
+            return dumps(record.msg, indent=2)        
+        
         else:
-            MESS = stringify(record.msg)
 
-        #===============================================
-        # PARSE: TIME
+            return stringify(record.msg)
 
+    def _timestamp(self) -> str:
+        from .time import now
+        
         n = now()
 
-        TIME = n.stamp(format='%y-%m-%d %H-%M-%S') + f'.{n.centisecond}'
+        return n.stamp(format='%y-%m-%d %H-%M-%S') + f'.{n.centisecond}'
+
+    def format(self,
+        record: '__LogRecord'
+    ) -> str:
 
         #===============================================
-        # PARSE: FILE
+        
+        # Ignore records from other modules
+        if record.name != 'root':
+            return ''
+
+        #===============================================
+
+        COLOR = self._color(record)
+
+        TIME = self._timestamp()
 
         FILE = f'{record.filename}:{record.lineno}'
+
+        LEVEL = self._levelname(record)
+
+        MESS = self._message(record)
+
+        TRACE = self._traceback(record)
 
         #===============================================
         # output
 
         # Write to the logfile
-        self._wfile.write(f"\n{TIME} {FILE} {LEVEL}\n{MESS}\n{TRACE}")
+        with self._wfile.open('a') as f:
+            
+            f.write(f"\n{TIME} {FILE} {LEVEL}\n{MESS}\n{TRACE}")
         
         # Return a string to be printed to the terminal
         return f"\n{COLOR}\033[1m{TIME} {FILE} {LEVEL}\033[22m\n{MESS}\033[0m\n{TRACE}"
