@@ -279,6 +279,8 @@ class SysTask:
         self.id: str | int = id
         """PID / IM"""
 
+        # TODO Wildcard names
+
     def __iter__(self):
         from psutil import process_iter, Process, NoSuchProcess
         
