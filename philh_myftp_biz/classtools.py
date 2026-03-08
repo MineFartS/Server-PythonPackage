@@ -100,29 +100,17 @@ def loc(obj:Any) -> str:
 #========================================================
 
 def stringify(obj:Any) -> str:
-    """
-    Creates a string containing a table of all attributes of an instance
-    (for debugging)
-    """
-    from io import StringIO
-    
-    IO = StringIO()
+    """Creates a string table of all attributes of an instance"""
 
-    IO.write('--- ')
-    IO.write(cpath(obj))
-    IO.write(f' @{loc(obj)}')
-    IO.write(' ---\n')
+    string = f'--- {cpath(obj)} @{loc(obj)} ---\n'
 
     for c in attrs(obj):
 
         if not (c.private or c.callable or c.null):
 
-            IO.write(c.name)
-            IO.write(' = ')
-            IO.write(str(c))
-            IO.write('\n')
+            string += f'{c.name} = {c}\n'
 
-    return IO.getvalue()
+    return string
 
 #========================================================
 
