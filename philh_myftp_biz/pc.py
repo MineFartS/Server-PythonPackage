@@ -55,8 +55,6 @@ class Path:
 
         # ==================================
 
-        self.path = _Path(self.path).absolute().as_posix()
-
         # Append trailing slash
         if _path.isdir(self.path) and (self.path[-1] != '/'):
             self.path += '/'

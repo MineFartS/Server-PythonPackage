@@ -10,9 +10,7 @@ def temp(
     ext: str = 'ph',
     id: str = None
 ) -> 'Path':
-    """
-    Get a random path in the temporary directory
-    """
+    """Get a random path in the temporary directory"""
     from .text import random
     from .pc import temp_dir
 
@@ -21,7 +19,7 @@ def temp(
     else:
         id = random(50)
 
-    return temp_dir.child(f'{name}-{id}.{ext}')
+    return temp_dir().child(f'{name}-{id}.{ext}')
 
 #========================================================
 
@@ -68,9 +66,7 @@ class _Template:
 #========================================================
 
 class XML(_Template):
-    """
-    .XML File
-    """
+    """.XML File"""
 
     @property
     def parsed(self) -> dict:
@@ -92,9 +88,7 @@ class XML(_Template):
             f.write(data)
 
 class PKL(_Template):
-    """
-    .PKL File
-    """
+    """.PKL File"""
 
     @property
     def parsed(self):
@@ -112,9 +106,7 @@ class PKL(_Template):
             dump(obj=value, file=f)
 
 class VHDX:
-    """
-    .VHDX File
-    """
+    """.VHDX File"""
 
     def __init__(self,
         VHD: 'Path',
@@ -163,9 +155,7 @@ class VHDX:
         self.MNT.delete()
 
 class JSON(_Template):
-    """
-    .JSON File
-    """
+    """.JSON File"""
 
     @property
     def parsed(self):
@@ -183,9 +173,7 @@ class JSON(_Template):
         )
 
 class INI(_Template):
-    """
-    .INI/.PROPERTIES File
-    """
+    """.INI/.PROPERTIES File"""
     
     @property
     def parsed(self):
@@ -204,9 +192,7 @@ class INI(_Template):
         obj.write()
 
 class YAML(_Template):
-    """
-    .YML/.YAML File
-    """
+    """.YML/.YAML File"""
     
     @property
     def parsed(self):
@@ -225,27 +211,19 @@ class YAML(_Template):
         )
 
 class TXT(_Template):
-    """
-    .TXT File
-    """
+    """.TXT File"""
     
     @property
     def parsed(self):
-        """
-        Read data from the txt file
-        """
+        """Read data from the txt file"""
         return self.path.open(mode='r').read()
     
     def save(self, data:str) -> None:
-        """
-        Save data to the txt file
-        """
+        """Save data to the txt file"""
         self.path.open(mode='w').write(str(data))
 
 class ZIP:
-    """
-    .ZIP File
-    """
+    """.ZIP File"""
 
     def __init__(self,
         path: 'Path'
@@ -294,9 +272,7 @@ class ZIP:
         self._zip.extractall(str(path))
 
 class CSV(_Template):
-    """
-    .CSV File
-    """
+    """.CSV File"""
 
     @property
     def parsed(self):
@@ -312,9 +288,7 @@ class CSV(_Template):
             writer(csvfile).writerows(data)
 
 class TOML(_Template):
-    """
-    .TOML File
-    """
+    """.TOML File"""
 
     @property
     def parsed(self):
