@@ -403,7 +403,7 @@ class Log:
     ```"""
 
     def _log(
-        msg: Any,
+        msg: Any = '',
         exc_info: Any = None,
         level: int = None
     ) -> None:

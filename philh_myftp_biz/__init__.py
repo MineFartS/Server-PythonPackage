@@ -104,23 +104,22 @@ class CustomFormatter(__Formatter):
         from .json import dumps
         
         if isinstance(record.msg, (str, int, float, bool)):
-            
-            return str(record.msg)
+            message = str(record.msg)
 
-        elif isinstance(record.msg, (tuple, list)):
-            
-            return dumps(record.msg, indent=2)        
+        elif isinstance(record.msg, (tuple, list, dict)):
+            message = dumps(record.msg, indent=2)
         
         else:
+            message = stringify(record.msg)
 
-            return stringify(record.msg)
+        return message.encode().decode()
 
     def _timestamp(self) -> str:
         from .time import now
         
         n = now()
 
-        return n.stamp(format='%y-%m-%d %H-%M-%S') + f'.{n.centisecond}'
+        return n.stamp(format='%y-%m-%d %H-%M-%S') + f'.{n.centisecond:.02d}'
 
     def format(self,
         record: '__LogRecord'
