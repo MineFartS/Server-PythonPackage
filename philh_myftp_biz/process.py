@@ -1,6 +1,7 @@
-from typing import Literal, TYPE_CHECKING, Any, Callable
+from typing import Literal, TYPE_CHECKING, Any, Callable, Iterator
 
 if TYPE_CHECKING:
+    from psutil import Process as __Process
     from .pc import Path
 
 #========================================================
@@ -274,22 +275,39 @@ class SysTask:
     Wrapper for psutil.Process
     """
 
-    def __init__(self, id:str|int) -> None:
+    pid = None
+    """Process ID"""
 
-        self.id: str | int = id
-        """PID / IM"""
+    name = None
+    """Process Name"""
+    
+    namelike = None
+    """Process Name [Wildcard]"""
 
-        # TODO Wildcard names
-
-    def __iter__(self):
-        from psutil import process_iter, Process, NoSuchProcess
+    def __init__(self,
+        id: str | int
+    ) -> None:
         
-        main = None
+        self.id = id
 
-        if isinstance(self.id, int):
+        if isinstance(id, int):
+            self.pid = id
+
+        elif '*' in id:
+            self.namelike = id.lower()
+        
+        else:                
+            self.name = id.lower()
+
+    @property
+    def _main(self) -> '__Process|None':
+        from psutil import process_iter, Process, NoSuchProcess
+        from .text import like
+
+        if self.pid:
 
             try:
-                main = Process(self.id)
+                return Process(self.pid)
             
             except NoSuchProcess:
                 pass
@@ -297,39 +315,42 @@ class SysTask:
         else:
 
             for proc in process_iter():
-            
-                if proc.name().lower() == self.id.lower():
-            
-                    main = proc
-            
-                    break
 
+                NAMEEQ = self.name.lower() == proc.name().lower()
+
+                NAMELIKE = like(proc.name(), self.namelike)
+            
+                if NAMEEQ or NAMELIKE:
+            
+                    return proc
+
+    def __iter__(self) -> 'Iterator[__Process]':
+        from psutil import NoSuchProcess
+        
+        main = self._main
+
+        # IF main process found
         if main:
 
             processes = [main]
 
             try:
-
-                for child in main.children(recursive=True):
-                
-                    processes += [child]
+                processes += main.children(recursive=True)
 
             except NoSuchProcess:
                 pass
+
+            return iter(filter(
+                lambda p: p.is_running(),    
+                reversed(processes)
+            )) # pyright: ignore[reportReturnType]
         
         else:
 
-            processes = []
-
-        return iter(filter(
-            lambda p: p.is_running(),    
-            reversed(processes)
-        ))
+            return iter([])
 
     def stop(self) -> None:
-        """
-        Stop Process and all of it's children
-        """
+        """Stop Process and all of it's children"""
 
         for p in self:
             
@@ -337,9 +358,8 @@ class SysTask:
 
     @property
     def exists(self) -> bool:
-        """
-        Check if the process is running
-        """        
+        """Check if the process is running"""
+
         return len(list(self)) > 0
     
     @property

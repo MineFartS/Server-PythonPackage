@@ -1,6 +1,8 @@
 from typing import Callable
 from functools import cache
 
+from fnmatch import fnmatch as like # pyright: ignore[reportUnusedImport]
+
 def split(
     value: str,
     sep: str = None
