@@ -55,7 +55,7 @@ class Path:
 
         # ==================================
 
-        self.path = _Path(self.path).absolute().as_posix().replace('//', '/')
+        self.path = _Path(self.path).absolute().as_posix()
 
         # Append trailing slash
         if _path.isdir(self.path) and (self.path[-1] != '/'):
@@ -88,12 +88,16 @@ class Path:
     @cached_property
     def is_file(self) -> bool:
         """Check if path is a file"""
-        return self._pure.is_file()
+        return not self.is_dir
     
     @cached_property
     def is_dir(self) -> bool:
         """Check if path is a folder"""
-        return self._pure.is_dir()
+
+        if self.path[-1] == '/':
+            return True
+        else:
+            return self._pure.is_dir()
 
     def __str__(self):
         return self.path
@@ -154,24 +158,15 @@ class Path:
 
         return any([PARENT, CHILD, SAME])
     
-    def child(self, *name:str) -> Path:
-        """
-        Get child of path
-        
-        Note: Will raise TypeError if path is a file
-        """
+    def child(self,
+        name: str
+    ) -> Path:
+        """Get child of path"""
 
         if self.is_file:
             raise TypeError("Parent path cannot be a file")
-        
-        elif len(name) > 1:
-            return Path(self.path + '/'.join(name))
-        
-        elif name[0].startswith('/'):
-            return Path(self.path + name[0][1:])
-            
-        else:
-            return Path(self.path + name[0])
+
+        return Path(self.path + name)
     
     def __format__(self, spec:str) -> str:
         return f'{self.path:{spec}}'

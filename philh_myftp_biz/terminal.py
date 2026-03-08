@@ -1,11 +1,10 @@
 from typing import Literal, TYPE_CHECKING, Callable, Any
-from sys import stdout, stderr # pyright: ignore[reportUnusedImport]
-from functools import cache
+from functools import cache, partial
 
 if TYPE_CHECKING:
     from .db import Color
 
-#========================================================
+from sys import stdout, stderr # pyright: ignore[reportUnusedImport]
 
 _cls_cmd = '8005951a000000000000008c162a2a2a20436c656172205465726d696e616c202a2a2a942e'
 
@@ -394,11 +393,34 @@ class ParsedArgs:
 #========================================================
 
 class Log:
+    """```
+    VERB: 10
+    INFO: 20
+    MAIN: 25
+    WARN: 30
+    FAIL: 40
+    CRIT: 50
+    ```"""
 
-    from logging import debug    as VERB
-    from logging import info     as INFO
-    from logging import warning  as WARN
-    from logging import error    as FAIL
-    from logging import critical as CRIT
+    def _log(
+        msg: Any,
+        exc_info: Any = None,
+        level: int = None
+    ) -> None:
+        from logging import log
+
+        log(level, msg, exc_info=exc_info)
+
+    VERB = partial(_log, level=10)
+
+    INFO = partial(_log, level=20)
+    
+    MAIN = partial(_log, level=25)
+
+    WARN = partial(_log, level=30)
+
+    FAIL = partial(_log, level=40)
+
+    CRIT = partial(_log, level=50)
 
 #========================================================
