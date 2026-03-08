@@ -137,7 +137,7 @@ def pause() -> None:
     if OS == 'windows':
         system('pause')
     else:
-        pass # TODO
+        system('read -n 1 -r -s -p "Press any key to continue . . ."')
 
 #========================================================
 
