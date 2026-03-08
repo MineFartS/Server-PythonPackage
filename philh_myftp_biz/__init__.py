@@ -15,14 +15,13 @@ HELP: bool = (len({'-h', '--help'} & set(__argv)) >= 1)
 class CustomFormatter(__Formatter):
 
     def __init__(self) -> None:
-        from .pc import pycache
+        from .terminal import main_module
+        from .pc import cache_dir
         from time import time
-        from sys import argv
-        from os import path
 
         super().__init__()
 
-        self.file = pycache.child(f'{path.basename(argv[0])} - {time():.0f}.log')
+        self.file = cache_dir().child(f'{main_module().__file__} - {time():.0f}.log')
 
     @cached_property
     def _wfile(self):

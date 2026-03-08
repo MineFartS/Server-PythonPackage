@@ -3,9 +3,9 @@
 # DISK CACHE
 
 from diskcache import Cache as __Cache
-from .pc import pycache as __pycache
+from .pc import cache_dir
 
-diskcache = __Cache(__pycache.path).memoize
+diskcache = __Cache(cache_dir().path).memoize
 
 #========================================================
 

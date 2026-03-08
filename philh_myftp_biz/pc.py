@@ -1,5 +1,5 @@
 from typing import Literal, Self, Generator, TYPE_CHECKING, Any
-from functools import cached_property
+from functools import cached_property, cache
 
 if TYPE_CHECKING:
     from .time import from_stamp
@@ -824,47 +824,56 @@ class WindowsService:
 #========================================================
 # NAME
 
-from socket import gethostname as __gethostname
-NAME: str = __gethostname()
+from socket import gethostname as NAME
 
 #=================================
 # OS
 
-from os import name as __name
-OS: Literal['windows', 'unix'] 
+@cache
+def OS() -> Literal['windows', 'unix']:
+    from os import name
 
-match __name:
+    match name:
 
-    case 'nt':
-        OS = 'windows'
-    
-    case _:
-        OS = 'unix'
+        case 'nt':
+            return 'windows'
+        
+        case _:
+            return 'unix'
 
 #=================================
 # TEMP DIR
 
-from tempfile import gettempdir as __gettempdir
+@cache
+def temp_dir() -> Path:
+    from tempfile import gettempdir
 
-__temp_SERVER = Path('E:/__temp__/')
+    SERVER = Path('E:/__temp__/')
 
-if __temp_SERVER.exists and (NAME == 'PC-1'):
-    tempdir = __temp_SERVER
-else:
-    tempdir = Path(__gettempdir())
+    if SERVER.exists and (NAME() == 'PC-1'):
+        return SERVER
+    else:
+        return Path(gettempdir())
 
 #========================================================
 # SCRIPT DIR
 
-from .terminal import main_module
+@cache
+def script_dir() -> Path:
+    from .terminal import main_module
 
-scriptdir = Path(main_module().__file__).parent
+    return Path(main_module().__file__).parent
 
 #========================================================
 # CACHE DIR
 
-pycache = scriptdir.child('/__pycache__/')
+@cache
+def cache_dir() -> Path:
 
-pycache.mkdir()
+    pycache = script_dir().child('/__pycache__/')
+
+    pycache.mkdir()
+
+    return pycache
 
 #========================================================

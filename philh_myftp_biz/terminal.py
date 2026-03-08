@@ -133,7 +133,7 @@ def pause() -> None:
     from os import system
     from .pc import OS
 
-    if OS == 'windows':
+    if OS() == 'windows':
         system('pause')
     else:
         system('read -n 1 -r -s -p "Press any key to continue . . ."')
@@ -163,7 +163,7 @@ def cls() -> None:
 
     print(_cls_cmd)
     
-    if OS == 'windows':
+    if OS() == 'windows':
         system('cls')
     else:
         system('clear')

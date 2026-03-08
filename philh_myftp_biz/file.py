@@ -14,14 +14,14 @@ def temp(
     Get a random path in the temporary directory
     """
     from .text import random
-    from .pc import tempdir
+    from .pc import temp_dir
 
     if id:
         id = str(id)
     else:
         id = random(50)
 
-    return tempdir.child(f'{name}-{id}.{ext}')
+    return temp_dir.child(f'{name}-{id}.{ext}')
 
 #========================================================
 
