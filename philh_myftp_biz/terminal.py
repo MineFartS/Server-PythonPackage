@@ -439,7 +439,11 @@ def main_module():
 
         from _frozen_importlib import _module_locks
 
-        return modules[next(iter(_module_locks))]
+        fullname: str = next(iter(_module_locks))
+
+        name = fullname.split('.')[0]
+
+        return modules[name]
 
 @cache
 def script_file():
