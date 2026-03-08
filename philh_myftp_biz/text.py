@@ -261,14 +261,28 @@ def from_function(func: Callable) -> str:
     
     raise TypeError(cpath(func))
 
-def to_slice(string:str) -> list[slice|int]:
+def to_slice(string:str) -> None | list[slice|int]:
+    """
+    Parse a string into a list of slices or integers
+
+    EXAMPLES:
+    ```
+    '*'    : [:]
+    '.'    : [:]
+    '7'    : 7
+    '..3'  : [:4]
+    '5..'  : [5:]
+    '3..5' : [3:6]
+    '1,3'  : 1, 3
+    ```
+    """
     from .num import is_int
 
-    if string == '*':
+    if string in ['*', '.']:
 
         return [slice(0, None)]
 
-    if is_int(string):
+    elif is_int(string):
 
         return [int(string)]
     
@@ -281,19 +295,27 @@ def to_slice(string:str) -> list[slice|int]:
             slices += to_slice(part)
 
         return slices
-    
-    elif '-' in string:
-    
-        x1, x2 = string.split('-')
 
-        return [slice(int(x1), int(x2)+1)]
-    
-    elif ':' in string:
-    
-        x1, x2 = string.split(':')
+    elif string.startswith('..'):
 
-        return [slice(int(x1), int(x2))]
+        return [slice(
+            0, 
+            int(string[2:])+1
+        )]
     
-    else:
+    elif string.endswith('..'):
 
-        return []
+        return [slice(
+            int(string[:-2]),
+            None 
+        )]
+
+    elif '..' in string:
+    
+        parts = string.split('..')
+
+        return [slice(
+            int(parts[0]),
+            int(parts[1])+1
+        )]
+    
