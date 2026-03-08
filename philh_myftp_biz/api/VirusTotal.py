@@ -1,4 +1,8 @@
 from functools import cached_property
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..pc import Path
 
 class VirusTotal:
 
@@ -13,33 +17,14 @@ class VirusTotal:
             return Client(self.key)
 
         def scan(self,
-            #file: Path
+            file: 'Path'
         ):
-            """
-            Retrieve the analysis report for a file
-            """
+            """Retrieve the analysis report for a file"""
 
             # TODO
-            
-            """
-            self.client
-    
-                try:
         
-                    # Check for existing report first
-                    file_obj = client.get_object(f"/files/{file_hash}")
-        
-                    return file_obj.last_analysis_stats, file_obj.permalink
-    
-                except vt.APIError as e:
-                    if e.code == 'NotFoundError':
-                        return None, None
-                    else:
-                        print(f"Error retrieving report: {e}")
-                        return None, None
-            
-            get(
-                url = 'https://www.virustotal.com/api/v3/files',
-                headers = {'x-apikey': self.key},
-                params = {}
-            )"""
+            # Check for existing report first
+            file_obj = self.client.get_object(f"/files/{file.hash}")
+
+            return file_obj.last_analysis_stats, file_obj.permalink
+
