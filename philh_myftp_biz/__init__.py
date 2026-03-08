@@ -15,13 +15,13 @@ HELP: bool = (len({'-h', '--help'} & set(__argv)) >= 1)
 class CustomFormatter(__Formatter):
 
     def __init__(self) -> None:
-        from .terminal import main_module
+        from .terminal import script_file
         from .pc import cache_dir
         from time import time
 
         super().__init__()
 
-        self.file = cache_dir().child(f'{main_module().__file__} - {time():.0f}.log')
+        self.file = cache_dir().child(f'{script_file().name}.{time():.0f}.log')
 
     @cached_property
     def _wfile(self):

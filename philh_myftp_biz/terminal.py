@@ -425,7 +425,7 @@ class Log:
 
 #========================================================
 
-
+@cache
 def main_module():
     from sys import modules
 
@@ -440,5 +440,11 @@ def main_module():
         from _frozen_importlib import _module_locks
 
         return modules[next(iter(_module_locks))]
+
+@cache
+def script_file():
+    from .pc import Path
+
+    return Path(main_module().__file__)
 
 #========================================================
