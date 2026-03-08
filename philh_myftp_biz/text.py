@@ -260,3 +260,40 @@ def from_function(func: Callable) -> str:
         return source
     
     raise TypeError(cpath(func))
+
+def to_slice(string:str) -> list[slice|int]:
+    from .num import is_int
+
+    if string == '*':
+
+        return [slice(0, None)]
+
+    if is_int(string):
+
+        return [int(string)]
+    
+    elif ',' in string:
+
+        slices = []
+
+        for part in string.split(','):
+
+            slices += to_slice(part)
+
+        return slices
+    
+    elif '-' in string:
+    
+        x1, x2 = string.split('-')
+
+        return [slice(int(x1), int(x2)+1)]
+    
+    elif ':' in string:
+    
+        x1, x2 = string.split(':')
+
+        return [slice(int(x1), int(x2))]
+    
+    else:
+
+        return []
