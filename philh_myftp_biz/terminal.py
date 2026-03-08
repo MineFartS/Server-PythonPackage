@@ -424,3 +424,21 @@ class Log:
     CRIT = partial(_log, level=50)
 
 #========================================================
+
+
+def main_module():
+    from sys import modules
+
+    try:
+        
+        modules['__main__'].__file__
+
+        return modules['__main__']
+
+    except AttributeError:
+
+        from _frozen_importlib import _module_locks
+
+        return modules[next(iter(_module_locks))]
+
+#========================================================

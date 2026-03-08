@@ -856,10 +856,9 @@ else:
 #========================================================
 # SCRIPT DIR
 
-from os import path as __path
-from sys import argv as __argv
+from .terminal import main_module
 
-scriptdir = Path( __path.dirname(__path.abspath(__argv[0])) )
+scriptdir = Path(main_module().__file__).parent
 
 #========================================================
 # CACHE DIR
