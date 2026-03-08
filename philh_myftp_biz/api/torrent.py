@@ -1,4 +1,5 @@
 from typing import Literal, Generator, TYPE_CHECKING, Callable
+from functools import cached_property
 
 if TYPE_CHECKING:
     from qbittorrentapi import Client, TorrentDictionary
@@ -17,9 +18,7 @@ qualities: dict[str, int] = {
     '360p': 360,
     '4K': 2160
 }
-"""
-QUALITY LOOKUP TABLE
-"""
+"""QUALITY LOOKUP TABLE"""
 
 class TorrentFile:
     """
@@ -128,9 +127,7 @@ class TorrentFile:
         return f"<File '{abbr(num=30, string=self.title)}' @{loc(obj=self)}>"
 
 class qBitTorrent:
-    """
-    Client for qBitTorrent Web Server
-    """
+    """Client for qBitTorrent Web Server"""
 
     def __init__(self,
         host: str,
@@ -139,7 +136,6 @@ class qBitTorrent:
         port: int = 8080,
         timeout: int = 3600 # 1 hour
     ) -> None:
-        from qbittorrentapi import Client
         from ..terminal import Log
 
         Log.VERB(
@@ -153,20 +149,24 @@ class qBitTorrent:
         self.port: int = port
         self.timeout: int = timeout
 
-        self._rclient = Client(
-            host = host,
-            port = port,
-            username = username,
-            password = password,
+        self.__login = (username, password)
+
+    @cached_property
+    def _rclient(self) -> 'Client':
+        from qbittorrentapi import Client
+
+        return Client(
+            host = self.host,
+            port = self.port,
+            username = self.__login[0],
+            password = self.__login[1],
             VERIFY_WEBUI_CERTIFICATE = False,
-            REQUESTS_ARGS = {'timeout': (timeout, timeout)}
+            REQUESTS_ARGS = {'timeout': (self.timeout, self.timeout)}
         )
 
     @property
     def _client(self) -> 'Client':
-        """
-        Wait for server connection, then returns qbittorrentapi.Client
-        """
+        """Wait for server connection, then returns qbittorrentapi.Client"""
         from qbittorrentapi.exceptions import LoginFailed, Forbidden403Error, APIConnectionError
         from ..time import Stopwatch
         from ..terminal import Log
@@ -190,9 +190,7 @@ class qBitTorrent:
 
     @property
     def connected(self) -> bool:
-        """
-        Check if qBitTorrent is connected to the internet
-        """
+        """Check if qBitTorrent is connected to the internet"""
 
         tinfo = self._client.transfer.info()
 
@@ -204,9 +202,7 @@ class qBitTorrent:
         rm_files: bool = True,
         filter_func: Callable[['TorrentDictionary'], bool] = lambda t: True
     ) -> None:
-        """
-        Remove all Magnets from the download queue
-        """
+        """Remove all Magnets from the download queue"""
         from ..text import from_function
         from ..terminal import Log
 
@@ -233,9 +229,7 @@ class qBitTorrent:
         })
 
 class Magnet(qBitTorrent):
-    """
-    Handler for MAGNET URLs
-    """
+    """Handler for MAGNET URLs"""
 
     def __init__(self,
         title: str = '',
@@ -290,9 +284,7 @@ class Magnet(qBitTorrent):
     def start(self,
         path: 'str|Path' = None
     ) -> None:
-        """
-        Start Downloading a Magnet
-        """
+        """Start Downloading a Magnet"""
         from ..terminal import Log
 
         Log.VERB(
@@ -323,9 +315,7 @@ class Magnet(qBitTorrent):
             self._torrent.reannounce()
 
     def restart(self) -> None:
-        """
-        Restart Downloading a Magnet
-        """
+        """Restart Downloading a Magnet"""
         from ..terminal import Log
 
         Log.VERB(f'Restarting: {self}')
@@ -369,9 +359,7 @@ class Magnet(qBitTorrent):
     def stop(self,
         rm_files: bool = True
     ) -> None:
-        """
-        Stop downloading a Magnet
-        """
+        """Stop downloading a Magnet"""
         from ..terminal import Log
 
         Log.VERB(f'Stopping: {rm_files=} | {self}')
@@ -380,9 +368,7 @@ class Magnet(qBitTorrent):
 
     @property
     def finished(self) -> None | bool:
-        """
-        Check if a magnet is finished downloading
-        """
+        """Check if a magnet is finished downloading"""
         
         if self._torrent:
 
@@ -392,9 +378,7 @@ class Magnet(qBitTorrent):
 
     @property
     def errored(self) -> bool:
-        """
-        Check if a magnet is errored
-        """
+        """Check if a magnet is errored"""
 
         if self._torrent:
             return self._torrent.state_enum.is_errored
@@ -403,26 +387,20 @@ class Magnet(qBitTorrent):
         
     @property
     def downloading(self) -> None | bool:
-        """
-        Check if a magnet is downloading
-        """
+        """Check if a magnet is downloading"""
         
         if self._torrent:
             return self._torrent.state_enum.is_downloading
 
     @property
     def exists(self) -> bool:
-        """
-        Check if a magnet is in the download queue
-        """
+        """Check if a magnet is in the download queue"""
         
         return (self._torrent != None)
 
     @property
     def stalled(self) -> bool:
-        """
-        Check if a magnet is stalled
-        """
+        """Check if a magnet is stalled"""
         
         if self._torrent:
             return (self._torrent.state_enum.value == 'stalledDL')
