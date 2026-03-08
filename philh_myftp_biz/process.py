@@ -281,7 +281,7 @@ class SysTask:
     name = None
     """Process Name"""
     
-    namelike = None
+    pat = None
     """Process Name [Wildcard]"""
 
     def __init__(self,
@@ -294,7 +294,7 @@ class SysTask:
             self.pid = id
 
         elif '*' in id:
-            self.namelike = id.lower()
+            self.pat = id.lower()
         
         else:                
             self.name = id.lower()
@@ -316,12 +316,14 @@ class SysTask:
 
             for proc in process_iter():
 
-                NAMEEQ = self.name.lower() == proc.name().lower()
+                pname = proc.name().lower()
 
-                NAMELIKE = like(proc.name(), self.namelike)
-            
-                if NAMEEQ or NAMELIKE:
-            
+                if self.name and (self.name == pname):
+
+                    return proc
+                
+                elif self.pat and like(pname, self.pat):
+
                     return proc
 
     def __iter__(self) -> 'Iterator[__Process]':
