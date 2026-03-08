@@ -261,13 +261,13 @@ def from_function(func: Callable) -> str:
     
     raise TypeError(cpath(func))
 
+@cache
 def to_slice(string:str) -> None | list[slice|int]:
     """
     Parse a string into a list of slices or integers
 
     EXAMPLES:
     ```
-    '*'    : [:]
     '.'    : [:]
     '7'    : 7
     '..3'  : [:4]
@@ -278,7 +278,7 @@ def to_slice(string:str) -> None | list[slice|int]:
     """
     from .num import is_int
 
-    if string in ['*', '.']:
+    if string == '.':
 
         return [slice(0, None)]
 
@@ -292,8 +292,13 @@ def to_slice(string:str) -> None | list[slice|int]:
 
         for part in string.split(','):
 
-            slices += to_slice(part)
+            _slice: list = to_slice(part)
 
+            if _slice:
+                slices += _slice
+            else:
+                return
+        
         return slices
 
     elif string.startswith('..'):
