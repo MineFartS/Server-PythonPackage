@@ -16,7 +16,11 @@ class VirusReport:
 
         self._VTobj = VTobj
 
-        self.results: dict = VTobj.last_analysis_results
+        self.results: dict[str, dict] = VTobj.last_analysis_results
+
+    @cached_property
+    def url(self) -> str:
+        return f"https://www.virustotal.com/gui/file/{self._VTobj.id}"
     
     @cached_property
     def warnings(self) -> list[dict]:
@@ -27,7 +31,7 @@ class VirusReport:
 
             if data['result'] != None:
             
-                _warnings += {data}
+                _warnings += {data} # pyright: ignore[reportUnhashable]
 
         return _warnings
 
@@ -51,31 +55,59 @@ class VirusReport:
 
 class VirusTotal:
 
-        def __init__(self):
+        def __init__(self) -> None:
             
             self.key = 'c063375af8061ad11694b15fb48327b3fd3c2a4f79cff8669f3de82143cc6562'
 
-        @cached_property
+        @property
         def client(self):
             from vt import Client
 
             return Client(self.key)
 
+        def _upload(self,
+            file: 'Path',
+            wait: bool = True
+        ) -> VTobj:
+            
+            with file.open("rb") as f:
+
+                with self.client as client:
+                
+                    obj = client.scan_file(f, wait)
+
+                return obj
+            
+        def _check(self,
+            file: 'Path'
+        ) -> VTobj | None:
+            from vt.error import APIError
+        
+            try: # Check for existing report first
+
+                return self.client.get_object(f"/files/{file.hash}")
+
+            except APIError as e:
+
+                if e.args[0] != 'NotFoundError':
+                    
+                    raise e
+
         def scan(self,
             file: 'Path'
         ) -> VirusReport:
             """Retrieve the analysis report for a file"""
-
-            # TODO
         
-            # Check for existing report first
-            obj = self.client.get_object(f"/files/{file.hash}")
+            obj = self._check(file)
 
-            return VirusReport(file, obj)
+            if obj:
 
-            #return file_obj.last_analysis_stats, file_obj.permalink
-        
-            # with open("path/to/file.exe", "rb") as f:
-            #     analysis = client.scan_file(f)
-            #     print(analysis)
+                return VirusReport(file, obj)
+            
+            else:
 
+                self._upload(file)
+
+                obj = self._check(file)
+
+                return VirusReport(file, obj)
