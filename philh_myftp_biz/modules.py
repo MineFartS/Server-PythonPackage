@@ -280,7 +280,7 @@ class Service(Path):
 
             return self._run(name='Running').output(format='json') # pyright: ignore[reportReturnType]
         
-        except JSONDecodeError, AttributeError, FileNotFoundError:
+        except JSONDecodeError, AttributeError, FileNotFoundError, PermissionError:
             return False
     
     def stop(self) -> None:
