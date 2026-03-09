@@ -409,7 +409,12 @@ class Log:
     ) -> None:
         from logging import log
 
-        log(level, msg, exc_info=exc_info)
+        log(
+            level = level, 
+            msg = msg, 
+            exc_info = exc_info,
+            stacklevel = 2
+        )
 
     VERB = partial(_log, level=10)
 
