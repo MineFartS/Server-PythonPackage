@@ -52,6 +52,24 @@ class attr:
         return callable(self.value)
     
     @cached_property
+    def parameters(self) -> list[str]:
+        from inspect import signature, ismethod
+
+        try:
+
+            keys = signature(self.value).parameters.keys()
+
+            if ismethod(self.value):
+                return list(keys)[1:]
+            
+            else:
+                return list(keys)
+        
+        except ValueError, TypeError:
+
+            return []
+
+    @cached_property
     def null(self):
         return (self.value is None)
 
