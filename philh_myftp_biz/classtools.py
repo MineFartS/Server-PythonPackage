@@ -170,3 +170,10 @@ class SharedBuffer:
 
 #========================================================
 
+def clear_cache(instance: Any) -> None:
+
+    for name, value in vars(instance).items():
+
+        if isinstance(value, cached_property):
+
+            delattr(instance, name)
