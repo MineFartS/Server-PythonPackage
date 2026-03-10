@@ -49,42 +49,35 @@ class CustomFormatter(__Formatter):
             
             case 50: 
                 return 'CRIT'
-            
-            case 60:
-                return 'PBOX'
-            
-            case 65:
-                return 'CNFM'
-            
-            case 70: 
-                return 'GOOG'
-            
-            case 75: 
-                return 'TEXT'
 
     def _color(self,
         record: '__LogRecord'
     ) -> str: # pyright: ignore[reportReturnType]
         from .db import Color
         
-        if record.levelno == 10:
+        match record.levelno: # pyright: ignore[reportMatchNotExhaustive]
 
-            if '\\Lib\\site-packages\\philh_myftp_biz\\' in record.pathname:
-                return Color.values['GRAY']
-            else:
+            case 10:
+
+                if '\\Lib\\site-packages\\philh_myftp_biz\\' in record.pathname:
+                    return Color.values['GRAY']
+                else:
+                    return Color.values['WHITE']
+            
+            case 20: 
                 return Color.values['WHITE']
             
-        elif record.levelno == 20:
-            return Color.values['WHITE']
-
-        elif record.levelno == 40:
-            return Color.values['RED']
-        
-        elif record.levelno == 50:
-            return Color.values['MAGENTA']
-
-        elif record.levelno in [25, 30, 60, 65, 70, 75]:
-            return Color.values['YELLOW']
+            case 25: 
+                return Color.values['YELLOW']
+            
+            case 30: 
+                return Color.values['YELLOW']
+            
+            case 40: 
+                return Color.values['RED']
+            
+            case 50: 
+                return Color.values['MAGENTA']
 
     def _traceback(self,
         record: '__LogRecord'
