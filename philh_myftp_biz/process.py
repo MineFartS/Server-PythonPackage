@@ -353,6 +353,9 @@ class SysTask:
 
     def stop(self) -> None:
         """Stop Process and all of it's children"""
+        from .terminal import Log
+
+        Log.VERB(f'Stopping Process: {self.id}')
 
         for p in self:
             
