@@ -1,6 +1,5 @@
 from functools import cached_property, partial
 from typing import Any, Generator, Callable
-from inspect import signature
 
 #========================================================
 
@@ -213,9 +212,13 @@ class Instantiate:
 
         for name, value in vars(cls).items():
 
-            if callable(value):
+            try:
 
-                if 'self' in signature(value).parameters:
+                setattr(
+                    cls, name,
+                    partial(value, self=self)
+                )
 
-                    setattr(cls, name, partial(value, self))
+            except TypeError:
+                pass
 
