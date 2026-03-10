@@ -401,8 +401,11 @@ class Log:
     FAIL: 40
     CRIT: 50
 
-    GOOG: 60 - Log to google sheet
-    TEXT: 70 - Send an sms alert
+    PBOX: 60 - Show a notification box
+    CNFM: 65 - Show a confimration box and wait for user
+
+    GOOG: 70 - Log to google sheet
+    TEXT: 75 - Send an sms alert
 
     ```"""
 
@@ -443,6 +446,39 @@ class Log:
             }
         )
 
+    def _gui(
+        msg: str,
+        level: int,
+        met: str 
+    ) -> None:
+        from .gui import GUI, Widget
+        from logging import log
+
+        log(
+            level = level, 
+            msg = msg,
+            stacklevel = 2
+        )
+
+        gui = GUI()
+
+        gui.title = 'Alert'
+
+        gui.size = (300, 100)
+
+        page = gui.Page()
+
+        page += Widget.Text(msg)
+
+        page += Widget.Button(
+            text = 'Close',
+            onclick = gui.close
+        )
+
+        gui.page = page
+
+        getattr(gui, met) ()
+
     VERB = partial(_log, level=10)
 
     INFO = partial(_log, level=20)
@@ -455,9 +491,16 @@ class Log:
 
     CRIT = partial(_log, level=50)
 
-    GOOG = partial(_web, level=60, alert=False)
+    # TODO fix tkinter threading issue
+    PBOX = partial(_gui, level=60, met='start') 
 
-    TEXT = partial(_web, level=70, alert=True)
+    CNFM = partial(_gui, level=65, met='run')
+
+    GOOG = partial(_web, level=70, alert=False)
+
+    TEXT = partial(_web, level=75, alert=True)
+
+
 
 #========================================================
 
