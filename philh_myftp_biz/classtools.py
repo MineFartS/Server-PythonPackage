@@ -1,5 +1,6 @@
+from functools import cached_property, partial
 from typing import Any, Generator, Callable
-from functools import cached_property
+from inspect import signature
 
 #========================================================
 
@@ -177,3 +178,44 @@ def clear_cache(instance: Any) -> None:
         if isinstance(value, cached_property):
 
             delattr(instance, name)
+
+#========================================================
+
+class Instantiate:
+    """
+    Create Instance on Subclass Definition
+
+    NOTE: 
+    
+    Keyword Arguements are required.
+
+    Positional Arguements will be captured by the 'self' parameter.
+
+    EXAMPLE:
+    ```
+    class MyClass(Instantiate):
+    
+        def func1(self):
+            self.hi = 'hi'
+
+        def func2(self):
+            return self.hi
+
+    >>> MyClass.func1()
+    >>> MyClass.func2()
+    'hi'
+    ```
+    """
+
+    def __init_subclass__(cls) -> None:
+
+        self = cls()
+
+        for name, value in vars(cls).items():
+
+            if callable(value):
+
+                if 'self' in signature(value).parameters:
+
+                    setattr(cls, name, partial(value, self))
+
