@@ -119,7 +119,7 @@ class CustomFormatter(__Formatter):
         
         n = now()
 
-        return n.stamp(format='%y-%m-%d %H-%M-%S') + f'.{n.centisecond:.02d}'
+        return n.stamp(format='%y-%m-%d %H-%M-%S') + f'.{n.centisecond:.02f}'
 
     def format(self,
         record: '__LogRecord'
