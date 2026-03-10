@@ -49,6 +49,12 @@ class CustomFormatter(__Formatter):
             
             case 50: 
                 return 'CRIT'
+            
+            case 60: 
+                return 'GOOG'
+            
+            case 70: 
+                return 'TEXT'
 
     def _color(self,
         record: '__LogRecord'
@@ -78,6 +84,12 @@ class CustomFormatter(__Formatter):
             
             case 50: 
                 return Color.values['MAGENTA']
+            
+            case 60:
+                return Color.values['YELLOW']
+            
+            case 70:
+                return Color.values['YELLOW']
 
     def _traceback(self,
         record: '__LogRecord'

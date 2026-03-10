@@ -400,6 +400,10 @@ class Log:
     WARN: 30
     FAIL: 40
     CRIT: 50
+
+    GOOG: 60 - Log to google sheet
+    TEXT: 70 - Send an sms alert
+
     ```"""
 
     def _log(
@@ -416,6 +420,29 @@ class Log:
             stacklevel = 2
         )
 
+    def _web(
+        msg: str, 
+        alert: bool,
+        level: int
+    ) -> None:
+        from logging import log
+        from .web import get
+
+        log(
+            level = level, 
+            msg = msg,
+            stacklevel = 2
+        )
+
+        # Send SMS Alert
+        get(
+            url = 'https://script.google.com/macros/s/AKfycby9Xe6d1WYiMMxyHJhK7KADTucfScyvDJa5SLBGuR9QqCwrx52dRhizI2d0UjiJY_NfAg/exec',
+            params = {
+                'message': msg,
+                'doAlert': alert  
+            }
+        )
+
     VERB = partial(_log, level=10)
 
     INFO = partial(_log, level=20)
@@ -427,6 +454,10 @@ class Log:
     FAIL = partial(_log, level=40)
 
     CRIT = partial(_log, level=50)
+
+    GOOG = partial(_web, level=60, alert=False)
+
+    TEXT = partial(_web, level=70, alert=True)
 
 #========================================================
 
