@@ -150,11 +150,6 @@ class GUI:
 
         self.size = (500, 300)
 
-    def start(self) -> None:
-        from .process import Thread
-
-        Thread(self._tk.mainloop)
-
     def Page(self) -> Page:
 
         return Page(self)
