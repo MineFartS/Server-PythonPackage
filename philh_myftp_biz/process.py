@@ -90,6 +90,7 @@ class SubProcess:
         from subprocess import Popen, PIPE
         from .array import stringify
         from sys import executable
+        from .terminal import Log
         from .pc import Path, cwd
 
         # =====================================
@@ -141,6 +142,8 @@ class SubProcess:
                 args = ['wscript', *args]
 
         # =====================================
+
+        Log.VERB(f'Running Subprocess:\n{args=}\n{dir=}\nhide={self._hide}\nwait={self._wait}')
 
         self._process = Popen(
             args = args,
