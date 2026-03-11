@@ -25,9 +25,7 @@ class PathPair:
             self.__dict__[key] = Path(value)
 
 class Path:
-    """
-    File/Folder
-    """
+    """File/Folder"""
 
     path: str
     
@@ -52,6 +50,8 @@ class Path:
             self.path = input[0]
 
         # ==================================
+
+        self.path = self.path.replace('\\', '/').replace('//', '/')
 
         # Append trailing slash
         if _path.isdir(self.path) and (self.path[-1] != '/'):
