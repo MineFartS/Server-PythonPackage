@@ -1,5 +1,6 @@
 from typing import Literal, Self, Generator, TYPE_CHECKING, Any
 from functools import cached_property, cache
+from dataclasses import dataclass
 
 if TYPE_CHECKING:
     from .time import from_stamp
@@ -7,14 +8,11 @@ if TYPE_CHECKING:
 
 #========================================================
 
+@dataclass
 class PathPair:
 
-    def __init__(self,
-        src: Any,
-        dst: Any
-    ) -> None:
-        self.src: Path = src
-        self.dst: Path = dst
+    src: Path|Any
+    dst: Path|Any
 
     def __setattr__(self,
         key: str, 
@@ -574,49 +572,40 @@ class Path:
             return sha256(f.read()).hexdigest()
 
 class _cd:
-    """
-    Advanced Options for Change Directory
-    """
 
-    def __enter__(self):
+    __via_with = False
+    
+    def __enter__(self) -> None:
         self.__via_with = True
 
-    def __exit__(self, *_):
+    def __exit__(self, *_) -> None:
         if self.__via_with:
             self.back()
 
-    def __init__(self, path:'Path'):
-        
-        self.__via_with = False
+    def __init__(self, path:Path) -> None:
 
-        self.__target = path
+        self._target = str(path)
 
         self.open()
 
     def open(self) -> None:
-        """
-        Change CWD to the given path
-
-        Saves CWD for easy return with cd.back()
-        """
+        """Change CWD to the given path"""
         from os import getcwd, chdir
 
-        self.__back = getcwd()
+        self._back = getcwd()
 
-        chdir(self.__target.path)
+        chdir(self._target)
 
     def back(self) -> None:
-        """
-        Change CWD to the previous path
-        """
+        """Change CWD to the previous path"""
         from os import chdir
         
-        chdir(self.__back)
+        chdir(self._back)
 
+@dataclass
 class _mtime:
 
-    def __init__(self, path:Path):
-        self.path = path
+    path: Path
 
     def set(self,
         mtime: int | 'from_stamp' = None
@@ -653,10 +642,10 @@ class _mtime:
         
         return SW
 
+@dataclass
 class _set_access:
 
-    def __init__(self, path:'Path'):
-        self.path = path
+    path: Path
 
     def __paths(self) -> Generator['Path']:
 
@@ -690,10 +679,10 @@ class _set_access:
         else:
             chmod(str(self.path), 0o777)
 
+@dataclass
 class _visibility:
-    
-    def __init__(self, path:Path):
-        self.path = path
+
+    path: Path
 
     def hide(self) -> None:
         from win32con import FILE_ATTRIBUTE_HIDDEN
@@ -743,13 +732,8 @@ class _visibility:
 
 #========================================================
 
-def cwd() -> Path:
-    """
-    Get the Current Working Directory
-    """
-    from os import getcwd
-
-    return Path(getcwd())
+cwd = lambda: Path('.')
+"""Get the Current Working Directory"""
 
 def relscan(
     src: Path,
@@ -793,31 +777,6 @@ def relscan(
     buff.stop_when = lambda: not t.running
 
     yield from buff
-
-#========================================================
-
-class WindowsService:
-
-    def __init__(self, name:str):
-        self.name = name
-
-    def stop(self) -> None:
-        from .process import RunHidden
-        from .terminal import Log
-
-        Log.VERB(f'Stopping Windows Service: {self.name}')
-
-        RunHidden(['net', 'stop', self.name])
-
-    def disable(self) -> None:
-        from .process import RunHidden
-        from .terminal import Log
-
-        Log.VERB(f'Disabling Windows Service: {self.name}')
-
-        RunHidden(['net', 'stop', self.name])
-
-        RunHidden(['sc', 'config', self.name, 'start=disabled'])
 
 #========================================================
 # NAME
