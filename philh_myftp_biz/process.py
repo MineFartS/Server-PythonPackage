@@ -7,9 +7,7 @@ if TYPE_CHECKING:
 #========================================================
 
 class Thread:
-    """
-    Quickly Start a Thread
-    """
+    """Quickly Start a Thread"""
 
     def __init__(self,
         func: Callable,
@@ -33,12 +31,10 @@ class Thread:
 
         self.wait = self._t.join
 
-        self.running = self._t.is_alive
+        self.running: bool = property(self._t.is_alive)
 
 class Sleeper:
-    """
-    Call a function before exiting after main thread has ended
-    """
+    """Call a function before exiting after main thread has ended"""
 
     def __init__(self,
         func: Callable,
@@ -65,9 +61,7 @@ class Sleeper:
         self.func(*self.args, **self.kwargs)
 
 def Alive() -> bool:
-    """
-    Check if the main thread is running
-    """
+    """Check if the main thread is running"""
     from threading import main_thread
 
     return main_thread().is_alive()
@@ -75,9 +69,7 @@ def Alive() -> bool:
 #========================================================
 
 class SubProcess:
-    """
-    Subprocess Wrapper
-    """
+    """Subprocess Wrapper"""
 
     _hide: bool
     _wait: bool
