@@ -1,37 +1,55 @@
 from typing import Literal, TYPE_CHECKING, Any, Callable, Iterator
 
 if TYPE_CHECKING:
-    from psutil import Process as __Process
+    from psutil import Process as __SYS_Process
+    from multiprocessing import Process as __MP_Process
+    from threading import Thread as __Thread
     from .pc import Path
 
 #========================================================
 
-class Thread:
-    """Quickly Start a Thread"""
+
+class _bkg_task:
+
+    _kind: __MP_Process | __Thread
 
     def __init__(self,
         func: Callable,
         *args: str,
         **kwargs: str
     ) -> None:
-        from threading import Thread
 
         # Create new thread
-        self._t = Thread(
+        p = self._kind(
             target = func,
             kwargs = kwargs,
             args = args
         )
 
         # Close when main execution ends
-        self._t.daemon = True
+        p.daemon = True
 
-        # start the thread
-        self._t.start()
+        # start the task
+        p.start()
 
-        self.wait = self._t.join
+        self.wait = p.join
 
-        self.running: bool = property(self._t.is_alive)
+        self.running: bool = property(p.is_alive)
+
+class Thread(_bkg_task):
+
+    @property
+    def _kind(self):
+        from threading import Thread
+        return Thread
+
+class MProcess(_bkg_task):
+
+    @property
+    def _kind(self):
+        from multiprocessing import Process
+        return Process
+
 
 class Sleeper:
     """Call a function before exiting after main thread has ended"""
@@ -295,7 +313,7 @@ class SysTask:
             self.name = id.lower()
 
     @property
-    def _main(self) -> '__Process|None':
+    def _main(self) -> '__SYS_Process|None':
         from psutil import process_iter, Process, NoSuchProcess
         from .text import like
 
@@ -321,7 +339,7 @@ class SysTask:
 
                     return proc
 
-    def __iter__(self) -> 'Iterator[__Process]':
+    def __iter__(self) -> 'Iterator[__SYS_Process]':
         from psutil import NoSuchProcess
         
         main = self._main
