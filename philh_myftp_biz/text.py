@@ -46,17 +46,18 @@ def int_stripper(string:str) -> None | int:
         return int(string)
 
 class contains:
-    """
-    Functions to check if text contains value(s) with list as input
-    """
+    """Functions to check if text contains value(s) with list as input"""
 
     def any(
         string: str,
-        values: list[str]
+        values: list[str],
+        case: bool = False
     ) -> bool:
-        """
-        Check if string contains any of the values
-        """
+        """Check if string contains any of the values"""
+        
+        if not case:
+            string = string.lower()
+            values = [str(v).lower() for v in values]
 
         # Iter through all passed values
         for v in values:
@@ -72,11 +73,14 @@ class contains:
     
     def all(
         string: str,
-        values: list[str]
+        values: list[str],
+        case: bool = False
     ) -> bool:
-        """
-        Check if string contains all of the values
-        """
+        """Check if string contains all of the values"""
+
+        if not case:
+            string = string.lower()
+            values = [str(v).lower() for v in values]
 
         # Iter through all passed values
         for v in values:
