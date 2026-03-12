@@ -1,6 +1,8 @@
 from typing import Literal, Generator, TYPE_CHECKING, Callable
 from functools import cached_property
 
+from qbittorrentapi.torrents import TorrentDictionary
+
 if TYPE_CHECKING:
     from qbittorrentapi import Client, TorrentDictionary
     from qbittorrentapi import TorrentFile as __TorrentFile
@@ -168,11 +170,10 @@ class qBitTorrent:
     def _client(self) -> 'Client':
         """Wait for server connection, then returns qbittorrentapi.Client"""
         from qbittorrentapi.exceptions import LoginFailed, Forbidden403Error, APIConnectionError
-        from ..time import Stopwatch
+        from ..time import Timeout
         from ..terminal import Log
 
-        sw = Stopwatch()
-        sw.start()
+        timeout = Timeout(self.timeout)
 
         while True:
 
@@ -183,10 +184,9 @@ class qBitTorrent:
                 return self._rclient
             
             except LoginFailed, Forbidden403Error, APIConnectionError:
-                Log.WARN('qBitTorrentAPI Connection Error')
+                Log.VERB('qBitTorrentAPI Connection Error')
 
-            if sw.elapsed >= self.timeout:
-                raise TimeoutError('qBitTorrentAPI Connection Timed Out')
+            timeout.check()
 
     @property
     def connected(self) -> bool:
@@ -272,7 +272,7 @@ class Magnet(qBitTorrent):
                 )
 
     @property
-    def _torrent(self):
+    def _torrent(self) -> None | TorrentDictionary:
 
         for t in self._client.torrents_info():
             
@@ -330,31 +330,26 @@ class Magnet(qBitTorrent):
 
         Waits for at least one file to be found before returning
         """
-        from ..time import Stopwatch
+        from ..time import Timeout
         from ..terminal import Log
 
         Log.VERB(f'Scanning Files: {self}')
 
-        sw = Stopwatch()
-        sw.start()
+        timeout = Timeout(self.timeout)
 
-        if self._torrent:
+        # Wait for torrent creation
+        while self._torrent is None:
+            timeout.check()
+            
+        self._torrent.setForceStart(True)
 
-            self._torrent.setForceStart(True)
+        # Wait for files to populate
+        while len(self._torrent.files) == 0:
+            timeout.check()
 
-            #
-            while len(self._torrent.files) == 0:
+        self._torrent.setForceStart(False)
 
-                if sw >= self.timeout:
-
-                    raise TimeoutError()
-
-            self._torrent.setForceStart(False)
-
-            return [TorrentFile(self._torrent,f) for f in self._torrent.files]
-        
-        else:
-            return []
+        return [TorrentFile(self._torrent,f) for f in self._torrent.files]
 
     def stop(self,
         rm_files: bool = True

@@ -50,10 +50,10 @@ def toHMS(stamp:int) -> str:
     
     return f'{h:02d}:{m:02d}:{s:02d}'
 
+#==============================================================================
+
 class Stopwatch:
-    """
-    Keeps track of time
-    """
+    """Keeps track of time"""
 
     def __init__(self):
         self.start_time = None
@@ -62,9 +62,7 @@ class Stopwatch:
 
     @property
     def elapsed(self) -> None | float:
-        """
-        Get the # of seconds between now or the stop time, and the start time
-        """
+        """Get the # of seconds between now or the stop time, and the start time"""
         from time import perf_counter
 
         if self.start_time != None:
@@ -77,9 +75,7 @@ class Stopwatch:
             return elapsed
 
     def start(self) -> Self:
-        """
-        Start the stopwatch at 0
-        """
+        """Start the stopwatch at 0"""
         from time import perf_counter
 
         self.start_time = perf_counter()
@@ -89,9 +85,7 @@ class Stopwatch:
         return self
 
     def stop(self) -> Self:
-        """
-        Stop the stopwatch
-        """
+        """Stop the stopwatch"""
         from time import perf_counter
 
         self.end_time = perf_counter()
@@ -129,10 +123,29 @@ class Stopwatch:
     ) -> bool:
         return self.elapsed == other
 
+class Timeout(Stopwatch):
+
+    def __init__(self,
+        timeout: int,
+        msg: str = ''
+    ):
+        
+        super().__init__()
+        self.start()
+
+        self.timeout: int = timeout
+        self.msg = msg
+
+    def check(self) -> None:
+
+        if self.elapsed >= self.timeout:
+            
+            raise TimeoutError(self.msg)
+
+#==============================================================================
+
 class from_stamp:
-    """
-    Handler for a unix time stamp
-    """
+    """Handler for a unix time stamp"""
 
     def __init__(self,
         stamp: SupportsFloat
