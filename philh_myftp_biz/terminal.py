@@ -412,8 +412,7 @@ class Log:
         log(
             level = level, 
             msg = msg, 
-            exc_info = exc_info,
-            stacklevel = 2
+            exc_info = exc_info
         )
 
     VERB = partial(_log, level=10)

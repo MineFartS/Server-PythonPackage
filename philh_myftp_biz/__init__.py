@@ -14,6 +14,11 @@ HELP: bool = (len({'-h', '--help'} & set(__argv)) >= 1)
 
 class CustomFormatter(__Formatter):
 
+    _ig = [
+        '\\Lib\\site-packages\\philh_myftp_biz\\',
+        '\\Lib\\logging\\'
+    ]
+
     @cached_property
     def _wfile(self):
         from .terminal import script_file
@@ -59,7 +64,7 @@ class CustomFormatter(__Formatter):
 
             case 10:
 
-                if '\\Lib\\site-packages\\philh_myftp_biz\\' in record.pathname:
+                if self._ig[0] in record.pathname:
                     return Color.values['GRAY']
                 else:
                     return Color.values['WHITE']
@@ -121,6 +126,22 @@ class CustomFormatter(__Formatter):
 
         return n.stamp(format='%y-%m-%d %H-%M-%S') + f'.{n.centisecond:.02f}'
 
+    def _file(self) -> str:
+        from inspect import stack
+        from os import path
+
+        for frame in stack():
+
+            # If the frame does not contain any ignored strings
+            if not any(v in frame.filename for v in self._ig):
+
+                filename = path.basename(frame.filename)
+                lineno = frame.lineno
+                
+                return f'{filename}:{lineno}'
+
+        return ''
+
     def format(self,
         record: '__LogRecord'
     ) -> str:
@@ -137,7 +158,7 @@ class CustomFormatter(__Formatter):
 
         TIME = self._timestamp()
 
-        FILE = f'{record.filename}:{record.lineno}'
+        FILE = self._file()
 
         LEVEL = self._levelname(record)
 
