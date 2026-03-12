@@ -220,3 +220,9 @@ def intify(array:list) -> list[int]:
     return array
 
 #========================================================
+
+def overlap(
+    list1: list,
+    list2: list
+) -> bool:
+    return not set(list1).isdisjoint(list2)
