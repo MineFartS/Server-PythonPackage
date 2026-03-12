@@ -427,6 +427,8 @@ class Log:
 
     CRIT = partial(_log, level=50)
 
+    # TODO Add ability to block certain functions
+
 #========================================================
 
 @cache
