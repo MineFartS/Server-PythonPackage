@@ -1,10 +1,9 @@
-from typing import Literal, TYPE_CHECKING, Callable
+from typing import Literal, TYPE_CHECKING
 from .functools import single_use
 from functools import partial
 
 if TYPE_CHECKING:
     from selenium.webdriver.remote.webelement import WebElement
-    from paramiko.channel import ChannelFile, ChannelStderrFile
     from requests import Response
     from .pc import Path
 
@@ -98,60 +97,6 @@ class Port:
     
     def __repr__(self) -> str:
         return f"Port({self.port})"
-
-class SSH:
-    """
-    SSH Client
-
-    Wrapper for paramiko.SSHClient
-    """
-
-    class Response:
-
-        def __init__(self,
-            stdout: 'ChannelFile',
-            stderr: 'ChannelStderrFile'
-        ) -> None:
-            
-            self.output: str = stdout.read().decode()
-            """stdout"""
-
-            self.error: str = stderr.read().decode()
-            """stderr"""
-
-    def __init__(self,
-        ip: str,
-        username: str,
-        password: str,
-        timeout: int = None,
-        port: int = 22
-    ) -> None:
-        from paramiko import SSHClient, AutoAddPolicy
-
-        self.__client = SSHClient()
-
-        self.__client.set_missing_host_key_policy(policy=AutoAddPolicy())
-
-        self.__client.connect(
-            hostname = ip, 
-            port = port, 
-            username = username, 
-            password = password, 
-            timeout = timeout
-        )
-
-        self.close: Callable[[], None] = self.__client.close
-        """Close the connection to the remote computer"""
-
-    def run(self, command:str) -> SSH.Response:
-        """
-        Send a command to the remote computer
-        """
-
-        # Execute a command
-        stdout, stderr = self.__client.exec_command(command)[1:]
-
-        return self.Response(stdout, stderr)
 
 def get(
     url: str,
