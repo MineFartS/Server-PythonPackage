@@ -1,4 +1,16 @@
-from typing import Callable, Any, Iterator, Self
+from typing import Callable, Any, Iterator, Self, Union, TypeAlias, TypeVar
+
+_T = TypeVar('_T')
+
+SortFunc: TypeAlias = Callable[
+    [_T],
+    Union[
+        int, 
+        float, 
+        list[int | float], 
+        tuple[int | float]
+    ]
+]
 
 #========================================================
 

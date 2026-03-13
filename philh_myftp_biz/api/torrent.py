@@ -1,4 +1,4 @@
-from typing import Literal, Generator, TYPE_CHECKING, Callable
+from typing import Literal, Generator, TYPE_CHECKING
 from functools import cached_property
 
 from qbittorrentapi.torrents import TorrentDictionary
@@ -6,6 +6,7 @@ from qbittorrentapi.torrents import TorrentDictionary
 if TYPE_CHECKING:
     from qbittorrentapi import Client, TorrentDictionary
     from qbittorrentapi import TorrentFile as __TorrentFile
+    from ..array import SortFunc
     from ..web import Driver
     from ..pc import Path
 
@@ -200,7 +201,7 @@ class qBitTorrent:
 
     def clear(self,
         rm_files: bool = True,
-        filter_func: Callable[['TorrentDictionary'], bool] = lambda t: True
+        func: SortFunc['TorrentDictionary'] = lambda t: True
     ) -> None:
         """Remove all Magnets from the download queue"""
         from ..text import from_function
@@ -209,16 +210,39 @@ class qBitTorrent:
         Log.VERB(
             f'Clearing Download Queue:\n'+ \
             f'{rm_files=}\n'+ \
-            'func='+from_function(filter_func)
+            'func='+from_function(func)
         )
 
         for torrent in self._client.torrents_info():
 
-            if filter_func(torrent):
+            if func(torrent):
             
                 Log.VERB(f'Deleting Queue Item: {rm_files=} | {torrent.name=}')
                 
                 torrent.delete(rm_files)
+
+    def sort(self,
+        func: SortFunc['TorrentDictionary']
+    ) -> None:
+        """Sort the download queue"""
+        from ..text import from_function
+        from ..terminal import Log
+
+        Log.VERB(
+            f'Sorting Download Queue:\n'+ \
+            'func='+from_function(func)
+        )
+
+        torrents = sorted(
+            self._client.torrents_info(),
+            key = func
+        )
+
+        # Iterate through reversed list of torrents
+        for t in reversed(torrents):
+
+            # Move to top of queue
+            t.top_priority()
 
     def randomize_port(self) -> None:
         from random import randint
