@@ -466,9 +466,7 @@ class thePirateBay:
         # Set driver var 'lines' to a list of lines
         try:
             _run("window.lines = document.getElementById('searchResult').children[1].children")
-        
         except RuntimeError:
-            Log.VERB('', exc_info=True)
             return
 
         # Iter from 0 to # of lines
