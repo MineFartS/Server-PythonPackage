@@ -1,12 +1,10 @@
 from typing import Literal, Generator, TYPE_CHECKING
 from functools import cached_property
 
-from qbittorrentapi.torrents import TorrentDictionary
-
 if TYPE_CHECKING:
     from qbittorrentapi import Client, TorrentDictionary
     from qbittorrentapi import TorrentFile as __TorrentFile
-    from ..array import SortFunc
+    from ..array import SortFunc, FilterFunc
     from ..web import Driver
     from ..pc import Path
 
@@ -201,7 +199,7 @@ class qBitTorrent:
 
     def clear(self,
         rm_files: bool = True,
-        func: SortFunc['TorrentDictionary'] = lambda t: True
+        func: FilterFunc['TorrentDictionary'] = lambda t: True
     ) -> None:
         """Remove all Magnets from the download queue"""
         from ..text import from_function

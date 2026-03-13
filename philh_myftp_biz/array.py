@@ -12,6 +12,8 @@ SortFunc: TypeAlias = Callable[
     ]
 ]
 
+FilterFunc: TypeAlias = Callable[[_T], bool]
+
 #========================================================
 
 class List[V]:
