@@ -34,19 +34,27 @@ class FTP:
     username: str
     password: str
     timeout: int = None
-    port: int = 22
+    port: int = 21
 
     @cached_property
     def _client(self):
         from ftplib import FTP as __FTP
 
-        return __FTP(
-            host = self.host,
-            port = self.port,
-            user = self.username,
-            passwd = self.password,
+        ftp = __FTP(
             timeout = self.timeout
         )
+
+        ftp.connect(
+            host = self.host, 
+            port = self.port
+        )
+
+        ftp.login(
+            user = self.username, 
+            passwd = self.password
+        )
+
+        return ftp
     
     def cd(self, path:str) -> None:
         self._client.cwd(path)
