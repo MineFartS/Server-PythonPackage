@@ -59,9 +59,14 @@ class TorrentFile:
 
     @property
     def progress(self) -> None | float:
-
-        if self._file:
-            return self._file.progress
+        from qbittorrentapi.exceptions import NotFound404Error
+        
+        try:
+            if self._file:
+                return self._file.progress
+        
+        except NotFound404Error:
+            pass
 
     def start(self,
         force: bool = False
