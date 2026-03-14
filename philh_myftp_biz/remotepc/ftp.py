@@ -60,6 +60,20 @@ class FTPPath:
     def is_file(self) -> bool:
         return (not self.is_dir)
     
+    @property
+    def exists(self) -> bool:
+        from ftplib import error_perm
+
+        try:
+            self.size
+            return True
+        
+        except TypeError:
+            return True
+        
+        except error_perm:
+            return False
+    
     def child(self, name:str) -> "FTPPath":
         
         if self.is_file:
