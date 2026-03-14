@@ -19,6 +19,18 @@ class FTPPath:
     def download(self,
         local: 'Path'
     ) -> None:
+        from ..terminal import Log
+
+        if self.is_dir:
+            raise NotImplementedError()
+
+        Log.VERB(
+            f'Downloading File\n'+ \
+            f'remote={self}\n'+ \
+            f'local={local}'
+        )
+
+        local.mkdir()
 
         # Open the local file in write-binary mode
         with local.open('wb') as stream:
