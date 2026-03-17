@@ -100,8 +100,8 @@ class CustomFormatter(__Formatter):
 
             _tb.write('\n')
 
-        return _tb.getvalue()
-    
+        return _tb.getvalue().strip()
+
     def _message(self,
         record: '__LogRecord'    
     ) -> str:
@@ -117,7 +117,7 @@ class CustomFormatter(__Formatter):
         else:
             message = stringify(record.msg)
 
-        return message.encode().decode()
+        return message.encode(errors='ignore').decode()
 
     def _timestamp(self) -> str:
         from .time import now
@@ -145,7 +145,8 @@ class CustomFormatter(__Formatter):
     def format(self,
         record: '__LogRecord'
     ) -> str:
-
+        from .text import recode
+        
         #===============================================
         
         # Ignore records from other modules
@@ -171,11 +172,15 @@ class CustomFormatter(__Formatter):
 
         # Write to the logfile
         with self._wfile.open('a') as f:
+
+            line = f"\n{TIME} {FILE} {LEVEL}\n{MESS}\n{TRACE}"
             
-            f.write(f"\n{TIME} {FILE} {LEVEL}\n{MESS}\n{TRACE}")
+            f.write(recode(line))
         
         # Return a string to be printed to the terminal
-        return f"\n{COLOR}\033[1m{TIME} {FILE} {LEVEL}\033[22m\n{MESS}\033[0m\n{TRACE}"
+        line = f"\n{COLOR}\033[1m{TIME} {FILE} {LEVEL}\033[22m\n{MESS}\033[0m\n{TRACE}"
+
+        return recode(line)
     
         #===============================================
 

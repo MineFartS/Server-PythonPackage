@@ -327,4 +327,6 @@ def to_slice(string:str) -> None | list[slice|int]:
             int(parts[0]),
             int(parts[1])+1
         )]
-    
+
+def recode(string:str):
+    return string.encode(errors='ignore').decode()

@@ -478,9 +478,13 @@ class Path:
         """
         Open the current file
 
-        Works the same as: open(self.Path)
+        Works the same as: open(self.path)
         """
-        return open(file=self.path, mode=mode)
+        return open(
+            file = self.path, 
+            mode = mode,
+            encoding = None if ('b' in mode) else 'utf-8'
+        )
 
     def __setitem__(self,
         key: Any, 
