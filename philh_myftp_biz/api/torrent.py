@@ -519,4 +519,4 @@ class thePirateBay:
                 )
 
             except KeyError, RuntimeError:
-                Log.VERB('', exc_info=True)
+                pass
