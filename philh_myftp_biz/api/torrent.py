@@ -468,7 +468,7 @@ class thePirateBay:
         else:
             self._driver = Driver()
 
-        self._cache: TransitoryCache[list[Magnet]] = TransitoryCache()
+        self._cache: TransitoryCache[list[Magnet]] = TransitoryCache(expire=36000) # 10 hours
 
     def search(self,
         query: str
