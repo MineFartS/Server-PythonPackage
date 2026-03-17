@@ -1,4 +1,4 @@
-from typing import Literal, Generator, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING
 from functools import cached_property
 
 if TYPE_CHECKING:
@@ -455,6 +455,7 @@ class thePirateBay:
         driver: 'Driver' = None,
         qbit: qBitTorrent = None
     ) -> None:
+        from ..functools import TransitoryCache
         
         self.tpburl: str = (f'https://{url}' + '/search/{}/1/99/0')
         """tpb mirror url"""
@@ -467,9 +468,11 @@ class thePirateBay:
         else:
             self._driver = Driver()
 
+        self._cache: TransitoryCache[list[Magnet]] = TransitoryCache()
+
     def search(self,
         query: str
-    ) -> None | Generator[Magnet]:
+    ) -> list[Magnet]:
         """
         Search thePirateBay for magnets
 
@@ -477,8 +480,10 @@ class thePirateBay:
         for magnet in thePirateBay.search('term'):
             magnet
         """
-        from ..terminal import Log
         from ..db import Size
+
+        if self._cache[query]:
+            return self._cache[query] # pyright: ignore[reportReturnType]
 
         # Remove all "." & "'" from query
         query = query.replace('.', '').replace("'", '')
@@ -494,7 +499,10 @@ class thePirateBay:
         try:
             _run("window.lines = document.getElementById('searchResult').children[1].children")
         except RuntimeError:
-            return
+            self._cache[query] = []
+            return []
+        
+        magnets: list[Magnet] = []
 
         # Iter from 0 to # of lines
         for x in range(0, _run('return lines.length')):
@@ -502,7 +510,7 @@ class thePirateBay:
             try:
 
                 # Yield a magnet instance
-                yield Magnet(
+                magnets += [Magnet(
 
                     title = _run(f"return lines[{x}].children[1].textContent"),
 
@@ -516,7 +524,11 @@ class thePirateBay:
 
                     qbit = self._qbit
 
-                )
+                )]
 
             except KeyError, RuntimeError:
                 pass
+
+        self._cache[query] = magnets
+
+        return magnets

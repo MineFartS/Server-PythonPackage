@@ -1,11 +1,60 @@
+from diskcache import Cache as __Cache
+from functools import cached_property
+from dataclasses import dataclass
+from .pc import cache_dir
+from typing import Any
 
 #========================================================
 # DISK CACHE
 
-from diskcache import Cache as __Cache
-from .pc import cache_dir
-
 diskcache = __Cache(cache_dir().path).memoize
+
+@dataclass
+class TransitoryCache[T]:
+
+    expire: int = 18000
+
+    @cached_property
+    def _file(self):
+        from .pc import cache_dir
+        return cache_dir().child('philh_myftp_biz.pkl')
+
+    @cached_property
+    def _dict(self):
+        from .json import Dict
+        from .file import PKL
+
+        pkl = PKL(
+            path = self._file,
+            default = {}
+        )
+
+        return Dict(pkl)
+
+    def __getitem__(self, key:Any) -> T | None:
+        from .time import Timeout
+
+        if self._dict[key]:
+
+            time: Timeout = self._dict[key]['time']
+
+            try:
+
+                time.check()
+                
+                return self._dict[key]['value']
+            
+            except TimeoutError:
+                del self._dict[key]
+
+    def __setitem__(self, key:Any, value:T) -> None:
+        from .time import Timeout
+
+        self._dict[key] = {}
+
+        self._dict[key]['time'] = Timeout(self.expire) 
+
+        self._dict[key]['value'] = value
 
 #========================================================
 
