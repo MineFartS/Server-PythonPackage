@@ -341,6 +341,15 @@ class Magnet(qBitTorrent):
 
             self._torrent.reannounce()
 
+    def recheck(self) -> None:
+        from ..terminal import Log
+
+        Log.VERB(f'Rechecking: {self}')
+
+        if self._torrent:
+
+            self._torrent.recheck()
+
     def restart(self) -> None:
         """Restart Downloading a Magnet"""
         from ..terminal import Log
