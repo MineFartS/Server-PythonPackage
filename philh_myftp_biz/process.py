@@ -170,6 +170,8 @@ class SubProcess:
 
         self.stop = self._task.stop
 
+        self.send = self._process.communicate
+
         # =====================================
 
         self.stdout  = ''
