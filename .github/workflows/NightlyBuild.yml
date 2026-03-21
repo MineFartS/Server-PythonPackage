@@ -8,15 +8,48 @@ on:
     - cron: '0 3 * * *' # Runs daily at 22:00 EST
 
 jobs:
-  
+
   main:
-  
+
     runs-on: ubuntu-latest
   
     permissions:
       contents: write
 
     steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # fetch all history and tags
+
+      - name: Get latest release tag
+        id: get-latest-tag
+        run: |
+          LATEST_TAG=$(git tag --sort=-version:refname | head -n 1)
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_ENV
+          echo "Latest tag found: $LATEST_TAG"
+
+      - name: Scan for Changes
+        id: check-diff
+        run: |
+          if [ -z "$LATEST_TAG" ]; then
+            echo "No previous tag found."
+            echo "has_changed=true" >> $GITHUB_ENV
+          else
+            CHANGED_FILES=$(git diff --name-only $LATEST_TAG HEAD)
+            if [ -z "$CHANGED_FILES" ]; then
+              echo "has_changed=false" >> $GITHUB_ENV
+            else
+              echo "has_changed=true" >> $GITHUB_ENV
+            fi
+          fi
+
+      - name: Exit if unchanged
+        run: |
+          if [ "$has_changed" = "true" ]; then
+            exit
+          fi
 
       - name: Checkout code
         uses: actions/checkout@v4
