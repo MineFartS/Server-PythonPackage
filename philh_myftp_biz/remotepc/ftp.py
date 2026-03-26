@@ -88,10 +88,13 @@ class FTPPath:
         
             for name in self.ftp._client.nlst():
 
-                yield FTPPath(
+                _path = FTPPath(
                     ftp = self.ftp,
                     path = (self.path.rstrip('/') + '/' + name)
                 )
+
+                if _path.exists:
+                    yield _path
 
     @cached_property
     def descendants(self) -> Generator[FTPPath]:
