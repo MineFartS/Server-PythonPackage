@@ -1,10 +1,11 @@
-from typing import Literal, TYPE_CHECKING
+from qbittorrentapi import TorrentDictionary
+from typing import Literal, TYPE_CHECKING, Callable
 from functools import cached_property
 
 if TYPE_CHECKING:
-    from qbittorrentapi import Client, TorrentDictionary
     from qbittorrentapi import TorrentFile as __TorrentFile
     from ..array import SortFunc, FilterFunc
+    from qbittorrentapi import Client
     from ..web import Driver
     from ..pc import Path
 
@@ -132,6 +133,145 @@ class TorrentFile:
 
         return f"<File '{abbr(num=30, string=self.title)}' @{loc(obj=self)}>"
 
+class Torrent:
+
+    def __init__(self,
+        qbit: qBitTorrent,
+        hash: str
+    ):
+        
+        self.qbit = qbit
+        self.timeout = qbit.timeout
+
+        self.hash = hash
+
+    def __qbit_getter(name:str):
+        return property(lambda s: getattr(s.qbit, name, None))
+
+    _client: 'Client' = __qbit_getter('_client')
+
+    priority: int = __qbit_getter('priority')
+
+    seeders: int = __qbit_getter('num_complete')
+
+    leechers: int = __qbit_getter('num_incomplete')
+
+    title: str = __qbit_getter('name')
+
+    def start(self):
+        if self._tdict:
+            self._tdict.start()
+
+    @property
+    def _tdict(self) -> TorrentDictionary | None:
+        
+        for t in self._client.torrents_info():
+        
+            if t.hash == self.hash:
+
+                return t
+
+    @property
+    def files(self) -> list[TorrentFile]:
+        """
+        List of all files in Magnet Download
+
+        Waits for at least one file to be found before returning
+        """
+        from ..time import Timeout
+        from ..terminal import Log
+
+        Log.VERB(f'Scanning Files: {self}')
+
+        timeout = Timeout(self.timeout)
+
+        # Wait for torrent creation
+        while self._tdict is None:
+            timeout.check()
+            
+        self._tdict.setForceStart(True)
+
+        # Wait for files to populate
+        while len(self._tdict.files) == 0:
+            timeout.check()
+
+        self._tdict.setForceStart(False)
+
+        return [TorrentFile(self._tdict,f) for f in self._tdict.files]
+
+    @property
+    def selected_files(self):
+        return [f for f in self.files if f.priority > 0]
+
+    def stop(self,
+        rm_files: bool = True
+    ) -> None:
+        """Stop downloading a Magnet"""
+        from ..terminal import Log
+
+        Log.VERB(f'Stopping: {rm_files=} | {self}')
+
+        self._tdict.delete(delete_files=rm_files)
+
+    @property
+    def finished(self) -> None | bool:
+        """Check if a magnet is finished downloading"""
+        
+        if self._tdict:
+
+            state = self._tdict.state_enum
+            
+            return (state.is_uploading or state.is_complete)
+
+    @property
+    def errored(self) -> bool:
+        """Check if a magnet is errored"""
+
+        if self._tdict:
+            return self._tdict.state_enum.is_errored
+        else:
+            return False
+        
+    @property
+    def downloading(self) -> None | bool:
+        """Check if a magnet is downloading"""
+        
+        if self._tdict:
+            return self._tdict.state_enum.is_downloading
+
+    @property
+    def exists(self) -> bool:
+        """Check if a magnet is in the download queue"""
+        
+        return (self._tdict != None)
+
+    @property
+    def stalled(self) -> bool:
+        """Check if a magnet is stalled"""
+        
+        if self._tdict:
+            return (self._tdict.state_enum.value == 'stalledDL')
+        else:
+            return False
+
+    def reannounce(self) -> None:
+        from ..terminal import Log
+
+        Log.VERB(f'Reannouncing: {self}')
+
+        if self._tdict:
+
+            self._tdict.reannounce()
+
+    def recheck(self) -> None:
+        from ..terminal import Log
+
+        Log.VERB(f'Rechecking: {self}')
+
+        if self._tdict:
+
+            self._tdict.recheck()
+
 class qBitTorrent:
     """Client for qBitTorrent Web Server"""
 
@@ -204,7 +344,7 @@ class qBitTorrent:
 
     def clear(self,
         rm_files: bool = True,
-        func: FilterFunc['TorrentDictionary'] = lambda t: True
+        func: FilterFunc['Torrent'] = lambda t: True
     ) -> None:
         """Remove all Magnets from the download queue"""
         from ..text import from_function
@@ -216,16 +356,18 @@ class qBitTorrent:
             'func='+from_function(func)
         )
 
-        for torrent in self._client.torrents_info():
+        for t in self._client.torrents_info():
+
+            torrent = Torrent(self, t.hash)
 
             if func(torrent):
             
-                Log.VERB(f'Deleting Queue Item: {rm_files=} | {torrent.name=}')
+                Log.VERB(f'Deleting Queue Item: {rm_files=} | {torrent.title=}')
                 
-                torrent.delete(rm_files)
+                torrent.stop(rm_files)
 
     def sort(self,
-        func: SortFunc['TorrentDictionary']
+        func: SortFunc['Torrent']
     ) -> None:
         """Sort the download queue"""
         from ..text import from_function
@@ -236,16 +378,20 @@ class qBitTorrent:
             'func='+from_function(func)
         )
 
-        torrents = sorted(
-            self._client.torrents_info(),
-            key = func
-        )
+        torrents = [Torrent(self, t.hash) for t in self._client.torrents_info()]
+
+        torrents.sort(key=func)
 
         # Iterate through reversed list of torrents
         for t in reversed(torrents):
 
             # Move to top of queue
-            t.top_priority()
+            t._tdict.top_priority()
+
+    @property
+    def queue(self) -> Generator[Torrent]:
+        for t in self._client.torrents_info():
+            yield Torrent(self, t.hash)
 
     def randomize_port(self) -> None:
         from random import randint
@@ -255,34 +401,42 @@ class qBitTorrent:
             'listen_port': randint(a=10000, b=60000)
         })
 
-class Magnet(qBitTorrent):
+class Magnet(Torrent):
     """Handler for MAGNET URLs"""
 
     def __init__(self,
+        qbit: qBitTorrent,
         title: str = '',
         seeders: int = -1,
         leechers: int = -1,
         url: str = '',
-        size: str = -1,
-        qbit: 'qBitTorrent' = None
+        size: str = -1
     ) -> None:
         from urllib.parse import urlparse, parse_qs
 
+        #===================================================
+
         # Get the value of the 'xt' parameter (it's a list, so take the first element)
         XT: str = parse_qs(urlparse(url).query)['xt'][0]
-        
+
         # The hash follows 'urn:btih:' or 'urn:btmh:'
         if XT.startswith('urn:btih:'):
-            self.hash = XT[len('urn:btih:'):].lower()
+            _hash = XT[len('urn:btih:'):].lower()
         
         elif XT.startswith('urn:btmh:'): # for v2 magnets
-            self.hash = XT[len('urn:btmh:'):].lower()
+            _hash = XT[len('urn:btmh:'):].lower()
+
+        super().__init__(qbit, _hash)
             
-        self.title: str = title.lower()
-        self.leechers: int = leechers
-        self.seeders: int = seeders
+        #===================================================
+
+        self._title: str = title.lower()
+        self._leechers: int = leechers
+        self._seeders: int = seeders
         self.size: str = size
         self.url: str = url
+
+        #===================================================
 
         self.quality = 0
         for term, quality in qualities.items():
@@ -291,25 +445,16 @@ class Magnet(qBitTorrent):
                 
                 self.quality: int = quality
 
-        if qbit:
-            for name in ['_rclient', 'timeout']:
-                setattr(
-                    self, name,
-                    getattr(qbit, name)
-                )
+        #===================================================
 
-    @property
-    def _torrent(self) -> None | TorrentDictionary:
-
-        for t in self._client.torrents_info():
-            
-            #
-            if t.hash == self.hash:
-
-                return t
+    def __torrent_getter(name:str):
+        return property(lambda s: getattr(
+            s.qbit, name,
+            getattr(s, '_'+name)
+        ))
 
     def start(self,
-        path: 'str|Path' = None
+        path: 'None|str|Path' = None
     ) -> None:
         """Start Downloading a Magnet"""
         from ..terminal import Log
@@ -323,32 +468,14 @@ class Magnet(qBitTorrent):
         if path:
             path = str(path)
 
-        if self._torrent:
-            self._torrent.start()
+        if self._tdict:
+            self._tdict.start()
         
         else:
             self._client.torrents_add(
                 urls = self.url,
                 save_path = path
             )
-
-    def reannounce(self) -> None:
-        from ..terminal import Log
-
-        Log.VERB(f'Reannouncing: {self}')
-
-        if self._torrent:
-
-            self._torrent.reannounce()
-
-    def recheck(self) -> None:
-        from ..terminal import Log
-
-        Log.VERB(f'Rechecking: {self}')
-
-        if self._torrent:
-
-            self._torrent.recheck()
 
     def restart(self) -> None:
         """Restart Downloading a Magnet"""
@@ -359,84 +486,11 @@ class Magnet(qBitTorrent):
         self.stop()
         self.start()
 
-    @property
-    def files(self) -> list[TorrentFile]:
-        """
-        List of all files in Magnet Download
+    title: str = __torrent_getter('title')
 
-        Waits for at least one file to be found before returning
-        """
-        from ..time import Timeout
-        from ..terminal import Log
+    seeders: int = __torrent_getter('seeders')
 
-        Log.VERB(f'Scanning Files: {self}')
-
-        timeout = Timeout(self.timeout)
-
-        # Wait for torrent creation
-        while self._torrent is None:
-            timeout.check()
-            
-        self._torrent.setForceStart(True)
-
-        # Wait for files to populate
-        while len(self._torrent.files) == 0:
-            timeout.check()
-
-        self._torrent.setForceStart(False)
-
-        return [TorrentFile(self._torrent,f) for f in self._torrent.files]
-
-    def stop(self,
-        rm_files: bool = True
-    ) -> None:
-        """Stop downloading a Magnet"""
-        from ..terminal import Log
-
-        Log.VERB(f'Stopping: {rm_files=} | {self}')
-
-        self._torrent.delete(delete_files=rm_files)
-
-    @property
-    def finished(self) -> None | bool:
-        """Check if a magnet is finished downloading"""
-        
-        if self._torrent:
-
-            state = self._torrent.state_enum
-            
-            return (state.is_uploading or state.is_complete)
-
-    @property
-    def errored(self) -> bool:
-        """Check if a magnet is errored"""
-
-        if self._torrent:
-            return self._torrent.state_enum.is_errored
-        else:
-            return False
-        
-    @property
-    def downloading(self) -> None | bool:
-        """Check if a magnet is downloading"""
-        
-        if self._torrent:
-            return self._torrent.state_enum.is_downloading
-
-    @property
-    def exists(self) -> bool:
-        """Check if a magnet is in the download queue"""
-        
-        return (self._torrent != None)
-
-    @property
-    def stalled(self) -> bool:
-        """Check if a magnet is stalled"""
-        
-        if self._torrent:
-            return (self._torrent.state_enum.value == 'stalledDL')
-        else:
-            return False
+    leechers: int = __torrent_getter('leechers')
 
     def __repr__(self) -> str:
         from ..classtools import loc
