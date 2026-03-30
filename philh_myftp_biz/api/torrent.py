@@ -1,5 +1,5 @@
-from qbittorrentapi import TorrentDictionary
 from typing import Literal, TYPE_CHECKING, Callable
+from qbittorrentapi import TorrentDictionary
 from functools import cached_property
 
 if TYPE_CHECKING:
@@ -145,6 +145,8 @@ class Torrent:
 
         self.hash = hash
 
+    #===================================================
+
     def __qbit_getter(name:str):
         return property(lambda s: getattr(s.qbit, name, None))
 
@@ -157,6 +159,8 @@ class Torrent:
     leechers: int = __qbit_getter('num_incomplete')
 
     title: str = __qbit_getter('name')
+
+    #===================================================
 
     def start(self):
         if self._tdict:
@@ -389,9 +393,8 @@ class qBitTorrent:
             t._tdict.top_priority()
 
     @property
-    def queue(self) -> Generator[Torrent]:
-        for t in self._client.torrents_info():
-            yield Torrent(self, t.hash)
+    def queue(self) -> list[Torrent]:
+        return [Torrent(self, t.hash) for t in self._client.torrents_info()]
 
     def randomize_port(self) -> None:
         from random import randint
@@ -447,11 +450,21 @@ class Magnet(Torrent):
 
         #===================================================
 
+    #===================================================
+    
     def __torrent_getter(name:str):
         return property(lambda s: getattr(
             s.qbit, name,
             getattr(s, '_'+name)
         ))
+
+    title: str = __torrent_getter('title')
+
+    seeders: int = __torrent_getter('seeders')
+
+    leechers: int = __torrent_getter('leechers')
+
+    #===================================================
 
     def start(self,
         path: 'None|str|Path' = None
@@ -485,12 +498,6 @@ class Magnet(Torrent):
 
         self.stop()
         self.start()
-
-    title: str = __torrent_getter('title')
-
-    seeders: int = __torrent_getter('seeders')
-
-    leechers: int = __torrent_getter('leechers')
 
     def __repr__(self) -> str:
         from ..classtools import loc
@@ -543,13 +550,24 @@ class thePirateBay:
         for magnet in thePirateBay.search('term'):
             magnet
         """
-        from ..db import Size
+        from ..array import flatten
 
         if self._cache[query]:
             return self._cache[query] # pyright: ignore[reportReturnType]
 
         # Remove all "." & "'" from query
-        query = query.replace('.', '').replace("'", '')
+        fquery = lambda r: query.replace('.', r).replace("'", r)
+
+        magnets = flatten(self.rsearch(fquery(f)) for f in ['', ' '])
+
+        self._cache[query] = magnets
+
+        return magnets
+
+    def rsearch(self,
+        query: str
+    ) -> list[Magnet]:
+        from ..db import Size
 
         # Open the search in a url
         self._driver.open(
@@ -595,3 +613,4 @@ class thePirateBay:
         self._cache[query] = magnets
 
         return magnets
+
