@@ -262,8 +262,6 @@ def from_function(func: Callable) -> str:
     else:
 
         return source
-    
-    raise TypeError(cpath(func))
 
 @cache
 def to_slice(string:str) -> None | list[slice|int]:
