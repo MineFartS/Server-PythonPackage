@@ -240,3 +240,11 @@ def overlap(
     list2: list
 ) -> bool:
     return not set(list1).isdisjoint(list2)
+
+def flatten(
+    array: list
+):
+    from itertools import chain
+
+    return list(chain.from_iterable(array))
+
