@@ -429,7 +429,7 @@ class Magnet(Torrent):
         elif XT.startswith('urn:btmh:'): # for v2 magnets
             _hash = XT[len('urn:btmh:'):].lower()
 
-        super().__init__(qbit, _hash)
+        super().__init__(qbit, _hash) # pyright: ignore[reportPossiblyUnboundVariable]
             
         #===================================================
 
@@ -511,23 +511,25 @@ class thePirateBay:
 
     'https://thepiratebay.org/'
     """
+
+    urls: list[str] = [
+        "thepiratebay11.com",
+        "thepiratebay10.info",
+        "thepiratebay7.com",
+        "thepiratebay0.org",
+        "thehiddenbay.com",
+        "piratebay.live",
+        "tpb.party"
+    ]
     
     def __init__(self,
-        url: Literal[
-            "thepiratebay11.com",
-            "thepiratebay10.info",
-            "thepiratebay7.com",
-            "thepiratebay0.org",
-            "thehiddenbay.com",
-            "piratebay.live",
-            "tpb.party"
-        ] = "thepiratebay0.org",
+        url: Literal[*urls] = "thepiratebay0.org",
         driver: 'Driver' = None,
         qbit: qBitTorrent = None
     ) -> None:
         from ..functools import TransitoryCache
         
-        self.tpburl: str = (f'https://{url}' + '/search/{}/1/99/0')
+        self.url: str = f'https://{url}/search/{{}}'
         """tpb mirror url"""
 
         self._qbit: qBitTorrent = qbit
@@ -571,7 +573,7 @@ class thePirateBay:
 
         # Open the search in a url
         self._driver.open(
-            url = self.tpburl.format(query)
+            url = self.url.format(query)
         )
 
         _run = self._driver.run
@@ -610,7 +612,4 @@ class thePirateBay:
             except KeyError, RuntimeError:
                 pass
 
-        self._cache[query] = magnets
-
         return magnets
-
