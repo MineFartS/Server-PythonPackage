@@ -1,4 +1,5 @@
 from typing import Callable, Any, Iterator, Self, Union, TypeAlias, TypeVar
+from functools import partialmethod
 
 _T = TypeVar('_T')
 
@@ -110,6 +111,23 @@ class List[V]:
 
     def __contains__(self, value:V) -> bool:
         return (value in self.read())
+    
+    def __list__(self):
+        return self.read()
+
+    def __updater[T](
+        _func: Callable[..., List[T]]
+    ):
+
+        def method(self:List[T], *args, **kwargs): # pyright: ignore[reportMissingParameterType]
+
+            self.save(_func(self, *args, **kwargs).read())
+
+            return self
+
+        return partialmethod(method)
+    
+    #=======================================
 
     def sorted(self,
         func: Callable[[V], Any] = lambda x: x
@@ -121,13 +139,9 @@ class List[V]:
 
         return List(sdata)
 
-    def sort(self,
-        func: Callable[[V], Any] = lambda x: x
-    ) -> None:
-        
-        data: list[V] = self.sorted().read()
+    sort = __updater(sorted)
 
-        self.save(data)
+    #=======================================
 
     def max(self,
         func: Callable[[V], Any] = lambda x: x
@@ -140,6 +154,8 @@ class List[V]:
                 key = func
             )
     
+    #=======================================
+
     def filtered(self,
         func: Callable[[V], Any] = lambda x: x
     ) -> List[V]:
@@ -148,13 +164,9 @@ class List[V]:
 
         return List(filtered)
     
-    def filter(self,
-        func: Callable[[V], Any] = lambda x: x
-    ) -> None:
-        
-        data: list[V] = self.filtered(func=func).read()
+    filter = __updater(filtered)
 
-        self.save(data)
+    #=======================================
 
     def reversed(self) -> List[V]:
 
@@ -164,11 +176,9 @@ class List[V]:
 
         return List(data)
     
-    def reverse(self):
+    reverse = __updater(reversed)
 
-        data: list[V] = self.reversed().read()
-
-        self.save(data)
+    #=======================================
 
     def random(self) -> None | V:
         from random import choice
@@ -177,6 +187,8 @@ class List[V]:
 
         if len(data) > 0:
             return choice(data)
+
+    #=======================================
 
     def shuffled(self) -> List[V]:
         from random import shuffle
@@ -187,11 +199,30 @@ class List[V]:
 
         return List(data)
 
-    def shuffle(self) -> None:
+    shuffle = __updater(shuffled)
 
-        data: list[V] = self.shuffled().read()
+    #=======================================
 
-        self.save(data)
+    def uniquified(self) -> List[V]:
+
+        data: list[V] = set(self.read())
+
+        return List(data)
+
+    uniquify = __updater(uniquified)
+
+    #=======================================
+
+    def flattened(self) -> List[V]:
+        from itertools import chain
+
+        data: chain[V] = chain.from_iterable(self.read())
+
+        return List(data)
+
+    flatten = __updater(flattened)
+
+    #=======================================
 
     def __str__(self) -> str:
         from .json import dumps
@@ -240,11 +271,3 @@ def overlap(
     list2: list
 ) -> bool:
     return not set(list1).isdisjoint(list2)
-
-def flatten(
-    array: list
-):
-    from itertools import chain
-
-    return list(chain.from_iterable(array))
-
