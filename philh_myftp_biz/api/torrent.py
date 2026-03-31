@@ -1,10 +1,10 @@
-from typing import Literal, TYPE_CHECKING, Callable
-from qbittorrentapi import TorrentDictionary
+from typing import Literal, TYPE_CHECKING
 from functools import cached_property
 
 if TYPE_CHECKING:
+    from qbittorrentapi import TorrentDictionary as __TorrentDict
     from qbittorrentapi import TorrentFile as __TorrentFile
-    from ..array import SortFunc, FilterFunc
+    from ..array import SortFunc, FilterFunc, List
     from qbittorrentapi import Client
     from ..web import Driver
     from ..pc import Path
@@ -167,7 +167,7 @@ class Torrent:
             self._tdict.start()
 
     @property
-    def _tdict(self) -> TorrentDictionary | None:
+    def _tdict(self) -> '__TorrentDict | None':
         
         for t in self._client.torrents_info():
         
@@ -205,7 +205,7 @@ class Torrent:
 
     @property
     def selected_files(self):
-        return [f for f in self.files if f.priority > 0]
+        return [f for f in self.files if f.enabled]
 
     def stop(self,
         rm_files: bool = True
@@ -523,7 +523,7 @@ class thePirateBay:
     ]
     
     def __init__(self,
-        url: Literal[*urls] = "thepiratebay0.org",
+        url: Literal[*urls] = "thepiratebay0.org", # pyright: ignore[reportInvalidTypeForm]
         driver: 'Driver' = None,
         qbit: qBitTorrent = None
     ) -> None:
@@ -540,11 +540,11 @@ class thePirateBay:
         else:
             self._driver = Driver()
 
-        self._cache: TransitoryCache[list[Magnet]] = TransitoryCache(expire=36000) # 10 hours
+        self._cache: 'TransitoryCache[List[Magnet]]' = TransitoryCache(expire=36000) # 10 hours
 
     def search(self,
         query: str
-    ) -> list[Magnet]:
+    ) -> List[Magnet]:
         """
         Search thePirateBay for magnets
 
@@ -552,19 +552,18 @@ class thePirateBay:
         for magnet in thePirateBay.search('term'):
             magnet
         """
-        from ..array import flatten
+        from ..array import List
 
         if self._cache[query]:
-            return self._cache[query] # pyright: ignore[reportReturnType]
+            return self._cache[query] # pyright: ignore[reportReturnType] 
 
-        # Remove all "." & "'" from query
-        fquery = lambda r: query.replace('.', r).replace("'", r)
+        magnets = List(self.rsearch(query.replace('.', f).replace("'", f)) for f in ['', ' '])
 
-        magnets = flatten(self.rsearch(fquery(f)) for f in ['', ' '])
+        magnets.flatten().uniquify()
 
         self._cache[query] = magnets
 
-        return magnets
+        return magnets # pyright: ignore[reportReturnType]
 
     def rsearch(self,
         query: str
