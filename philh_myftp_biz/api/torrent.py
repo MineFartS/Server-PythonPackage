@@ -1,4 +1,4 @@
-from typing import Literal, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING, Any
 from functools import cached_property
 
 if TYPE_CHECKING:
@@ -23,12 +23,10 @@ qualities: dict[str, int] = {
 """QUALITY LOOKUP TABLE"""
 
 class TorrentFile:
-    """
-    Downloading Torrent File
-    """
+    """Downloading Torrent File"""
 
     def __init__(self,
-        torrent: 'TorrentDictionary',
+        torrent: '__TorrentDict',
         file: '__TorrentFile'
     ) -> None:
         from ..pc import Path
@@ -147,18 +145,18 @@ class Torrent:
 
     #===================================================
 
-    def __qbit_getter(name:str):
-        return property(lambda s: getattr(s.qbit, name, None))
+    def __qbit_getter(name:str, defv:Any):
+        return property(lambda s: getattr(s.qbit, name, defv))
 
-    _client: 'Client' = __qbit_getter('_client')
+    _client: 'Client' = __qbit_getter('_client', None)
 
-    priority: int = __qbit_getter('priority')
+    priority: int = __qbit_getter('priority', None)
 
-    seeders: int = __qbit_getter('num_complete')
+    seeders: int = __qbit_getter('num_complete', -1)
 
-    leechers: int = __qbit_getter('num_incomplete')
+    leechers: int = __qbit_getter('num_incomplete', -1)
 
-    title: str = __qbit_getter('name')
+    title: str = __qbit_getter('name', None)
 
     #===================================================
 
@@ -376,19 +374,19 @@ class qBitTorrent:
         """Sort the download queue"""
         from ..text import from_function
         from ..terminal import Log
+        from ..array import List
 
         Log.VERB(
             f'Sorting Download Queue:\n'+ \
             'func='+from_function(func)
         )
 
-        torrents = [Torrent(self, t.hash) for t in self._client.torrents_info()]
+        torrents = List(Torrent(self, t.hash) for t in self._client.torrents_info())
 
-        torrents.sort(key=func)
+        torrents.sort(func).reverse()
 
         # Iterate through reversed list of torrents
-        for t in reversed(torrents):
-
+        for t in torrents:
             # Move to top of queue
             t._tdict.top_priority()
 
