@@ -3,6 +3,9 @@ from functools import cache, partial
 
 if TYPE_CHECKING:
     from .db import Color
+    from signal import _HANDLER
+    from types import FrameType
+    from types import TracebackType
 
 from sys import stdout, stderr # pyright: ignore[reportUnusedImport]
 
@@ -456,5 +459,44 @@ def script_file():
     from .pc import Path
 
     return Path(main_module().__file__)
+
+#========================================================
+
+class _KIC:
+    """KeyboardInterrupt Catcher"""
+    from signal import SIGINT as _INT
+    from signal import SIG_DFL as _DFL
+    
+    traceback: 'None|TracebackType' = None
+
+    def enable(self) -> None:
+        from signal import signal
+
+        signal(self._INT, self._handler)
+
+    def disable(self) -> None:
+        from signal import signal
+        
+        signal(self._INT, self._DFL)
+
+    def _handler(self,
+        sig: '_HANDLER',
+        frame: 'FrameType'
+    ) -> None:
+        from types import TracebackType
+
+        self.traceback = TracebackType(
+            tb_next = None, 
+            tb_frame = frame, 
+            tb_lasti = frame.f_lasti, 
+            tb_lineno = frame.f_lineno
+        )
+
+    def check(self):
+
+        if self.traceback:
+            raise KeyboardInterrupt().with_traceback(self.traceback)
+
+KIC = _KIC()
 
 #========================================================
