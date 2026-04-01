@@ -383,9 +383,7 @@ class FirewallException:
     def __init__(self,
         name: str
     ) -> None:
-        """
-        Windows Defender Inbound Port Exception
-        """
+        """Windows Defender Inbound Exception"""
         self.name: str = name
 
     def __repr__(self) -> str:
@@ -393,9 +391,7 @@ class FirewallException:
 
     @property
     def exists(self) -> bool:
-        """
-        Check if this exception exists in Windows Defender
-        """
+        """Check if this exception exists in Windows Defender"""
         from .process import RunHidden
 
         p = RunHidden(args=['netsh', 'advfirewall', 'firewall', 'show', 'rule', f'name={self.name}'])
@@ -403,9 +399,7 @@ class FirewallException:
         return ("No rules match the specified criteria." not in p.output())
     
     def delete(self) -> None:
-        """
-        Remove this exception from Windows Defender
-        """
+        """Remove this exception from Windows Defender"""
         from .process import RunHidden
 
         RunHidden([
@@ -415,7 +409,8 @@ class FirewallException:
         ])
 
     def set(self,
-        port: int,
+        i: 'int | Path',
+        dir: Literal['in', 'out'] = 'in',
         override: bool = True
     ) -> None:
         """
@@ -423,6 +418,7 @@ class FirewallException:
 
         (Deletes & Readds if it already exists)
         """
+        from philh_myftp_biz.pc import Path
         from .process import RunHidden
 
         if self.exists:
@@ -431,14 +427,21 @@ class FirewallException:
                 self.delete()
             else:
                 raise FileExistsError(self)
-
-        RunHidden([
-            'netsh', 'advfirewall', 'firewall',
+        
+        args = [
+            'netsh', 
+            'advfirewall', 'firewall',
             'add',
             'rule', f'name={self.name}',
-            'dir=in', 
-            'action=allow',
-            'protocol=TCP',
-            f'localport={port}'
-        ])
+            f'dir={dir}',
+            'action=allow'
+        ]
+
+        if isinstance(i, int):
+            args += ['protocol=TCP']
+
+        elif isinstance(i, Path):
+            args += [f'program={i.wpath}']
+
+        RunHidden(args)
   

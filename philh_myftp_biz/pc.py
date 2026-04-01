@@ -57,6 +57,8 @@ class Path:
         if _path.isdir(self.path) and (self.path[-1] != '/'):
             self.path += '/'
 
+        self.wpath: str = self.path.replace('/', '\\')
+
         # ==================================
 
         # Declare 'pathlib.Path' attribute
