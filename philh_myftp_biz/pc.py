@@ -479,16 +479,20 @@ class Path:
         wait: bool = True
     ):
         """__builtins__.open Wrapper"""
-        from .functools import waitfor
-
-        if wait:
-            waitfor(lambda: not self.in_use)
-
-        return open(
-            file = self.path, 
-            mode = mode,
-            encoding = None if ('b' in mode) else 'utf-8'
-        )
+        from .terminal import Log
+        
+        kwargs = {
+            'file': self.path, 
+            'mode': mode,
+            'encoding': None if ('b' in mode) else 'utf-8'
+        }
+    
+        while True:
+            try: 
+                return open(**kwargs)
+            except OSError as e: 
+                if not wait:
+                    raise e
 
     def __setitem__(self,
         key: Any, 
