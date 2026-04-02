@@ -211,7 +211,7 @@ class URL:
 
     def cache(self, path:'Path') -> None:
 
-        if path.size != self.size:
+        if (not path.exists) or (path.size != self.size):
 
             self.download(path)
 
