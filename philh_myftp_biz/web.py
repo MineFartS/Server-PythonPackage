@@ -7,6 +7,20 @@ if TYPE_CHECKING:
     from requests import Response
     from .pc import Path
 
+#=========================================
+# Temporary Backwards Compatibility
+# TODO: Update all references to new function
+
+def get(url:str, *args, **kwargs): # pyright: ignore[reportMissingParameterType]
+    return URL(url).get(*args, **kwargs)
+
+def ping(addr:str, *args, **kwargs): # pyright: ignore[reportMissingParameterType]
+    return URL(addr).online
+
+def download(url:str, *args, **kwargs): # pyright: ignore[reportMissingParameterType]
+    return URL(url).download(*args, **kwargs)
+#=========================================
+
 class IP:
 
     def LAN() -> str:
@@ -16,41 +30,6 @@ class IP:
     
     def WAN() -> str:
         return get('https://api.ipify.org').text
-
-def ping(
-    addr: str,
-    timeout: int = 3
-) -> bool:
-    """
-    Ping a network address
-
-    Returns true if ping reached destination
-    """
-    from urllib.parse import urlparse
-    from ping3 import ping
-
-    # Parse the given address
-    parsed = urlparse(addr)
-
-    # If the parser finds a network location
-    if parsed.netloc:
-
-        # Set the address to the network location
-        addr = parsed.netloc
-
-    try:
-
-        # Ping the address
-        p = ping(
-            dest_addr = addr,
-            timeout = timeout
-        )
-
-        # Return true/false if it went through
-        return bool(p)
-    
-    except OSError:
-        return False
 
 is_online: partial[bool] = partial(ping, '1.1.1.1')
 """Check if the local computer is connected to the internet"""
@@ -98,53 +77,151 @@ class Port:
     def __repr__(self) -> str:
         return f"Port({self.port})"
 
-def get(
-    url: str,
-    params: dict[str, str] = {},
-    headers: dict[str, str] = {},
-    stream: bool = None,
-    max_tries: int = None,
-    timeout: None|int = None,
-    method: Literal['GET', 'POST'] = 'GET'
-) -> 'Response':
-    """
-    Wrapper for requests.get
-    """
+@staticmethod
+def Session(max_tries:int|None):
     from requests.adapters import HTTPAdapter, Retry
     from requests import Session
-    from .terminal import Log
-    from .num import maxint    
+    from .num import maxint
 
-    headers['User-Agent'] = 'Mozilla/5.0'
-    headers['Accept-Language'] = 'en-US,en;q=0.5'
-
-    Log.VERB(
-        f'Requesting Page\n'+ \
-        f'{url=}\n'+ \
-        f'{params=}\n'+ \
-        f'{headers=}'
-    )
-
-    retry_strategy = Retry(
+    _retry_strat = Retry(
         total = (max_tries if max_tries else maxint),
         backoff_factor = 1,
         status_forcelist = list(range(400, 600)),
         allowed_methods = ["GET", "POST"]
     )
 
-    adapter = HTTPAdapter(max_retries=retry_strategy)
+    _adapter = HTTPAdapter(max_retries=_retry_strat)
 
-    session = Session()
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
+    _session = Session()
+    _session.mount("http://", _adapter)
+    _session.mount("https://", _adapter)
 
-    return getattr(session, method.lower())(
-        url = url,
-        params = params,
-        headers = headers,
-        stream = stream,
-        timeout = timeout
-    )
+    return _session
+
+class URL:
+
+    def __init__(self, url:str) -> None:
+        from urllib.parse import urlparse
+
+        self.url = url
+
+        self._parsed = urlparse(url)
+        self.netloc = self._parsed.netloc
+
+        if self.netloc:
+            self.addr = self.netloc
+        else:
+            self.addr = url
+
+    def download(self,
+        path: 'Path',
+        show_progress: bool = True
+    ) -> None:
+        """Download file to disk"""
+        from urllib.request import urlretrieve
+        from .terminal import Log
+        from tqdm import tqdm
+
+        Log.VERB(f'Downloading File:\nurl={self.url}\n{path=}')
+        
+        # If show_progress is True
+        if show_progress:
+
+            # Stream the url
+            r = self.get(
+                stream = True
+            )
+
+            # Open the destination file
+            file = path.open(mode='wb')
+
+            # Create a new progress bar
+            pbar = tqdm(
+                total = int(r.headers.get("content-length", 0)), # Total Download Size
+                unit = "B",
+                unit_scale = True
+            )
+
+            # Iter through all data in stream
+            for data in r.iter_content(chunk_size=1024):
+
+                # Update the progress bar
+                pbar.update(n=len(data))
+
+                # Write the data to the dest file
+                file.write(data)
+
+        else:
+
+            # Download directly to the desination file
+            urlretrieve(
+                url = self.url, 
+                filename = str(path)
+            )
+
+    @property
+    def size(self) -> None|int:
+        from requests import head
+        
+        response = head(
+            self.url, 
+            allow_redirects = True
+        )
+
+        _size = response.headers.get('Content-Length')
+
+        if _size:
+            return int(_size)
+
+    def get(self,
+        params: dict[str, str] = {},
+        headers: dict[str, str] = {},
+        stream: bool = None,
+        max_tries: int = None,
+        timeout: None|int = None,
+        method: Literal['GET', 'POST'] = 'GET'
+    ) -> 'Response':
+        """requests.get Wrapper"""
+        from .terminal import Log
+
+        headers['User-Agent'] = 'Mozilla/5.0'
+        headers['Accept-Language'] = 'en-US,en;q=0.5'
+
+        Log.VERB(
+            f'Requesting Page\n'+ \
+            f'url={self.url}\n'+ \
+            f'{params=}\n'+ \
+            f'{headers=}'
+        )
+
+        session = Session(max_tries)
+
+        return getattr(session, method.lower())(
+            url = self.url,
+            params = params,
+            headers = headers,
+            stream = stream,
+            timeout = timeout
+        )
+
+    @property
+    def online(self) -> bool:
+        """ping3.ping wrapper"""
+        from ping3 import ping
+
+        try:
+
+            # Ping the address
+            p = ping(
+                dest_addr = self.addr,
+                timeout = 3
+            )
+
+            # Return true/false if it went through
+            return bool(p)
+        
+        except OSError:
+            return False
 
 class Driver:
     """
@@ -332,51 +409,6 @@ class Driver:
             return self._drvr.current_url
         except WebDriverException:
             pass
-
-def download(
-    url: str,
-    path: 'Path',
-    show_progress: bool = True
-) -> None:
-    """Download file to disk"""
-    from urllib.request import urlretrieve
-    from .terminal import Log
-    from tqdm import tqdm
-
-    Log.VERB(f'Downloading File:\n{url=}\n{path=}')
-    
-    # If show_progress is True
-    if show_progress:
-
-        # Stream the url
-        r = get(
-            url = url,
-            stream = True
-        )
-
-        # Open the destination file
-        file = path.open(mode='wb')
-
-        # Create a new progress bar
-        pbar = tqdm(
-            total = int(r.headers.get("content-length", 0)), # Total Download Size
-            unit = "B",
-            unit_scale = True
-        )
-
-        # Iter through all data in stream
-        for data in r.iter_content(chunk_size=1024):
-
-            # Update the progress bar
-            pbar.update(n=len(data))
-
-            # Write the data to the dest file
-            file.write(data)
-
-    else:
-
-        # Download directly to the desination file
-        urlretrieve(url=url, filename=str(path))
 
 class FirewallException:
 
