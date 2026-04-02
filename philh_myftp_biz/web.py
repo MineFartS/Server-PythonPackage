@@ -113,65 +113,51 @@ class URL:
         else:
             self.addr = url
 
+    @property
+    def _stream(self):
+        return self.get(stream=True)
+
     def download(self,
         path: 'Path',
-        show_progress: bool = True
+        show_progress:bool = None # TODO: Fix all references, then remove
     ) -> None:
         """Download file to disk"""
-        from urllib.request import urlretrieve
         from .terminal import Log
+        from . import VERBOSE
         from tqdm import tqdm
 
         Log.VERB(f'Downloading File:\nurl={self.url}\n{path=}')
-        
-        # If show_progress is True
-        if show_progress:
 
-            # Stream the url
-            r = self.get(
-                stream = True
-            )
+        r = self._stream
 
-            # Open the destination file
-            file = path.open(mode='wb')
+        file = path.open(mode='wb')
 
-            # Create a new progress bar
+        if VERBOSE:
             pbar = tqdm(
-                total = int(r.headers.get("content-length", 0)), # Total Download Size
+                total = self.size, # Total Download Size
                 unit = "B",
                 unit_scale = True
             )
 
-            # Iter through all data in stream
-            for data in r.iter_content(chunk_size=1024):
+        # Iter through all data in stream
+        for data in r.iter_content(chunk_size=1024):
 
-                # Update the progress bar
-                pbar.update(n=len(data))
+            if VERBOSE:
+                pbar.update(n=len(data)) # pyright: ignore[reportPossiblyUnboundVariable]
 
-                # Write the data to the dest file
-                file.write(data)
-
-        else:
-
-            # Download directly to the desination file
-            urlretrieve(
-                url = self.url, 
-                filename = str(path)
-            )
+            # Write the data to the dest file
+            file.write(data)
 
     @property
-    def size(self) -> None|int:
+    def size(self) -> int:
         from requests import head
         
-        response = head(
+        r = head(
             self.url, 
             allow_redirects = True
         )
 
-        _size = response.headers.get('Content-Length')
-
-        if _size:
-            return int(_size)
+        return int(r.headers.get('Content-Length', 0))
 
     def get(self,
         params: dict[str, str] = {},
@@ -222,6 +208,12 @@ class URL:
         
         except OSError:
             return False
+
+    def cache(self, path:'Path') -> None:
+
+        if path.size != self.size:
+
+            self.download(path)
 
 class Driver:
     """
