@@ -458,11 +458,12 @@ class FirewallException:
             'add',
             'rule', f'name={self.name}',
             f'dir={dir}',
-            'action=allow'
+            'action=allow',
+            'protocol=TCP'
         ]
 
         if isinstance(i, int):
-            args += ['protocol=TCP']
+            args += [f'localport={i}']
 
         elif isinstance(i, Path):
             args += [f'program={i.wpath}']
