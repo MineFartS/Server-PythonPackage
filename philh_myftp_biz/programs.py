@@ -46,7 +46,7 @@ def __FFMPEG(name:str) -> 'Path':
             # Extract 'ffmpeg.exe' to location declared earlier
             zip.extractFile(
                 file = f,
-                path = exe
+                savepath = exe
             )
 
             break
