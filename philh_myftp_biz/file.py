@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 if TYPE_CHECKING:
     from .pc import Path
+    from zipfile import ZipFile as __ZipFile
 
 #========================================================
 
@@ -230,35 +231,47 @@ class ZIP:
 
     path: 'Path'
 
-    @cached_property
-    def _zip(self):
-        from zipfile import ZipFile
+    @dataclass
+    class Member:
 
+        _zip: __ZipFile
+        path: str
+
+        def open(self):
+            return self._zip.open(self.path)
+
+    @cached_property
+    def _zip(self) -> __ZipFile:
+        from zipfile import ZipFile
         return ZipFile(str(self.path))
         
     @property
-    def members(self) -> list[str]:
-        return self._zip.namelist()
+    def members(self) -> list[Member]:
+        return [self.Member(self._zip, n) for n in self._zip.namelist()]
 
-    def search(self, term:str) -> list[str]:
+    def search(self, term:str) -> list[Member]:
         """
         Search for files in the archive
 
         Ex: ZIP.search('test1') -> 'test123.json'
         """
 
-        return [f for f in self.members if (term in f)]
+        return [m for m in self.members if (term in m.path)]
 
     def extractFile(self,
-        member: str, 
+        member: Member, 
         path: 'Path'
     ) -> None:
         """Extract a single file from the zip archive"""
+        from shutil import copyfileobj
 
-        self._zip.extract(
-            member = member,
-            path = str(path)
-        )
+        src = member.open()
+        dst = path.open('wb')
+
+        copyfileobj(src, dst)
+
+        src.close()
+        dst.close()
 
     def extractAll(self, path:'Path') -> None:
         """Extract all files from the zip archive"""
