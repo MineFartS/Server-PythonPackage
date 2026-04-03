@@ -112,14 +112,17 @@ class CustomFormatter(__Formatter):
         else:
             message = stringify(record.msg)
 
-        return message.encode(errors='ignore').decode()
+        return message \
+            .encode(errors='ignore') \
+            .decode() \
+            .strip('\n')
 
     def _timestamp(self) -> str:
         from .time import now
         
         n = now()
 
-        return n.stamp(format='%y-%m-%d %H-%M-%S') + f'.{n.centisecond:.02f}'
+        return n.stamp(format='%y/%m/%d %H:%M:%S') + f'.{n.centisecond:02d}'
 
     def _file(self) -> str:
         from os.path import basename
