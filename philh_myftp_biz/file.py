@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Generator, Callable, Any
+from typing import TYPE_CHECKING, Callable, Any
+from functools import cached_property
+from dataclasses import dataclass
 
 if TYPE_CHECKING:
     from .pc import Path
@@ -8,18 +10,18 @@ if TYPE_CHECKING:
 def temp(
     name: str = 'undefined',
     ext: str = 'ph',
-    id: str = None
+    id: Any = None
 ) -> 'Path':
     """Get a random path in the temporary directory"""
     from .text import random
     from .pc import temp_dir
 
-    if id:
-        id = str(id)
+    if id is None:
+        _id = random(50)
     else:
-        id = random(50)
+        _id = str(id)      
 
-    return temp_dir().child(f'{name}-{id}.{ext}')
+    return temp_dir().child(f'{name}-{_id}.{ext}')
 
 #========================================================
 
@@ -222,50 +224,44 @@ class TXT(_Template):
         """Save data to the txt file"""
         self.path.open(mode='w').write(str(data))
 
+@dataclass
 class ZIP:
     """.ZIP File"""
 
-    def __init__(self,
-        path: 'Path'
-    ) -> None:
+    path: 'Path'
+
+    @cached_property
+    def _zip(self):
         from zipfile import ZipFile
 
-        self.path = path
-
-        self._zip = ZipFile(str(path))
+        return ZipFile(str(self.path))
         
-        self.files: Callable[[], list[str]] = self._zip.namelist
+    @property
+    def members(self) -> list[str]:
+        return self._zip.namelist()
 
-    def search(self,
-        term: str
-    ) -> Generator[str]:
+    def search(self, term:str) -> list[str]:
         """
         Search for files in the archive
 
-        Ex: ZIP.search('test123') -> 'test123.json'
+        Ex: ZIP.search('test1') -> 'test123.json'
         """
 
-        for f in self.files():
-            
-            if term in f:
-                
-                yield f
+        return [f for f in self.members if (term in f)]
 
     def extractFile(self,
-        file: str, 
-        savepath: 'Path'
-    ) -> None:
-        """
-        Extract a single file from the zip archive
-        """
-        self._zip.extract(file, str(savepath))
-
-    def extractAll(self,
+        member: str, 
         path: 'Path'
     ) -> None:
-        """
-        Extract all files from the zip archive
-        """
+        """Extract a single file from the zip archive"""
+
+        self._zip.extract(
+            member = member,
+            path = str(path)
+        )
+
+    def extractAll(self, path:'Path') -> None:
+        """Extract all files from the zip archive"""
 
         path.mkdir()
 
