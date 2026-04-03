@@ -2,10 +2,6 @@ from functools import cached_property
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from builtins import TimeoutError as _TimeoutError
-from builtins import ConnectionResetError as _ConnectionResetError
-from builtins import ConnectionAbortedError as _ConnectionAbortedError
-
 if TYPE_CHECKING:
     from paramiko.channel import ChannelFile, ChannelStderrFile
 
@@ -35,10 +31,6 @@ class SSH:
     @cached_property
     def _client(self):
         from paramiko import SSHClient, AutoAddPolicy
-        import builtins
-
-        builtins.TimeoutError = _ConnectionAbortedError
-        builtins.ConnectionResetError = _ConnectionAbortedError
 
         client = SSHClient()
 
@@ -55,11 +47,6 @@ class SSH:
         return client
     
     def close(self) -> None:
-        import builtins
-
-        builtins.TimeoutError = _TimeoutError
-        builtins.ConnectionResetError = _ConnectionResetError
-
         self._client.close()
         del self._client
 

@@ -1,6 +1,10 @@
+from typing import TYPE_CHECKING, Generator
 from functools import cached_property
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Generator
+
+from builtins import ConnectionAbortedError as _ConnectionAbortedError
+from builtins import ConnectionResetError as _ConnectionResetError
+from builtins import TimeoutError as _TimeoutError
 
 if TYPE_CHECKING:
     from ..pc import Path
@@ -164,6 +168,10 @@ class FTP:
     @cached_property
     def _client(self):
         from ftplib import FTP as __FTP
+        import builtins
+
+        builtins.TimeoutError = _ConnectionAbortedError
+        builtins.ConnectionResetError = _ConnectionAbortedError
 
         ftp = __FTP(
             timeout = self.timeout
@@ -182,6 +190,15 @@ class FTP:
         ftp.encoding = 'latin-1'
 
         return ftp
+    
+    def close(self):
+        import builtins
+        
+        builtins.TimeoutError = _TimeoutError
+        builtins.ConnectionResetError = _ConnectionResetError
+        
+        self._client.close()
+        del self._client
     
     def cd(self,
         path: FTPPath
