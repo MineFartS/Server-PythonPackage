@@ -1,13 +1,11 @@
-from typing import Literal, TYPE_CHECKING, Callable, Any, Type, NoReturn
+from typing import Literal, TYPE_CHECKING, Callable, Any
 from functools import cache, partial
-from dataclasses import dataclass
 
 if TYPE_CHECKING:
-    from types import TracebackType
+    from .db import Color
     from signal import _HANDLER
     from types import FrameType
-    from enum import IntEnum
-    from .db import Color
+    from types import TracebackType
 
 from sys import stdout, stderr # pyright: ignore[reportUnusedImport]
 
@@ -464,68 +462,41 @@ def script_file():
 
 #========================================================
 
-class Catcher:
-
-    @dataclass
-    class _Signal:
-        
-        _signal: IntEnum
-
-        _exception: Type[BaseException]
-        
-        traceback: 'None|TracebackType' = None
-
-        handler: None | Type[BaseException] | Callable[[TracebackType], None] = None
-
-        def enable(self) -> None:
-            from signal import signal
-
-            signal(self._signal, self._handler)
-
-        def disable(self) -> None:
-            from signal import signal, SIG_DFL
-            
-            signal(self._signal, SIG_DFL)
-
-        @property
-        def exception(self):
-            
-            exc = self._exception()
-            
-            if self.traceback:
-                return exc.with_traceback(self.traceback)
-            else:
-                return exc
-
-        def _handler(self,
-            sig: '_HANDLER',
-            frame: 'FrameType'
-        ) -> None:
-            from types import TracebackType
-
-            self.traceback = TracebackType(
-                tb_next = None, 
-                tb_frame = frame, 
-                tb_lasti = frame.f_lasti, 
-                tb_lineno = frame.f_lineno
-            )
-
-            if issubclass(self.handler, BaseException):
-                raise self.handler().with_traceback(self.traceback)
-            
-            elif callable(self.handler):
-                self.handler()
-
-        def check(self) -> None | NoReturn:
-            if self.traceback:
-                raise self._exception().with_traceback(self.traceback)
-
+class _KIC:
+    """KeyboardInterrupt Catcher"""
     from signal import SIGINT as _INT
-    from builtins import KeyboardInterrupt as _KI
-    KeyboardInterrupt = _Signal(_INT, _KI)
+    from signal import SIG_DFL as _DFL
+    
+    traceback: 'None|TracebackType' = None
 
-    from signal import SIGALRM  as _ALRM
-    from builtins import TimeoutError as _TE
-    TimeoutError = _Signal(_ALRM, _TE)
+    def enable(self) -> None:
+        from signal import signal
+
+        signal(self._INT, self._handler)
+
+    def disable(self) -> None:
+        from signal import signal
+        
+        signal(self._INT, self._DFL)
+
+    def _handler(self,
+        sig: '_HANDLER',
+        frame: 'FrameType'
+    ) -> None:
+        from types import TracebackType
+
+        self.traceback = TracebackType(
+            tb_next = None, 
+            tb_frame = frame, 
+            tb_lasti = frame.f_lasti, 
+            tb_lineno = frame.f_lineno
+        )
+
+    def check(self):
+
+        if self.traceback:
+            raise KeyboardInterrupt().with_traceback(self.traceback)
+
+KIC = _KIC()
 
 #========================================================

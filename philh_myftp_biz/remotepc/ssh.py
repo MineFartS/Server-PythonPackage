@@ -2,7 +2,6 @@ from functools import cached_property
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-
 if TYPE_CHECKING:
     from paramiko.channel import ChannelFile, ChannelStderrFile
 
@@ -32,10 +31,6 @@ class SSH:
     @cached_property
     def _client(self):
         from paramiko import SSHClient, AutoAddPolicy
-        from ..terminal import Catcher
-
-        Catcher.TimeoutError.handler = ConnectionAbortedError
-        Catcher.TimeoutError.enable()
 
         client = SSHClient()
 
@@ -52,14 +47,7 @@ class SSH:
         return client
     
     def close(self) -> None:
-        from ..terminal import Catcher
-
-        Catcher.TimeoutError.handler = None
-        Catcher.TimeoutError.disable()
-
         self._client.close()
-
-
         del self._client
 
     def run(self, command:str) -> SSHResponse:
