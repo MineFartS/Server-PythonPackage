@@ -435,7 +435,7 @@ class FirewallException:
     def set(self,
         i: 'int | Path',
         dir: Literal['in', 'out'] = 'in',
-        override: bool = True
+        override: bool = False
     ) -> None:
         """
         Add this exception to Windows Defender
@@ -449,8 +449,8 @@ class FirewallException:
             
             if override:
                 self.delete()
-            else:
-                raise FileExistsError(self)
+            #else:
+            #    raise FileExistsError(self)
         
         args = [
             'netsh', 
