@@ -239,10 +239,9 @@ def abbr(
     else:
         return string[:num] + end
 
-def from_function(func: Callable) -> str:
+def from_function(func: Callable) -> None | str:
     from ast import parse, walk, Lambda, unparse
     from inspect import getsourcelines
-    from .classtools import cpath
 
     source = ''.join(getsourcelines(func)[0])
 
