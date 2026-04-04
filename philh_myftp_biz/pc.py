@@ -479,7 +479,6 @@ class Path:
         wait: bool = True
     ):
         """__builtins__.open Wrapper"""
-        from .terminal import Log
         
         kwargs = {
             'file': self.path, 
@@ -559,9 +558,7 @@ class Path:
     def link(self,
         link: Path
     ) -> None:
-        """
-        Create a Symbolic Link
-        """
+        """Create a Symbolic Link"""
         from os import link as _link
 
         if link.exists:
@@ -702,6 +699,9 @@ class _visibility:
         from win32api import SetFileAttributes
         from pywintypes import error
 
+        if self.hidden:
+            return
+
         self.path.set_access.full()
 
         attrs = GetFileAttributes(str(self.path))
@@ -719,6 +719,9 @@ class _visibility:
         from win32file import GetFileAttributes
         from win32api import SetFileAttributes
         from pywintypes import error
+
+        if not self.hidden:
+            return
 
         self.path.set_access.full()
 
@@ -839,8 +842,6 @@ class _dir:
 
         path.mkdir()
 
-        path.visibility.hide()
-
         return path
     
     @cached_property
@@ -849,8 +850,6 @@ class _dir:
         path = self.script.child('/__pylogs__/')
 
         path.mkdir()
-
-        path.visibility.hide()
 
         return path
 
