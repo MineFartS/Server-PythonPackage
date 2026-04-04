@@ -17,10 +17,10 @@ class CustomFormatter(__Formatter):
     @cached_property
     def _wfile(self):
         from .terminal import script_file
-        from .pc import cache_dir
+        from .pc import loc
         from time import time
 
-        file = cache_dir().child(f'{script_file().name}.{time():.0f}.log')
+        file = loc.logs.child(f'{script_file().name}.{time():.0f}.log')
 
         file.open('w').close()
 

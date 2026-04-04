@@ -811,38 +811,49 @@ def OS() -> Literal['windows', 'unix']:
             return 'unix'
 
 #=================================
-# TEMP DIR
+# DIRs
 
-@cache
-def temp_dir() -> Path:
-    from tempfile import gettempdir
+class _dir:
 
-    SERVER = Path('E:/__temp__/')
+    @property
+    def temp(self) -> Path:
+        from tempfile import gettempdir
 
-    if SERVER.exists and (NAME() == 'PC-1'):
-        return SERVER
-    else:
-        return Path(gettempdir())
+        SERVER = Path('E:/__temp__/')
 
-#========================================================
-# SCRIPT DIR
+        if SERVER.exists and (NAME() == 'PC-1'):
+            return SERVER
+        else:
+            return Path(gettempdir())
 
-@cache
-def script_dir() -> Path:
-    from .terminal import main_module
+    @cached_property
+    def script(self) -> Path:
+        from .terminal import main_module
 
-    return Path(main_module().__file__).parent
+        return Path(main_module().__file__).parent
 
-#========================================================
-# CACHE DIR
+    @cached_property
+    def cache(self) -> Path:
 
-@cache
-def cache_dir() -> Path:
+        path = self.script.child('/__pycache__/')
 
-    pycache = script_dir().child('/__pycache__/')
+        path.mkdir()
 
-    pycache.mkdir()
+        path.visibility.hide()
 
-    return pycache
+        return path
+    
+    @cached_property
+    def logs(self) -> Path:
+
+        path = self.script.child('/__pylogs__/')
+
+        path.mkdir()
+
+        path.visibility.hide()
+
+        return path
+
+loc = _dir()
 
 #========================================================
