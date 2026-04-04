@@ -36,12 +36,15 @@ class List[V]:
         from .file import PKL, temp
 
         if isinstance(a, List):
+            self._temp = a._temp
             self.var = a.var
 
         elif hasattr(a, 'read') and hasattr(a, 'save'):
+            self._temp = False
             self.var = a
 
         else:
+            self._temp = True
             self.var = PKL(
                 path = temp('array', 'pkl')
             )
@@ -52,6 +55,10 @@ class List[V]:
         
         self.read = self.var.read
         self.save = self.var.save
+
+    def __del__(self) -> None:
+        if self._temp:
+            self.var.path.delete()
 
     def __iter__(self) -> Iterator[V]:
         return iter(self.read())
@@ -271,3 +278,5 @@ def overlap(
     list2: list
 ) -> bool:
     return not set(list1).isdisjoint(list2)
+
+#========================================================

@@ -14,11 +14,6 @@ HELP: bool = (len({'-h', '--help'} & set(__argv)) >= 1)
 
 class CustomFormatter(__Formatter):
 
-    _ig = [
-        '\\Lib\\site-packages\\philh_myftp_biz\\',
-        '\\Lib\\logging\\'
-    ]
-
     @cached_property
     def _wfile(self):
         from .terminal import script_file
@@ -64,7 +59,7 @@ class CustomFormatter(__Formatter):
 
             case 10:
 
-                if self._ig[0] in record.pathname:
+                if '\\Lib\\site-packages\\philh_myftp_biz\\' in record.pathname:
                     return Color.values['GRAY']
                 else:
                     return Color.values['WHITE']
@@ -117,28 +112,39 @@ class CustomFormatter(__Formatter):
         else:
             message = stringify(record.msg)
 
-        return message.encode(errors='ignore').decode()
+        return message \
+            .encode(errors='ignore') \
+            .decode() \
+            .strip('\n')
 
     def _timestamp(self) -> str:
         from .time import now
         
         n = now()
 
-        return n.stamp(format='%y-%m-%d %H-%M-%S') + f'.{n.centisecond:.02f}'
+        return n.stamp(format='%y/%m/%d %H:%M:%S') + f'.{n.centisecond:02d}'
 
     def _file(self) -> str:
+        from os.path import basename
         from inspect import stack
-        from os import path
 
         for frame in stack():
 
-            # If the frame does not contain any ignored strings
-            if not any(v in frame.filename for v in self._ig):
+            path = frame.filename.lower()
 
-                filename = path.basename(frame.filename)
-                lineno = frame.lineno
-                
-                return f'{filename}:{lineno}'
+            if '\\lib\\site-packages\\philh_myftp_biz\\' in path:
+                continue
+
+            if '\\lib\\logging\\' in path:
+                continue
+
+            if path.endswith("\\lib\\threading.py"):
+                return '<Thread>'
+
+            name = basename(path)
+            line = frame.lineno
+            
+            return f'{name}:{line}'
 
         return ''
 

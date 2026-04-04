@@ -475,18 +475,24 @@ class Path:
             return False
 
     def open(self,
-        mode: Literal['r', 'w', 'a', 'rb', 'wb', '+'] = 'r'
+        mode: Literal['r', 'w', 'a', 'rb', 'wb', '+'] = 'r',
+        wait: bool = True
     ):
-        """
-        Open the current file
-
-        Works the same as: open(self.path)
-        """
-        return open(
-            file = self.path, 
-            mode = mode,
-            encoding = None if ('b' in mode) else 'utf-8'
-        )
+        """__builtins__.open Wrapper"""
+        from .terminal import Log
+        
+        kwargs = {
+            'file': self.path, 
+            'mode': mode,
+            'encoding': None if ('b' in mode) else 'utf-8'
+        }
+    
+        while True:
+            try: 
+                return open(**kwargs)
+            except OSError as e: 
+                if not wait:
+                    raise e
 
     def __setitem__(self,
         key: Any, 

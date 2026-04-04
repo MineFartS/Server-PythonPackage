@@ -4,9 +4,7 @@ from typing import Any, Generator, Callable
 #========================================================
 
 class attr:
-    """
-    Attribute of Instance/Object
-    """
+    """Attribute of Instance/Object"""
 
     def __init__(self,
         parent: Any,
@@ -92,9 +90,7 @@ class attr:
 #========================================================
 
 def attrs(obj:Any) -> Generator[attr, Any, None]:
-    """
-    Get all attributes of an instance or object
-    """
+    """Get all attributes of an instance or object"""
 
     for name in dir(obj):
 
@@ -110,9 +106,7 @@ def cpath(obj:Any) -> str:
     return obj.__class__.__module__ + '.' + obj.__class__.__qualname__
 
 def loc(obj:Any) -> str:
-    """
-    Get the hexadecimal location of an instance in memory
-    """
+    """Get the hexadecimal location of an instance in memory"""
     return hex(id(obj))
 
 #========================================================
@@ -222,3 +216,4 @@ class Instantiate:
             except TypeError:
                 pass
 
+#========================================================

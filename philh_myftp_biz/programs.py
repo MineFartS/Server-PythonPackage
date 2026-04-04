@@ -8,50 +8,31 @@ if TYPE_CHECKING:
 
 def __FFMPEG(name:str) -> 'Path':
     from .file import temp, ZIP
-    from .web import download
-    from .terminal import Log
+    from .web import URL
 
-    # Declare 'Ffmpeg.exe' location
-    exe = temp(
-        name = name,
-        ext = 'exe',
-        id = '0'
-    )
+    exefile = temp(name, 'exe', 0)
+
+    zipfile = temp('ffmpeg', 'zip', 0)
+    zipurl = URL("https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip")
 
     # Check if 'Ffmpeg.exe' does not exist
-    if exe.exists:
+    if not exefile.exists:
 
-        Log.VERB(f'{name}.exe Exists')
-
-    else:
-
-        Log.VERB(f'Downloading: {name}.exe')
-
-        # Declare path for 'ffmpeg' zipfile
-        zipfile = temp('ffmpeg', 'zip')
-        """ffmpeg-release-essentials.zip"""
-
-        # Download ffmpeg zipfile
-        download(
-            url = 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip',
-            path = zipfile
-        )
+        zipurl.cache(zipfile)
 
         # Open zipfile as an 'ZIP' object
         zip = ZIP(zipfile)
 
-        # Search for 'ffmpeg.exe' in zipfile contents
-        for f in zip.search(f'{name}.exe'):
+        # Search for exefile in zipfile contents
+        member = zip.search(f'{name}.exe')[0]
 
-            # Extract 'ffmpeg.exe' to location declared earlier
-            zip.extractFile(
-                file = f,
-                path = exe
-            )
+        # Extract 'ffmpeg.exe' to location declared earlier
+        zip.extractFile(
+            member = member,
+            path = exefile
+        )
 
-            break
-
-    return exe
+    return exefile
 
 FFMPEG : partial[Path] = partial(__FFMPEG, 'ffmpeg')
 

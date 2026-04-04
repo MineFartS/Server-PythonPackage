@@ -211,7 +211,7 @@ class URL:
 
     def cache(self, path:'Path') -> None:
 
-        if path.size != self.size:
+        if (not path.exists) or (path.size != self.size):
 
             self.download(path)
 
@@ -458,11 +458,12 @@ class FirewallException:
             'add',
             'rule', f'name={self.name}',
             f'dir={dir}',
-            'action=allow'
+            'action=allow',
+            'protocol=TCP'
         ]
 
         if isinstance(i, int):
-            args += ['protocol=TCP']
+            args += [f'localport={i}']
 
         elif isinstance(i, Path):
             args += [f'program={i.wpath}']

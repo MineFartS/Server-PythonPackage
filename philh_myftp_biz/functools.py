@@ -1,8 +1,8 @@
 from diskcache import Cache as __Cache
 from functools import cached_property
 from dataclasses import dataclass
+from typing import Any, Callable
 from .pc import cache_dir
-from typing import Any
 
 #========================================================
 # DISK CACHE
@@ -74,5 +74,12 @@ def single_use(f): # pyright: ignore[reportMissingParameterType]
     wrapper.has_run = False
 
     return wrapper
+
+def waitfor(
+    func: Callable[..., bool]
+) -> None:
+
+    while not func():
+        pass
 
 #========================================================
