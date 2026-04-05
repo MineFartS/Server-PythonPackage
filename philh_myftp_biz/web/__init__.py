@@ -1,11 +1,11 @@
 from typing import Literal, TYPE_CHECKING
-from .functools import single_use
+from ..functools import single_use
 from functools import partial
 
 if TYPE_CHECKING:
     from selenium.webdriver.remote.webelement import WebElement
     from requests import Response
-    from .pc import Path
+    from ..pc import Path
 
 #=========================================
 # Temporary Backwards Compatibility
@@ -81,7 +81,7 @@ class Port:
 def Session(max_tries:int|None):
     from requests.adapters import HTTPAdapter, Retry
     from requests import Session
-    from .num import maxint
+    from ..num import maxint
 
     _retry_strat = Retry(
         total = (max_tries if max_tries else maxint),
@@ -135,7 +135,7 @@ class URL:
         show_progress:bool = None # TODO: Fix all references, then remove
     ) -> None:
         """Download file to disk"""
-        from .terminal import Log
+        from ..terminal import Log
         from . import VERBOSE
         from tqdm import tqdm
 
@@ -181,7 +181,7 @@ class URL:
         method: Literal['GET', 'POST'] = 'GET'
     ) -> 'Response':
         """requests.get Wrapper"""
-        from .terminal import Log
+        from ..terminal import Log
 
         headers['User-Agent'] = 'Mozilla/5.0'
         headers['Accept-Language'] = 'en-US,en;q=0.5'
@@ -242,8 +242,8 @@ class Driver:
     ) -> None:
         from selenium.webdriver import FirefoxOptions, Firefox
         from selenium.webdriver.firefox.options import Options
-        from .process import SysTask, Sleeper
-        from .terminal import Log
+        from ..process import SysTask, Sleeper
+        from ..terminal import Log
 
         Log.VERB(
             f'Starting Session\n'+ \
@@ -275,7 +275,7 @@ class Driver:
 
     def reload(self) -> None:
         """Reload the Current Page"""
-        from .terminal import Log
+        from ..terminal import Log
 
         Log.VERB(f'Reloading Page: {self.URL=}')
 
@@ -284,7 +284,7 @@ class Driver:
     def run(self, code:str):
         """Run JavaScript Code on the Current Page"""
         from selenium.common.exceptions import JavascriptException
-        from .terminal import Log
+        from ..terminal import Log
 
         try:
 
@@ -310,8 +310,8 @@ class Driver:
     ) -> list['WebElement']:
         """Get List of Elements by query"""
         from selenium.webdriver.common.by import By
-        from .terminal import Log
-        from .time import Stopwatch
+        from ..terminal import Log
+        from ..time import Stopwatch
 
         sw = Stopwatch().start()
 
@@ -365,7 +365,7 @@ class Driver:
         """
         from selenium.common.exceptions import WebDriverException
         from urllib3.exceptions import ReadTimeoutError
-        from .terminal import Log
+        from ..terminal import Log
 
         if isinstance(url, URL):
             url = url.url
@@ -388,7 +388,7 @@ class Driver:
     def close(self) -> None:
         """Close the Session"""
         from selenium.common.exceptions import InvalidSessionIdException
-        from .terminal import Log
+        from ..terminal import Log
 
         Log.VERB('Closing Session')
 
@@ -432,7 +432,7 @@ class FirewallException:
     @property
     def exists(self) -> bool:
         """Check if this exception exists in Windows Defender"""
-        from .process import RunHidden
+        from ..process import RunHidden
 
         p = RunHidden(args=['netsh', 'advfirewall', 'firewall', 'show', 'rule', f'name={self.name}'])
 
@@ -440,7 +440,7 @@ class FirewallException:
     
     def delete(self) -> None:
         """Remove this exception from Windows Defender"""
-        from .process import RunHidden
+        from ..process import RunHidden
 
         RunHidden([
             'netsh', 'advfirewall', 'firewall',
@@ -459,7 +459,7 @@ class FirewallException:
         (Deletes & Readds if it already exists)
         """
         from philh_myftp_biz.pc import Path
-        from .process import RunHidden
+        from ..process import RunHidden
 
         if self.exists:
             
