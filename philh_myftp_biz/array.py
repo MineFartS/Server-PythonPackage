@@ -203,9 +203,15 @@ class List[V]:
 
     def uniquified(self) -> List[V]:
 
-        data: list[V] = set(self.read())
+        data = List()
 
-        return List(data)
+        for item in self.read():
+
+            if item not in data:
+
+                data += item
+
+        return data
 
     uniquify = __updater(uniquified)
 
