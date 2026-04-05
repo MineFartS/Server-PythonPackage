@@ -49,12 +49,17 @@ class Omdb:
 
     def _get(self, params:dict) -> NoReturn | Dict[str]:
         from ..json import Dict
+        from .. import VERBOSE
+
+        VERBOSE.pause()
 
         params['apikey'] = self.key
 
         response = self.url.get(params)
 
         data = Dict(response.json())
+
+        VERBOSE.resume()
 
         # If an error is given
         if data['Error']:

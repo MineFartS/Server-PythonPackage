@@ -136,7 +136,7 @@ class URL:
     ) -> None:
         """Download file to disk"""
         from ..terminal import Log
-        from . import VERBOSE
+        from .. import VERBOSE
         from tqdm import tqdm
 
         Log.VERB(f'Downloading File:\nurl={self.url}\n{path=}')
