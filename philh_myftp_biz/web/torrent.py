@@ -521,14 +521,14 @@ class thePirateBay:
     ]
     
     def __init__(self,
-        url: Literal[*urls] = "thepiratebay0.org", # pyright: ignore[reportInvalidTypeForm]
+        url: Literal[*urls] = "thepiratebay11.com", # pyright: ignore[reportInvalidTypeForm]
         driver: 'Driver' = None,
         qbit: qBitTorrent = None
     ) -> None:
         from ..functools import TransitoryCache
         from ..web import URL
         
-        self.url: str = URL(f'https://{url}/search/')
+        self.url = URL(f'https://{url}/search/')
         """tpb mirror url"""
 
         self._qbit: qBitTorrent = qbit
@@ -541,8 +541,9 @@ class thePirateBay:
 
         self._cache: 'TransitoryCache[List[Magnet]]' = TransitoryCache(expire=36000) # 10 hours
 
-    def search(self, *queries:str) -> list[Magnet]:
+    def search(self, *queries:str) -> List[Magnet]:
         """Search thePirateBay for magnets"""
+        from ..array import List
         from .. import VERBOSE
 
         VERBOSE.pause()
@@ -563,25 +564,21 @@ class thePirateBay:
 
         VERBOSE.resume()
 
-        return magnets
+        return List(magnets)
 
     def rsearch(self, query:str) -> list[Magnet]:
         """Search thePirateBay for magnets"""
+        from ..terminal import Log
         from ..db import Size
-
-        if self._cache[query]:
-            return self._cache[query] # pyright: ignore[reportReturnType] 
 
         # Open the search in a url
         self._driver.open(
             url = self.url.child(query)
         )
 
-        _run = self._driver.run
-
         # Set driver var 'lines' to a list of lines
         try:
-            _run("window.lines = document.getElementById('searchResult').children[1].children")
+            self._driver.run("window.lines = document.getElementById('searchResult').children[1].children")
         except RuntimeError:
             self._cache[query] = []
             return []
@@ -589,29 +586,31 @@ class thePirateBay:
         magnets: list[Magnet] = []
 
         # Iter from 0 to # of lines
-        for x in range(0, _run('return lines.length')):
+        for x in range(0, self._driver.run('return lines.length')):
+
+            _run = lambda c: self._driver.run(f'return lines[{x}]{c}')
 
             try:
 
                 # Yield a magnet instance
                 magnets += [Magnet(
 
-                    title = _run(f"return lines[{x}].children[1].textContent"),
+                    title = _run(".children[1].textContent"),
 
-                    seeders = int(_run(f"return lines[{x}].children[5].textContent")),
+                    seeders = int(_run(".children[5].textContent")),
 
-                    leechers = int(_run(f"return lines[{x}].children[6].textContent")),
+                    leechers = int(_run(".children[6].textContent")),
 
-                    url = _run(f"return lines[{x}].children[3].children[0].children[0].href"),
+                    url = _run(".children[3].children[0].children[0].href"),
                     
-                    size = Size.to_bytes(_run(f"return lines[{x}].children[4].textContent")),
+                    size = Size.to_bytes(_run(".children[4].textContent")),
 
                     qbit = self._qbit
 
                 )]
 
             except KeyError, RuntimeError:
-                pass
+                Log.VERB('', exc_info=True)
 
         self._cache[query] = magnets
 
