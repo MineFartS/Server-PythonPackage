@@ -1,5 +1,6 @@
 from typing import Callable, Any, Iterator, Self, Union, TypeAlias, TypeVar
 from functools import partialmethod
+from sys import is_finalizing
 
 _T = TypeVar('_T')
 
@@ -57,8 +58,12 @@ class List[V]:
         self.save = self.var.save
 
     def __del__(self) -> None:
-        from . import VERBOSE
 
+        if is_finalizing():
+            return
+        
+        from . import VERBOSE
+        
         VERBOSE.pause()
 
         if self._temp:
