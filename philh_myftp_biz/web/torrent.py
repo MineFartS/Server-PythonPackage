@@ -411,17 +411,19 @@ class NameParser:
     @cached_property
     def _parsed(self) -> dict[str, Any]:
         from PTN import parse
-
         return parse(self.name)
     
     @cached_property
     def title(self) -> str | None:
-
         return self._parsed.get('title')
 
     @cached_property
     def year(self) -> list[int] | int | None:
         from re import findall
+
+        if self._parsed.get('year'):
+
+            return self._parsed['year']
 
         m = findall(
             pattern = "(?:19[0-9]|20[0-2])[0-9]",
@@ -462,7 +464,7 @@ class Magnet(Torrent, NameParser):
 
     def __init__(self,
         qbit: qBitTorrent,
-        title: str = '',
+        name: str = '',
         seeders: int = -1,
         leechers: int = -1,
         url: str = '',
@@ -486,13 +488,13 @@ class Magnet(Torrent, NameParser):
 
         #===================================================
 
-        self._title = title.lower().strip('\n')
+        self._name = name.lower().strip('\n')
         self._leechers: int = leechers
         self._seeders: int = seeders
         self.size: str = size
         self.url: str = url
 
-        NameParser.__init__(self, self._title)
+        NameParser.__init__(self, self._name)
 
         #===================================================
 
@@ -614,7 +616,11 @@ class thePirateBay:
 
         VERBOSE.resume()
 
-        return List(magnets)
+        _magnets = List(magnets)
+
+        _magnets.uniquify()
+
+        return _magnets
 
     def rsearch(self, query:str) -> list[Magnet]:
         """Search thePirateBay for magnets"""
@@ -645,7 +651,7 @@ class thePirateBay:
                 # Yield a magnet instance
                 magnets += [Magnet(
 
-                    title = _run(".children[1].textContent"),
+                    name = _run(".children[1].textContent"),
 
                     seeders = int(_run(".children[5].textContent")),
 
