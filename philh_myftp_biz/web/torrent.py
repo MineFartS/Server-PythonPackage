@@ -497,6 +497,12 @@ class Magnet(Torrent):
     #===================================================
 
     @cached_property
+    def _parsed(self) -> dict[str, Any]:
+        from PTN import parse
+
+        return parse(self.title)
+
+    @cached_property
     def year(self) -> list[int] | int | None:
         from re import findall
 
@@ -523,6 +529,16 @@ class Magnet(Torrent):
             if term in self.title:
                 
                 return quality
+            
+    @cached_property
+    def season(self) -> int | list[int] | None:
+
+        return self._parsed.get('season')
+    
+    @cached_property
+    def episode(self) -> int | list[int] | None:
+
+        return self._parsed.get('episode')
 
     #===================================================
 
