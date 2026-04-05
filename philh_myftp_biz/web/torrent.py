@@ -1,5 +1,6 @@
 from typing import Literal, TYPE_CHECKING, Any
 from functools import cached_property
+from dataclasses import dataclass
 
 if TYPE_CHECKING:
     from qbittorrentapi import TorrentDictionary as __TorrentDict
@@ -402,7 +403,61 @@ class qBitTorrent:
             'listen_port': randint(a=10000, b=60000)
         })
 
-class Magnet(Torrent):
+@dataclass
+class NameParser:
+        
+    name: str
+
+    @cached_property
+    def _parsed(self) -> dict[str, Any]:
+        from PTN import parse
+
+        return parse(self.name)
+    
+    @cached_property
+    def title(self) -> str | None:
+
+        return self._parsed.get('title')
+
+    @cached_property
+    def year(self) -> list[int] | int | None:
+        from re import findall
+
+        m = findall(
+            pattern = "(?:19[0-9]|20[0-2])[0-9]",
+            string = self.title
+        )
+        
+        if len(m) > 1:
+
+            years = list(range(int(m[0]), int(m[-1]) + 1))
+
+            if len(years) > 0:
+                return years
+        
+        elif m:
+            return int(m[0])
+
+    @cached_property
+    def quality(self) -> None | int:
+
+        for term, quality in qualities.items():
+            
+            if term in self.title:
+                
+                return quality
+            
+    @cached_property
+    def season(self) -> int | list[int] | None:
+
+        return self._parsed.get('season')
+    
+    @cached_property
+    def episode(self) -> int | list[int] | None:
+
+        return self._parsed.get('episode')
+
+class Magnet(Torrent, NameParser):
     """Handler for MAGNET URLs"""
 
     def __init__(self,
@@ -427,15 +482,17 @@ class Magnet(Torrent):
         elif XT.startswith('urn:btmh:'): # for v2 magnets
             _hash = XT[len('urn:btmh:'):].lower()
 
-        super().__init__(qbit, _hash) # pyright: ignore[reportPossiblyUnboundVariable]
-            
+        Torrent.__init__(self, qbit, _hash) # pyright: ignore[reportPossiblyUnboundVariable]
+
         #===================================================
 
-        self._title: str = title.lower().strip('\n')
+        self._title = title.lower().strip('\n')
         self._leechers: int = leechers
         self._seeders: int = seeders
         self.size: str = size
         self.url: str = url
+
+        NameParser.__init__(self, self._title)
 
         #===================================================
 
@@ -493,52 +550,6 @@ class Magnet(Torrent):
         from ..text import abbr
 
         return f"<Magnet '{abbr(30, self.title.strip())}' @{loc(self)}>"
-
-    #===================================================
-
-    @cached_property
-    def _parsed(self) -> dict[str, Any]:
-        from PTN import parse
-
-        return parse(self.title)
-
-    @cached_property
-    def year(self) -> list[int] | int | None:
-        from re import findall
-
-        m = findall(
-            pattern = "(?:19[0-9]|20[0-2])[0-9]",
-            string = self.title
-        )
-        
-        if len(m) > 1:
-
-            years = list(range(int(m[0]), int(m[-1]) + 1))
-
-            if len(years) > 0:
-                return years
-        
-        elif m:
-            return int(m[0])
-
-    @cached_property
-    def quality(self) -> None | int:
-
-        for term, quality in qualities.items():
-            
-            if term in self.title:
-                
-                return quality
-            
-    @cached_property
-    def season(self) -> int | list[int] | None:
-
-        return self._parsed.get('season')
-    
-    @cached_property
-    def episode(self) -> int | list[int] | None:
-
-        return self._parsed.get('episode')
 
     #===================================================
 

@@ -21,3 +21,4 @@ python-dateutil
 pytz
 xmltodict
 GitPython
+parse-torrent-title
