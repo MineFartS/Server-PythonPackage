@@ -526,8 +526,9 @@ class thePirateBay:
         qbit: qBitTorrent = None
     ) -> None:
         from ..functools import TransitoryCache
+        from ..web import URL
         
-        self.url: str = f'https://{url}/search/{{}}'
+        self.url: str = URL(f'https://{url}/search/')
         """tpb mirror url"""
 
         self._qbit: qBitTorrent = qbit
@@ -540,37 +541,35 @@ class thePirateBay:
 
         self._cache: 'TransitoryCache[List[Magnet]]' = TransitoryCache(expire=36000) # 10 hours
 
-    def search(self,
-        query: str
-    ) -> List[Magnet]:
-        """
-        Search thePirateBay for magnets
+    def search(self, *queries:str) -> list[Magnet]:
+        """Search thePirateBay for magnets"""
+        
+        magnets = []
 
-        EXAMPLE:
-        for magnet in thePirateBay.search('term'):
-            magnet
-        """
-        from ..array import List
+        _queries = []
+
+        for q in queries:
+            _queries += [
+                q,
+                q.replace('.', '').replace("'", ''),
+                q.replace('.', ' ').replace("'", ' ')
+            ]
+
+        for q in _queries:
+            magnets += self.rsearch(q)
+
+        return magnets
+
+    def rsearch(self, query:str) -> list[Magnet]:
+        """Search thePirateBay for magnets"""
+        from ..db import Size
 
         if self._cache[query]:
             return self._cache[query] # pyright: ignore[reportReturnType] 
 
-        magnets = List(self.rsearch(query.replace('.', f).replace("'", f)) for f in ['', ' '])
-
-        magnets.flatten().uniquify()
-
-        self._cache[query] = magnets
-
-        return magnets # pyright: ignore[reportReturnType]
-
-    def rsearch(self,
-        query: str
-    ) -> list[Magnet]:
-        from ..db import Size
-
         # Open the search in a url
         self._driver.open(
-            url = self.url.format(query)
+            url = self.url.child(query)
         )
 
         _run = self._driver.run
@@ -608,5 +607,7 @@ class thePirateBay:
 
             except KeyError, RuntimeError:
                 pass
+
+        self._cache[query] = magnets
 
         return magnets

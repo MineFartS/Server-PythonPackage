@@ -113,6 +113,19 @@ class URL:
         else:
             self.addr = url
 
+    def child(self, name:str):
+        
+        url = self.url
+
+        if url[-1] != '/':
+            url += '/'
+
+        # TODO add logic for parameters
+
+        url += name
+
+        return URL(url)
+
     @property
     def _stream(self):
         return self.get(stream=True)
@@ -343,7 +356,7 @@ class Driver:
         return []
 
     def open(self,
-        url: str
+        url: str | URL
     ) -> None:
         """
         Open a url
@@ -353,6 +366,9 @@ class Driver:
         from selenium.common.exceptions import WebDriverException
         from urllib3.exceptions import ReadTimeoutError
         from .terminal import Log
+
+        if isinstance(url, URL):
+            url = url.url
 
         Log.VERB(f"Opening Page: {url=}")
 
@@ -393,12 +409,12 @@ class Driver:
             pass
         
     @property
-    def URL(self) -> str | None:
+    def URL(self) -> URL | None:
         """URL of the Current Page"""
         from selenium.common.exceptions import WebDriverException
 
         try:
-            return self._drvr.current_url
+            return URL(self._drvr.current_url)
         except WebDriverException:
             pass
 
