@@ -93,9 +93,12 @@ class CustomFormatter(__Formatter):
             # Store the exception string
             print_exception(*record.exc_info, file=_tb)
 
-            _tb.write('\n')
+        outp = _tb.getvalue().strip()
 
-        return _tb.getvalue().strip()
+        if len(outp) > 0:
+            outp += '\n'
+
+        return outp
 
     def _message(self,
         record: '__LogRecord'    
@@ -152,8 +155,11 @@ class CustomFormatter(__Formatter):
         record: '__LogRecord'
     ) -> str:
         from .text import recode
-        
+
         #===============================================
+        
+        if (not VERBOSE) and (record.levelno == 10):
+            return ''
         
         # Ignore records from other modules
         if record.name != 'root':
@@ -206,6 +212,6 @@ class CustomStreamHandler(__StreamHandler):
         self.terminator = ''
 
 __basicConfig(
-    level = (10 if VERBOSE else 20),
+    level = 10,
     handlers = [CustomStreamHandler()]
 )
