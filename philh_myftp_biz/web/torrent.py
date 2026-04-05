@@ -431,7 +431,7 @@ class Magnet(Torrent):
             
         #===================================================
 
-        self._title: str = title.lower()
+        self._title: str = title.lower().strip('\n')
         self._leechers: int = leechers
         self._seeders: int = seeders
         self.size: str = size
