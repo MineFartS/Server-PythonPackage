@@ -439,15 +439,6 @@ class Magnet(Torrent):
 
         #===================================================
 
-        self.quality = 0
-        for term, quality in qualities.items():
-            
-            if term in self.title:
-                
-                self.quality: int = quality
-
-        #===================================================
-
     #===================================================
     
     def __torrent_getter(name:str):
@@ -502,6 +493,38 @@ class Magnet(Torrent):
         from ..text import abbr
 
         return f"<Magnet '{abbr(30, self.title.strip())}' @{loc(self)}>"
+
+    #===================================================
+
+    @cached_property
+    def year(self) -> list[int] | int | None:
+        from re import findall
+
+        m = findall(
+            pattern = "(?:19[0-9]|20[0-2])[0-9]",
+            string = self.title
+        )
+        
+        if len(m) > 1:
+
+            years = list(range(int(m[0]), int(m[-1]) + 1))
+
+            if len(years) > 0:
+                return years
+        
+        elif m:
+            return int(m[0])
+
+    @cached_property
+    def quality(self) -> None | int:
+
+        for term, quality in qualities.items():
+            
+            if term in self.title:
+                
+                return quality
+
+    #===================================================
 
 class thePirateBay:
     """
