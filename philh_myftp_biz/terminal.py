@@ -14,17 +14,13 @@ _cls_cmd = '8005951a000000000000008c162a2a2a20436c656172205465726d696e616c202a2a
 #========================================================
 
 def width() -> int:
-    """
-    Get the # of columns in the terminal
-    """
+    """Get the # of columns in the terminal"""
     from shutil import get_terminal_size
 
     return get_terminal_size().columns
 
 def del_last_line() -> None:
-    """
-    Clear the previous line in the terminal
-    """
+    """Clear the previous line in the terminal"""
     
     print(
         "\033[A{}\033[A\n".format(' ' * width()),
@@ -34,9 +30,7 @@ def del_last_line() -> None:
 #========================================================
 
 def is_elevated() -> bool:
-    """
-    Check if the current execution has Administrator Access
-    """
+    """Check if the current execution has Administrator Access"""
     from ctypes import windll
 
     try:
@@ -45,9 +39,7 @@ def is_elevated() -> bool:
         return False
     
 def elevate() -> None:
-    """
-    Restart the current execution as Administrator
-    """
+    """Restart the current execution as Administrator"""
     from elevate import elevate
 
     if not is_elevated():
@@ -60,9 +52,7 @@ def write(
     stream: Literal['out', 'err'] = 'out',
     flush: bool = True
 ) -> None:
-    """
-    Write text to the sys.stdout or sys.stderr buffer
-    """
+    """Write text to the sys.stdout or sys.stderr buffer"""
     from io import StringIO
     import sys
     
@@ -81,9 +71,7 @@ def print(
     end: str = '\n',
     overwrite: bool = False
 ) -> None:
-    """
-    Wrapper for built-in print function
-    """
+    """Wrapper for built-in print function"""
     from .db import Color
     
     if overwrite:
@@ -130,9 +118,7 @@ def input[D] (
         return input(prompt)
 
 def pause() -> None:
-    """
-    Pause the execution and wait for user input
-    """
+    """Pause the execution and wait for user input"""
     from os import system
     from .pc import OS
 
@@ -172,9 +158,7 @@ def cls() -> None:
         system('clear')
 
 def warn(exc: Exception) -> None:
-    """
-    Print an exception to the terminal without stopping the execution
-    """
+    """Print an exception to the terminal without stopping the execution"""
     from traceback import print_exception
     from io import StringIO
     
@@ -282,9 +266,7 @@ class ProgressBar:
 
 @cache
 def Args() -> list:
-    """
-    Read Command Line Arguements with automatic formatting
-    """
+    """Read Command Line Arguements with automatic formatting"""
     from .text import auto_convert
     from sys import argv
 
