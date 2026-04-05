@@ -427,7 +427,7 @@ class NameParser:
 
         m = findall(
             pattern = "(?:19[0-9]|20[0-2])[0-9]",
-            string = self.title
+            string = self.name
         )
         
         if len(m) > 1:
@@ -445,7 +445,7 @@ class NameParser:
 
         for term, quality in qualities.items():
             
-            if term in self.title:
+            if term in self.name:
                 
                 return quality
             
@@ -488,13 +488,12 @@ class Magnet(Torrent, NameParser):
 
         #===================================================
 
-        self._name = name.lower().strip('\n')
         self._leechers: int = leechers
         self._seeders: int = seeders
         self.size: str = size
         self.url: str = url
 
-        NameParser.__init__(self, self._name)
+        NameParser.__init__(self, name.lower().strip('\n'))
 
         #===================================================
 
@@ -505,8 +504,6 @@ class Magnet(Torrent, NameParser):
             s.qbit, name,
             getattr(s, '_'+name)
         ))
-
-    title: str = __torrent_getter('title')
 
     seeders: int = __torrent_getter('seeders')
 
@@ -551,7 +548,7 @@ class Magnet(Torrent, NameParser):
         from ..classtools import loc
         from ..text import abbr
 
-        return f"<Magnet '{abbr(30, self.title.strip())}' @{loc(self)}>"
+        return f"<Magnet '{abbr(30, self.name)}' @{loc(self)}>"
 
     #===================================================
 
