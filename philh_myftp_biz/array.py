@@ -1,6 +1,5 @@
 from typing import Callable, Any, Iterator, Self, Union, TypeAlias, TypeVar
 from functools import partialmethod
-from sys import is_finalizing
 
 _T = TypeVar('_T')
 
@@ -19,11 +18,7 @@ FilterFunc: TypeAlias = Callable[[_T], bool]
 #========================================================
 
 class List[V]:
-    """
-    List/Tuple Wrapper
-
-    Stores data to the local disk instead of memory
-    """
+    """List/Tuple Wrapper"""
 
     read: Callable[[], list[V]]
     """Read Data"""
@@ -34,42 +29,27 @@ class List[V]:
     def __init__(self,
         a: Iterator[V] | list[V] | tuple[V] = []
     ) -> None:
-        from .file import PKL, temp
 
-        if isinstance(a, List):
-            self._temp = a._temp
-            self.var = a.var
-
-        elif hasattr(a, 'read') and hasattr(a, 'save'):
-            self._temp = False
+        if hasattr(a, 'read') and hasattr(a, 'save'):
+        
+            if isinstance(a, List):
+                a = a.var
+                
             self.var = a
 
+            if a.default is None:
+                a.default = []
+
+            self.read = self.var.read
+            self.save = self.var.save
+
         else:
-            self._temp = True
-            self.var = PKL(
-                path = temp('array', 'pkl')
-            )
-            self.var.save(list(a))
+            
+            self.read = lambda: self.var
 
-        if self.var.default is None:
-            self.var.default = []
-        
-        self.read = self.var.read
-        self.save = self.var.save
+            self.save = lambda x: setattr(self, 'var', list(x))
 
-    def __del__(self) -> None:
-
-        if is_finalizing():
-            return
-        
-        from . import VERBOSE
-        
-        VERBOSE.pause()
-
-        if self._temp:
-            self.var.path.delete()
-
-        VERBOSE.resume()
+            self.save(a)
 
     def __iter__(self) -> Iterator[V]:
         return iter(self.read())
