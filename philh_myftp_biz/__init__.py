@@ -8,9 +8,34 @@ from sys import argv as __argv
 if TYPE_CHECKING:
     from logging import LogRecord as __LogRecord
 
-VERBOSE: bool = (len({'-v', '--verbose'} & set(__argv)) >= 1)
+#================================================================
 
-HELP: bool = (len({'-h', '--help'} & set(__argv)) >= 1)
+def _arg(*name:str):
+    return len(set(name) & set(__argv))
+
+#================================================================
+
+from .num import MutInt
+
+class _VERBOSE(MutInt):
+
+    def __init__(self):
+        super().__init__(None)
+        self.resume()
+
+    def pause(self):
+        self.value = 0
+
+    def resume(self):
+        self.value = _arg('-v', '--verbose')
+
+VERBOSE = _VERBOSE()
+
+#================================================================
+
+HELP: bool = _arg('-h', '--help')
+
+#================================================================
 
 class CustomFormatter(__Formatter):
 
@@ -155,11 +180,6 @@ class CustomFormatter(__Formatter):
         record: '__LogRecord'
     ) -> str:
         from .text import recode
-
-        #===============================================
-        
-        if (not VERBOSE) and (record.levelno == 10):
-            return ''
         
         # Ignore records from other modules
         if record.name != 'root':
@@ -189,12 +209,21 @@ class CustomFormatter(__Formatter):
             
             f.write(recode(line))
         
-        # Return a string to be printed to the terminal
-        line = f"\n{COLOR}\033[1m{TIME} {FILE} {LEVEL}\033[22m\n{MESS}\033[0m\n{TRACE}"
+        #===============================================
 
-        return recode(line)
+        if VERBOSE or (record.levelno > 10):
+
+            # Return a string to be printed to the terminal
+            line = f"\n{COLOR}\033[1m{TIME} {FILE} {LEVEL}\033[22m\n{MESS}\033[0m\n{TRACE}"
+
+            return recode(line)
+        
+        else:
+            return ''
     
         #===============================================
+
+#================================================================
 
 class CustomStreamHandler(__StreamHandler):
      
@@ -211,7 +240,11 @@ class CustomStreamHandler(__StreamHandler):
         # No New Line
         self.terminator = ''
 
+#================================================================
+
 __basicConfig(
     level = 10,
     handlers = [CustomStreamHandler()]
 )
+
+#================================================================

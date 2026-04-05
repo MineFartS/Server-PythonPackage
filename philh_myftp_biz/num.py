@@ -10,6 +10,41 @@ from random import randint, randrange # pyright: ignore[reportUnusedImport]
 
 #========================================================
 
+class MutInt:
+    """Mutable Integer"""
+
+    def __init__(self, value:int) -> None:
+        self.value = value
+
+    def __bool__(self):
+        return self.value > 0
+
+    def __int__(self):
+        return self.value
+    
+    __index__ = __int__
+
+    def __str__(self):
+        return str(self.value)
+
+    def __iadd__(self, other:int):
+        self.value += other
+        return self
+    
+    def __isub__(self, other:int):
+        self.value -= other
+        return self
+
+    def __add__(self, other:int):
+        return MutInt(self.value + other)
+    
+    def __sub__(self, other:int):
+        return MutInt(self.value - other)
+    
+    # TODO division / multiplication
+    
+#========================================================
+
 def digit(num:int, i:int) -> int:
     """
     Get digit from number by index

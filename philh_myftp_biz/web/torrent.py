@@ -543,6 +543,9 @@ class thePirateBay:
 
     def search(self, *queries:str) -> list[Magnet]:
         """Search thePirateBay for magnets"""
+        from .. import VERBOSE
+
+        VERBOSE.pause()
         
         magnets = []
 
@@ -557,6 +560,8 @@ class thePirateBay:
 
         for q in _queries:
             magnets += self.rsearch(q)
+
+        VERBOSE.resume()
 
         return magnets
 

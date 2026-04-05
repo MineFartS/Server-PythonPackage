@@ -57,8 +57,14 @@ class List[V]:
         self.save = self.var.save
 
     def __del__(self) -> None:
+        from . import VERBOSE
+
+        VERBOSE.pause()
+
         if self._temp:
             self.var.path.delete()
+
+        VERBOSE.resume()
 
     def __iter__(self) -> Iterator[V]:
         return iter(self.read())
