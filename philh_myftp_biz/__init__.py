@@ -7,6 +7,7 @@ from sys import argv as __argv
 
 if TYPE_CHECKING:
     from logging import LogRecord as __LogRecord
+    from inspect import FrameInfo
 
 #================================================================
 
@@ -105,25 +106,24 @@ class CustomFormatter(__Formatter):
                 return Color.values['MAGENTA']
 
     def _traceback(self,
-        record: '__LogRecord'
+        record: __LogRecord
     ) -> str:
-        from traceback import print_exception
-        from io import StringIO
+        from traceback import extract_tb
 
-        _tb = StringIO()
+        if record.exc_info is None:
+            return ''
 
-        # If an exception is passed
-        if record.exc_info:
+        tb = extract_tb(record.exc_info[2])
 
-            # Store the exception string
-            print_exception(*record.exc_info, file=_tb)
+        outp = []
 
-        outp = _tb.getvalue().strip()
+        for frame in self._stack(tb):
+            
+            outp.append(f'File "{frame.filename}", line {frame.lineno}')
+            
+        outp += [str(record.exc_info)]
 
-        if len(outp) > 0:
-            outp += '\n'
-
-        return outp
+        return "\n".join(outp).strip()
 
     def _message(self,
         record: '__LogRecord'    
@@ -152,28 +152,48 @@ class CustomFormatter(__Formatter):
 
         return n.stamp(format='%y/%m/%d %H:%M:%S') + f'.{n.centisecond:02d}'
 
-    def _file(self) -> str:
-        from os.path import basename
-        from inspect import stack
+    def _stack(self, frames:list[FrameInfo]):
 
-        for frame in stack():
+        for frame in frames:
 
             path = frame.filename.lower()
-
-            if '\\lib\\site-packages\\philh_myftp_biz\\' in path:
-                continue
 
             if '\\lib\\logging\\' in path:
                 continue
 
-            if path.endswith("\\lib\\threading.py"):
-                return '<Thread>'
+            if '\\site-packages\\fastapi\\' in path:
+                continue
 
-            name = basename(path)
+            if '\\site-packages\\starlette\\' in path:
+                continue
+
+            if '\\site-packages\\uvicorn\\' in path:
+                continue
+
+            if "\\lib\\threading.py" in path:
+                continue
+
+            if "\\Lib\\contextlib.py" in path:
+                continue
+
+            yield frame
+
+    def _file(self) -> str:
+        from os.path import basename
+        from inspect import stack
+
+        _stack = self._stack(stack())
+
+        for frame in _stack:
+
+            if '\\site-packages\\philh_myftp_biz\\' in frame.filename:
+                continue
+    
+            name = basename(frame.filename)
             line = frame.lineno
             
             return f'{name}:{line}'
-
+        
         return ''
 
     def format(self,
