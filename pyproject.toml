@@ -1,11 +1,11 @@
 [build-system]
-requires = ["hatchling", "hatch-requirements-txt"]
+requires = [ "hatchling", "hatch-requirements-txt",]
 build-backend = "hatchling.build"
 
 [project]
 name = "philh_myftp_biz"
-version = "v2026.04.05"
-dynamic = ["dependencies"]
+version = "v2026.04.06"
+dynamic = [ "dependencies",]
 
 [tool.hatch.metadata.hooks.requirements_txt]
-files = ["requirements.txt"]
+files = [ "requirements.txt",]
