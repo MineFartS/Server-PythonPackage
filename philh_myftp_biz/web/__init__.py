@@ -35,9 +35,7 @@ is_online: partial[bool] = partial(ping, '1.1.1.1')
 """Check if the local computer is connected to the internet"""
 
 class Port:
-    """
-    Details of a port on a network device
-    """
+    """Details of a port on a network device"""
 
     def __init__(self,
         port: int,
@@ -101,9 +99,11 @@ def Session(max_tries:int|None):
 class URL:
 
     def __init__(self, url:str) -> None:
-        from urllib.parse import urlparse
+        from urllib.parse import urlparse, parse_qsl
 
-        self.url = url
+        self.url = url.split('?')[0]
+
+        self.params = dict(parse_qsl(url))
 
         self._parsed = urlparse(url)
         self.netloc = self._parsed.netloc
@@ -111,7 +111,25 @@ class URL:
         if self.netloc:
             self.addr = self.netloc
         else:
-            self.addr = url
+            self.addr = url    
+
+    def copy(self):
+        return URL(self.furl)
+
+    def __str__(self):
+        from urllib.parse import urlencode
+
+        qsl = '?' + urlencode(self.params)
+
+        url = self.url
+
+        if len(qsl) > 1:
+            url += qsl
+
+        return url
+
+    __repr__ = __str__
+    furl: str = property(__str__)
 
     def child(self, name:str):
         
@@ -173,7 +191,7 @@ class URL:
         return int(r.headers.get('Content-Length', 0))
 
     def get(self,
-        params: dict[str, str] = {},
+        params: dict[str, str] = {}, # TODO deprecated - remove later
         headers: dict[str, str] = {},
         stream: bool = None,
         max_tries: int = None,
@@ -183,21 +201,24 @@ class URL:
         """requests.get Wrapper"""
         from ..terminal import Log
 
+        if len(params) > 0: # TODO deprecated - remove later
+            self.params = params
+
         headers['User-Agent'] = 'Mozilla/5.0'
         headers['Accept-Language'] = 'en-US,en;q=0.5'
 
         Log.VERB(
             f'Requesting Page\n'+ \
             f'url={self.url}\n'+ \
-            f'{params=}\n'+ \
+            f'{self.params=}\n'+ \
             f'{headers=}'
         )
 
         session = Session(max_tries)
 
-        return getattr(session, method.lower())(
+        return getattr(session, method.lower()) (
             url = self.url,
-            params = params,
+            params = self.params,
             headers = headers,
             stream = stream,
             timeout = timeout
