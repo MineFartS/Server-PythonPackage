@@ -490,6 +490,10 @@ class Path:
             encoding = None if ('b' in mode) else 'utf-8'
         )
 
+    @property
+    def siblings(self):
+        return [c for c in self.parent.children if c!=self]
+
     def __setitem__(self,
         key: Any, 
         value: Any
