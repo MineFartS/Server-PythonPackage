@@ -217,3 +217,9 @@ class Instantiate:
                 pass
 
 #========================================================
+
+class Absorber:
+    """Returns all getattribute requests with a blank function that absorbs all params"""
+
+    def __getattr__(self, *_) -> Callable[..., None]:
+        return lambda *args, **kwargs: None

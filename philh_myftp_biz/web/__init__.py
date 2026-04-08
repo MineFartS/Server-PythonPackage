@@ -153,6 +153,7 @@ class URL:
         show_progress:bool = None # TODO: Fix all references, then remove
     ) -> None:
         """Download file to disk"""
+        from ..classtools import Absorber
         from ..terminal import Log
         from .. import VERBOSE
         from tqdm import tqdm
@@ -169,12 +170,15 @@ class URL:
                 unit = "B",
                 unit_scale = True
             )
+            chunk_size = 1024
+        else:
+            pbar = Absorber()
+            chunk_size = None
 
         # Iter through all data in stream
-        for data in r.iter_content(chunk_size=1024):
+        for data in r.iter_content(chunk_size):
 
-            if VERBOSE:
-                pbar.update(n=len(data)) # pyright: ignore[reportPossiblyUnboundVariable]
+            pbar.update(n=len(data))
 
             # Write the data to the dest file
             file.write(data)
