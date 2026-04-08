@@ -475,15 +475,10 @@ class Path:
             return False
 
     def open(self,
-        mode: Literal['r', 'w', 'a', 'rb', 'wb', '+'] = 'r',
-        wait: bool = True
+        mode: Literal['r', 'w', 'a', 'rb', 'wb', '+'] = 'r'
     ):
-        """__builtins__.open Wrapper"""
-        from .functools import waitfor
-
-        if wait:
-            waitfor(lambda: not self.in_use)
-
+        """builtins.open Wrapper"""
+        
         return open(
             file = self.path, 
             mode = mode,
