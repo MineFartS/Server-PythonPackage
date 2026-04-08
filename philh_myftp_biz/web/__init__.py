@@ -247,9 +247,20 @@ class URL:
         except OSError:
             return False
 
-    def cache(self, path:'Path') -> None:
+    @property
+    def hash(self) -> str:
+        """Calculate the SHA256 hash of this URL"""
+        from urllib.request import urlopen
+        from hashlib import file_digest
 
-        if (not path.exists) or (path.size != self.size):
+        with urlopen(self.furl) as response:
+            digest = file_digest(response, 'sha256')
+
+        return digest.hexdigest()
+
+    def cache(self, path:'Path') -> None:
+        
+        if path.hash != self.hash:
 
             self.download(path)
 

@@ -567,10 +567,13 @@ class Path:
             dst = str(link)
         )
 
-    @cached_property
-    def hash(self) -> str:
-        """Calculate the SHA256 hash of a file."""
+    @property
+    def hash(self) -> None | str:
+        """Calculate the SHA256 hash of this file"""
         from hashlib import sha256
+
+        if not self.exists:
+            return
         
         with self.open("rb") as f:
             
