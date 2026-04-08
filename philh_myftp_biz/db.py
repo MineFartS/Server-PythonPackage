@@ -8,24 +8,19 @@ if TYPE_CHECKING:
 
 class MimeType:
 
-    def Ext(ext:str):
-        """
-        Get the mimetype from a file extension
-        """
+    def Ext(ext:None|str):
+        """Get the mimetype from a file extension"""
         from .file import temp, JSON
-        from .web import download
+        from .web import URL
         from .json import Dict
 
+        url = URL('https://raw.githubusercontent.com/MineFartS/FileTypes/refs/heads/master/compiled.json')
+
+        dbfile: 'Path' = temp(name='filetypes', ext='json', id='0')
+
         if ext:
-
-            dbfile: 'Path' = temp(name='filetypes', ext='json', id='0')
-
-            if not dbfile.exists:
-                download(
-                    url = 'https://raw.githubusercontent.com/MineFartS/FileTypes/refs/heads/master/compiled.json',
-                    path = dbfile,
-                    show_progress = False
-                )
+        
+            url.cache(dbfile)
 
             db: Dict[str] = Dict(JSON(path=dbfile))
 
@@ -33,15 +28,11 @@ class MimeType:
             return db[ext.lower()]
 
     def Path(path:'Path'):
-        """
-        Get the mimetype from a file path
-        """
+        """Get the mimetype from a file path"""
         return MimeType.Ext(path.ext)
     
     def Name(name:str):
-        """
-        Get the mimetype from a file name
-        """
+        """Get the mimetype from a file name"""
                 
         return MimeType.Ext(
             ext = name[:name.rfind('.')]
