@@ -1,46 +1,49 @@
-from functools import cached_property
-from typing import Literal
+from functools import cached_property, cache
+from dataclasses import dataclass
+from typing import Literal, Any
 
 class Mojang:
 
-    @cached_property
-    def javaV(self):
-        from ..web import get
+    @staticmethod
+    @cache
+    def _data() -> dict[str, Any]:
+        from ..web import URL
 
-        request = get('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json')
+        url = URL('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json')
+        
+        return url.get().json()
 
-        return request.json()['latest']['release']
+    @property
+    def java_latest(self) -> str:
+        return self._data()['latest']['release']
 
+@dataclass
 class ModrinthMod:
 
-    def __init__(self,
-        name: str,
-        loader: Literal['fabric', 'forge'] = 'fabric'
-    ) -> None:
-        from ..web import get
-
-        self.loader = loader
-
-        request = get(
-            url = f'https://api.modrinth.com/v2/project/{name}/version',
-            params = {
-                'loaders': [loader]
-            }
-        )
-
-        mj = Mojang()
-
-        for item in request.json():
-
-            if mj.javaV in item['game_versions']:
-
-                self._data = item
-
-                break
+    name: str
+    loader: Literal['fabric', 'forge'] = 'fabric'
+    
+    @property
+    def version(self) -> str:
+        # TODO Add more version options
+        return Mojang().java_latest
 
     @cached_property
-    def url(self) -> str:
-        return self._data['files'][0]['url']
+    def _data(self) -> dict[str, Any] | None:
+        from ..web import URL
+
+        url = URL(f'https://api.modrinth.com/v2/project/{self.name}/version')
+
+        for item in url.get().json():
+
+            if self.version in item['game_versions']:
+
+                return item
+
+    @property
+    def url(self) -> None | str:
+        if self._data:
+            return self._data['files'][0]['url']
 
 class FabricMC:
 
