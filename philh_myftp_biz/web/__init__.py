@@ -247,20 +247,13 @@ class URL:
             return False
 
     @property
-    def hash(self) -> None | str:
+    def hash(self) -> str:
         """Calculate the SHA256 hash of this URL"""
-        from urllib.request import urlopen
-        from urllib.error import HTTPError
-        from hashlib import file_digest
+        from hashlib import sha256
 
-        try:
-            with urlopen(self.furl) as response:
-                digest = file_digest(response, 'sha256')
+        content = self.get().content
 
-            return digest.hexdigest()
-        
-        except HTTPError:
-            pass
+        return sha256(content).hexdigest()
 
     def cache(self, path:'Path') -> None:
         
