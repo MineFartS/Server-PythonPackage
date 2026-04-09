@@ -149,8 +149,7 @@ class URL:
         return self.get(stream=True)
 
     def download(self,
-        path: 'Path',
-        show_progress:bool = None # TODO: Fix all references, then remove
+        path: 'Path'
     ) -> None:
         """Download file to disk"""
         from ..classtools import Absorber
@@ -248,15 +247,20 @@ class URL:
             return False
 
     @property
-    def hash(self) -> str:
+    def hash(self) -> None | str:
         """Calculate the SHA256 hash of this URL"""
         from urllib.request import urlopen
+        from urllib.error import HTTPError
         from hashlib import file_digest
 
-        with urlopen(self.furl) as response:
-            digest = file_digest(response, 'sha256')
+        try:
+            with urlopen(self.furl) as response:
+                digest = file_digest(response, 'sha256')
 
-        return digest.hexdigest()
+            return digest.hexdigest()
+        
+        except HTTPError:
+            pass
 
     def cache(self, path:'Path') -> None:
         
