@@ -55,11 +55,11 @@ class FabricMC:
     @cached_property
     def gameV(self) -> str: # pyright: ignore[reportReturnType]
         """Game Version"""
-        from ..web import get
+        from ..web import URL
 
-        request = get('https://meta.fabricmc.net/v2/versions/game')
+        request = URL('https://meta.fabricmc.net/v2/versions/game').json()
 
-        for item in request.json():
+        for item in request:
 
             if item['stable']:
 
@@ -68,11 +68,11 @@ class FabricMC:
     @cached_property
     def loaderV(self) -> str: # pyright: ignore[reportReturnType]
         """Loader Version"""
-        from ..web import get
+        from ..web import URL
 
-        request = get(f'https://meta.fabricmc.net/v1/versions/loader/{self.gameV}')
+        request = URL(f'https://meta.fabricmc.net/v1/versions/loader/{self.gameV}').json()
 
-        for item in request.json():
+        for item in request:
 
             if item['loader']['stable']:
 
@@ -81,11 +81,11 @@ class FabricMC:
     @cached_property
     def installerV(self) -> str: # pyright: ignore[reportReturnType]
         """Installer Version"""
-        from ..web import get
+        from ..web import URL
 
-        request = get(f'https://meta.fabricmc.net/v2/versions/installer')
+        request = URL(f'https://meta.fabricmc.net/v2/versions/installer').json()
 
-        for item in request.json():
+        for item in request:
 
             if item['stable']:
 

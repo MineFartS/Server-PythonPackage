@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from qbittorrentapi import TorrentFile as __TorrentFile
     from ..array import SortFunc, FilterFunc, List
     from qbittorrentapi import Client
-    from ..web import Driver
+    from .driver import Driver
     from ..pc import Path
 
 qualities: dict[str, int] = {
