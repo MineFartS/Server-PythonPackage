@@ -103,7 +103,10 @@ class URL:
 
         self.url = url.split('?')[0]
 
-        self.params = dict(parse_qsl(url))
+        if '?' in url:
+            self.params = dict(parse_qsl(url.split('?', 1)[1]))
+        else:
+            self.params = {}
 
         self._parsed = urlparse(url)
         self.netloc = self._parsed.netloc
