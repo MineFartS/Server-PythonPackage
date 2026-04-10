@@ -142,7 +142,7 @@ class Driver:
             except WebDriverException, ReadTimeoutError:
                 Log.WARN('Failed to open url', exc_info=True)
 
-    def close(self) -> None:
+    def close(self, *_) -> None:
         """Close the Session"""
         from selenium.common.exceptions import InvalidSessionIdException
         from ..terminal import Log
@@ -155,7 +155,9 @@ class Driver:
         except InvalidSessionIdException:
             pass
 
-    __del__ = close
+    __del__   = close
+    __exit__  = close
+    __enter__ = lambda self: self
 
     @property
     def HTML(self) -> str | None:
