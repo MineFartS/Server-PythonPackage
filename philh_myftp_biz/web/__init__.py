@@ -206,20 +206,18 @@ class URL:
 
     def get(self,
         params: dict[str, str] = {}, # TODO deprecated - remove later
+        *,
         headers: dict[str, str] = {},
         stream: bool = None,
         max_tries: int = None,
         timeout: None|int = None,
-        method: Literal['GET', 'POST'] = 'GET'
+        allow_redirects: bool = True
     ) -> 'Response':
         """requests.get Wrapper"""
         from ..terminal import Log
 
         if len(params) > 0: # TODO deprecated - remove later
             self.params = params
-
-        headers['User-Agent'] = 'Mozilla/5.0'
-        headers['Accept-Language'] = 'en-US,en;q=0.5'
 
         Log.VERB(
             f'Requesting Page\n'+ \
@@ -228,14 +226,13 @@ class URL:
             f'{headers=}'
         )
 
-        session = Session(max_tries)
-
-        return getattr(session, method.lower()) (
+        return Session(max_tries).get(
             url = self.url,
             params = self.params,
             headers = headers,
             stream = stream,
-            timeout = timeout
+            timeout = timeout,
+            allow_redirects = allow_redirects
         )
 
     @property
