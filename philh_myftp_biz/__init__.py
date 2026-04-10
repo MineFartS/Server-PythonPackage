@@ -121,7 +121,7 @@ class CustomFormatter(__Formatter):
             
             outp.append(f'File "{frame.filename}", line {frame.lineno}')
             
-        outp += [str(record.exc_info)]
+        outp += [str(record.exc_info).split('>, ')[1].split(', <')[0]]
 
         return "\n".join(outp).strip()
 
