@@ -1,6 +1,10 @@
 from selenium.webdriver.remote.webelement import WebElement
+from typing import Literal, TYPE_CHECKING
 from dataclasses import dataclass
 from ..functools import single_use
+
+if TYPE_CHECKING:
+    from . import URL
 
 @dataclass
 class Element(WebElement):
@@ -28,19 +32,25 @@ class Driver:
     def __init__(self,
         headless: bool = True,
         eager: bool = False,
-        timeout: int = 300
+        timeout: int = 300,
+        daemon: bool = True
     ) -> None:
         from selenium.webdriver import FirefoxOptions, Firefox
         from selenium.webdriver.firefox.options import Options
-        from ..process import SysTask, Sleeper
+        from ..classtools import attr
+        from ..process import SysTask
         from ..terminal import Log
 
         Log.VERB(
             f'Starting Session\n'+ \
             f'{headless=}\n'+ \
             f'{eager=}\n'+ \
-            f'{timeout=}'
+            f'{timeout=}\n'+ \
+            f'{daemon=}'
         )
+
+        if not daemon:
+            attr(self, '__del__').set(lambda: ...) 
 
         options: Options = FirefoxOptions()
 
@@ -93,8 +103,7 @@ class Driver:
 
     def element(self,
         by: Literal['class', 'id', 'xpath', 'name', 'attr'],
-        name: str,
-        timeout: int = 30
+        name: str
     ) -> list[Element]:
         """Get List of Elements by query"""
         from selenium.webdriver.common.by import By
@@ -184,6 +193,7 @@ class Driver:
     def URL(self) -> URL | None:
         """URL of the Current Page"""
         from selenium.common.exceptions import WebDriverException
+        from . import URL
 
         try:
             return URL(self._drvr.current_url)
