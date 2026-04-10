@@ -574,10 +574,15 @@ class Path:
 
         if not self.exists:
             return
+
+        hasher = sha256()
         
         with self.open("rb") as f:
+
+            for chunk in iter(lambda: f.read(8192), b""):
+                hasher.update(chunk)
             
-            return sha256(f.read()).hexdigest()
+        return hasher.hexdigest()
 
 class _cd:
 

@@ -145,8 +145,16 @@ class URL:
         return URL(url)
 
     @property
-    def _stream(self):
+    def stream(self):
         return self.get(stream=True)
+
+    @property
+    def content(self):
+        return self.get().content
+
+    @property
+    def json(self):
+        return self.get().json()
 
     def download(self,
         path: 'Path'
@@ -159,7 +167,7 @@ class URL:
 
         Log.VERB(f'Downloading File:\nurl={self.url}\n{path=}')
 
-        r = self._stream
+        r = self.stream
 
         file = path.open(mode='wb')
 
@@ -251,9 +259,12 @@ class URL:
         """Calculate the SHA256 hash of this URL"""
         from hashlib import sha256
 
-        content = self.get().content
+        hasher = sha256()
 
-        return sha256(content).hexdigest()
+        for chunk in self.stream.iter_content(chunk_size=8192):
+            hasher.update(chunk)
+
+        return hasher.hexdigest()
 
     def cache(self, path:'Path') -> None:
         
