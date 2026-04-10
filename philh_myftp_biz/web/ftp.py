@@ -179,7 +179,7 @@ class FTP:
             passwd = self.password
         )
 
-        ftp.encoding = 'latin-1'
+        ftp.encoding = 'utf-16'
 
         return ftp
     
