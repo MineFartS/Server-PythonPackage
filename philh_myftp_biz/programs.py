@@ -12,25 +12,22 @@ def __FFMPEG(name:str) -> 'Path':
 
     exefile = temp(name, 'exe', 0)
 
-    zipfile = temp('ffmpeg', 'zip', 0)
     zipurl = URL("https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip")
 
-    # Check if 'Ffmpeg.exe' does not exist
-    if not exefile.exists:
+    zipfile = temp('ffmpeg', 'zip', 0)
+    zipurl.cache(zipfile)
 
-        zipurl.cache(zipfile)
+    # Open zipfile as an 'ZIP' object
+    zip = ZIP(zipfile)
 
-        # Open zipfile as an 'ZIP' object
-        zip = ZIP(zipfile)
+    # Search for exefile in zipfile contents
+    member = zip.search(f'{name}.exe')[0]
 
-        # Search for exefile in zipfile contents
-        member = zip.search(f'{name}.exe')[0]
-
-        # Extract 'ffmpeg.exe' to location declared earlier
-        zip.extractFile(
-            member = member,
-            path = exefile
-        )
+    # Extract 'ffmpeg.exe' to location declared earlier
+    zip.extractFile(
+        member = member,
+        path = exefile
+    )
 
     return exefile
 
