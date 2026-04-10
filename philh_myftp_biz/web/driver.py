@@ -1,5 +1,6 @@
 from selenium.webdriver.remote.webelement import WebElement
 from dataclasses import dataclass
+from ..functools import single_use
 
 @dataclass
 class Element(WebElement):
@@ -151,6 +152,7 @@ class Driver:
             except WebDriverException, ReadTimeoutError:
                 Log.WARN('Failed to open url', exc_info=True)
 
+    @single_use
     def close(self, *_) -> None:
         """Close the Session"""
         from selenium.common.exceptions import InvalidSessionIdException

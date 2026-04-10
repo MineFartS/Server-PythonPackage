@@ -1,5 +1,4 @@
 from typing import Literal, TYPE_CHECKING
-from ..functools import single_use
 from functools import partial
 
 if TYPE_CHECKING:
