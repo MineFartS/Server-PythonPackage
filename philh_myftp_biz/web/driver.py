@@ -10,6 +10,14 @@ class Element(WebElement):
             webelement._id
         )
 
+    @property
+    def children(self):
+        from selenium.webdriver.common.by import By
+        
+        elements = self.find_elements(By.XPATH, ".//*")
+        
+        return [Element(e) for e in elements]
+
     def __getattr__(self, name:str):
         return self.get_attribute(name)
 
@@ -47,6 +55,7 @@ class Driver:
         self.Task = SysTask(self._drvr.service.process.pid)
 
         # Set Timeouts
+        self._drvr.implicitly_wait(timeout)
         self._drvr.command_executor.set_timeout(timeout)
         self._drvr.set_page_load_timeout(time_to_wait=timeout)
         self._drvr.set_script_timeout(time_to_wait=timeout)
