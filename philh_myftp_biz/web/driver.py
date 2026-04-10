@@ -1,10 +1,20 @@
+from selenium.webdriver.remote.webelement import WebElement
+from dataclasses import dataclass
+
+@dataclass
+class Element(WebElement):
+
+    def __init__(self, webelement:WebElement):
+        super().__init__(
+            webelement._parent, 
+            webelement._id
+        )
+
+    def __getattr__(self, name:str):
+        return self.get_attribute(name)
 
 class Driver:
-    """
-    Firefox Web Driver
-    
-    Wrapper for FireFox Selenium Session
-    """
+    """Firefox Web Driver"""
 
     def __init__(self,
         headless: bool = True,
@@ -75,13 +85,10 @@ class Driver:
         by: Literal['class', 'id', 'xpath', 'name', 'attr'],
         name: str,
         timeout: int = 30
-    ) -> list['WebElement']:
+    ) -> list[Element]:
         """Get List of Elements by query"""
         from selenium.webdriver.common.by import By
         from ..terminal import Log
-        from ..time import Stopwatch
-
-        sw = Stopwatch().start()
 
         Log.VERB(f"Finding Element: {by=} | {name=}")
 
@@ -110,29 +117,16 @@ class Driver:
             case _:
                 raise TypeError(f'"{by}" is an invalid method')
 
-        while sw.elapsed < timeout:
+        elements = self._drvr.find_elements(by=BY, value=name)
+        return [Element(e) for e in elements]
 
-            elements: list['WebElement'] = self._drvr.find_elements(by=BY, value=name)
-
-            # If at least 1 element was found
-            if len(elements) > 0:
-
-                Log.VERB(f"Found Elements: {elements=}")
-
-                return elements
-            
-        return []
-
-    def open(self,
-        url: str | URL
-    ) -> None:
+    def open(self, url:str) -> None:
         """Open a url"""
         from selenium.common.exceptions import WebDriverException
         from urllib3.exceptions import ReadTimeoutError
         from ..terminal import Log
 
-        if isinstance(url, URL):
-            url = url.url
+        url = str(url)
 
         Log.VERB(f"Opening Page: {url=}")
 
@@ -148,7 +142,6 @@ class Driver:
             except WebDriverException, ReadTimeoutError:
                 Log.WARN('Failed to open url', exc_info=True)
 
-    @single_use
     def close(self) -> None:
         """Close the Session"""
         from selenium.common.exceptions import InvalidSessionIdException
