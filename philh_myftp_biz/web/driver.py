@@ -1,6 +1,10 @@
 from selenium.webdriver.remote.webelement import WebElement
+from typing import TYPE_CHECKING, Literal
 from dataclasses import dataclass
 from ..functools import single_use
+
+if TYPE_CHECKING:
+    from . import URL
 
 @dataclass
 class Element(WebElement):
@@ -184,6 +188,7 @@ class Driver:
     def URL(self) -> URL | None:
         """URL of the Current Page"""
         from selenium.common.exceptions import WebDriverException
+        from . import URL
 
         try:
             return URL(self._drvr.current_url)
