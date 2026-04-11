@@ -1,6 +1,6 @@
 from typing import Literal, TYPE_CHECKING
-from ..json import SupportsJSON
 from ..classtools import singleton
+from ..json import SupportsJSON
 
 if TYPE_CHECKING:
     from requests import Response
@@ -60,7 +60,6 @@ class Port:
     def __repr__(self) -> str:
         return f"Port({self.port})"
 
-@staticmethod
 def Session(max_tries:int|None):
     from requests.adapters import HTTPAdapter, Retry
     from requests import Session
