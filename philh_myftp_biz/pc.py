@@ -1,10 +1,11 @@
 from typing import Literal, Self, Generator, TYPE_CHECKING, Any
-from functools import cached_property, cache
+from functools import cached_property
+from .classtools import singleton
 from dataclasses import dataclass
 
 if TYPE_CHECKING:
-    from .time import from_stamp
     from pathlib import PurePath as __PurePath
+    from .time import from_stamp
 
 #========================================================
 
@@ -805,7 +806,6 @@ from socket import gethostname as NAME
 #=================================
 # OS
 
-@cache
 def OS() -> Literal['windows', 'unix']:
     from os import name
 
@@ -820,7 +820,8 @@ def OS() -> Literal['windows', 'unix']:
 #=================================
 # DIRs
 
-class _dir:
+@singleton
+class loc:
 
     @property
     def temp(self) -> Path:
@@ -856,7 +857,5 @@ class _dir:
         path.mkdir()
 
         return path
-
-loc = _dir()
 
 #========================================================

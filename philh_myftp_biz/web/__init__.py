@@ -1,18 +1,22 @@
 from typing import Literal, TYPE_CHECKING
 from ..json import SupportsJSON
+from ..classtools import singleton
 
 if TYPE_CHECKING:
     from requests import Response
     from ..pc import Path
 
+@singleton
 class IP:
 
-    def LAN() -> str:
+    @property
+    def LAN(self) -> str:
         from socket import gethostname, gethostbyname
 
         return gethostbyname(gethostname())
     
-    def WAN() -> str:
+    @property
+    def WAN(self) -> str:
         return URL('https://api.ipify.org').text
 
 class Port:

@@ -1,5 +1,6 @@
 from typing import Literal, TYPE_CHECKING, Callable, Any
 from functools import cache, partial
+from .classtools import singleton
 
 if TYPE_CHECKING:
     from .db import Color
@@ -444,7 +445,8 @@ def script_file():
 
 #========================================================
 
-class _KIC:
+@singleton
+class KIC:
     """KeyboardInterrupt Catcher"""
     from signal import SIGINT as _INT
     from signal import SIG_DFL as _DFL
@@ -478,7 +480,5 @@ class _KIC:
 
         if self.traceback:
             raise KeyboardInterrupt().with_traceback(self.traceback)
-
-KIC = _KIC()
 
 #========================================================

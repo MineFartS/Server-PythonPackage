@@ -16,9 +16,11 @@ def _arg(*name:str):
 
 #================================================================
 
+from .classtools import singleton
 from .num import MutInt
 
-class _VERBOSE(MutInt):
+@singleton
+class VERBOSE(MutInt):
 
     def __init__(self):
         super().__init__(None)
@@ -29,8 +31,6 @@ class _VERBOSE(MutInt):
 
     def resume(self):
         self.value = _arg('-v', '--verbose')
-
-VERBOSE = _VERBOSE()
 
 #================================================================
 

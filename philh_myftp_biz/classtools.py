@@ -1,5 +1,5 @@
-from functools import cached_property, partial
-from typing import Any, Generator, Callable
+from typing import Any, Generator, Callable, Type
+from functools import cached_property
 from dataclasses import dataclass
 import builtins
 
@@ -196,47 +196,8 @@ def clear_cache(instance: Any) -> None:
 
 #========================================================
 
-class Instantiate:
-    """
-    Create Instance on Subclass Definition
-
-    NOTE: 
-    
-    Keyword Arguements are required.
-
-    Positional Arguements will be captured by the 'self' parameter.
-
-    EXAMPLE:
-    ```
-    class MyClass(Instantiate):
-    
-        def func1(self):
-            self.hi = 'hi'
-
-        def func2(self):
-            return self.hi
-
-    >>> MyClass.func1()
-    >>> MyClass.func2()
-    'hi'
-    ```
-    """
-
-    def __init_subclass__(cls) -> None:
-
-        self = cls()
-
-        for name, value in vars(cls).items():
-
-            try:
-
-                setattr(
-                    cls, name,
-                    partial(value, self=self)
-                )
-
-            except TypeError:
-                pass
+def singleton[T](cls:Type[T]) -> T:
+    return cls()
 
 #========================================================
 
@@ -245,3 +206,5 @@ class Absorber:
 
     def __getattr__(self, *_) -> Callable[..., None]:
         return lambda *args, **kwargs: None
+
+#========================================================
