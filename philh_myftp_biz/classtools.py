@@ -1,6 +1,7 @@
 from functools import cached_property, partial
 from typing import Any, Generator, Callable
 from dataclasses import dataclass
+import builtins
 
 #========================================================
 
@@ -70,12 +71,18 @@ class attr:
         return (self.value is None)
 
     def set(self, value:Any) -> None:
+
+        if self.name in base_attrs:
     
-        self.parent.__class__ = type(
-            self.parent.__class__.__name__,
-            (self.parent.__class__,),
-            {self.name: value}
-        )
+            self.parent.__class__ = type(
+                self.parent.__class__.__name__,
+                (self.parent.__class__,),
+                {self.name: value}
+            )
+
+        else:
+
+            setattr(self, self.name, value)
 
     def __str__(self) -> str:
         """
@@ -92,6 +99,15 @@ class attr:
             )
         except TypeError:
             return str(self.value)
+
+#========================================================
+
+base_attrs: list[str] = []
+
+for obj in vars(builtins).values():
+    base_attrs += dir(obj)
+
+base_attrs = list(set(n for n in base_attrs if n.startswith('__')))
 
 #========================================================
 
