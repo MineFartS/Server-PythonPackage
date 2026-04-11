@@ -1,17 +1,15 @@
 from functools import cached_property, partial
 from typing import Any, Generator, Callable
+from dataclasses import dataclass
 
 #========================================================
 
+@dataclass
 class attr:
     """Attribute of Instance/Object"""
 
-    def __init__(self,
-        parent: Any,
-        name: str
-    ) -> None:
-        self.name: str = name
-        self.parent = parent
+    parent: Any
+    name: str
 
     @cached_property
     def private(self) -> bool:
@@ -71,6 +69,14 @@ class attr:
     def null(self):
         return (self.value is None)
 
+    def set(self, value:Any) -> None:
+    
+        self.parent.__class__ = type(
+            self.parent.__class__.__name__,
+            (self.parent.__class__,),
+            {self.name: value}
+        )
+
     def __str__(self) -> str:
         """
         Get the value of the attribute as a string
@@ -94,7 +100,7 @@ def attrs(obj:Any) -> Generator[attr, Any, None]:
 
     for name in dir(obj):
 
-        yield attr(parent=obj, name=name)
+        yield attr(obj, name)
 
 def cpath(obj:Any) -> str:
     """

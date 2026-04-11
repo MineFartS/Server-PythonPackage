@@ -4,9 +4,7 @@ from typing import Any, ItemsView, Callable
 #========================================================
 
 def is_json(value:str) -> bool:
-    """
-    Check if a string contains valid json data
-    """
+    """Check if a string contains valid json data"""
     from json.decoder import JSONDecodeError
 
     try:
@@ -111,3 +109,12 @@ class Dict[V]:
     __repr__ = __str__
 
 #========================================================
+
+SupportsJSON = \
+    str| \
+    int| \
+    float| \
+    bool| \
+    None| \
+    dict[str, "SupportsJSON"]| \
+    list["SupportsJSON"]

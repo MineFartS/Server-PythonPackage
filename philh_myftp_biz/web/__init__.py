@@ -1,8 +1,7 @@
 from typing import Literal, TYPE_CHECKING
-from functools import partial
+from ..json import SupportsJSON
 
 if TYPE_CHECKING:
-    from selenium.webdriver.remote.webelement import WebElement
     from requests import Response
     from ..pc import Path
 
@@ -14,7 +13,7 @@ class IP:
         return gethostbyname(gethostname())
     
     def WAN() -> str:
-        return get('https://api.ipify.org').text
+        return URL('https://api.ipify.org').text
 
 class Port:
     """Details of a port on a network device"""
@@ -136,9 +135,13 @@ class URL:
     @property
     def content(self):
         return self.get().content
+    
+    @property
+    def text(self) -> str:
+        return self.get().text
 
     @property
-    def json(self):
+    def json(self) -> SupportsJSON:
         return self.get().json()
 
     def download(self,
