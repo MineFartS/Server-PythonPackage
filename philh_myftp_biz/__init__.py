@@ -38,7 +38,7 @@ HELP: bool = _arg('-h', '--help')
 
 #================================================================
 
-class CustomFormatter(__Formatter):
+class _Formatter(__Formatter):
 
     @cached_property
     def _wfile(self):
@@ -115,15 +115,16 @@ class CustomFormatter(__Formatter):
 
         tb = extract_tb(record.exc_info[2])
 
-        outp = []
+        outp = ''
 
         for frame in self._stack(tb):
             
-            outp.append(f'File "{frame.filename}", line {frame.lineno}')
+            outp += f'\nFile "{frame.filename}", line {frame.lineno}'
             
-        outp += [str(record.exc_info).split('>, ')[1].split(', <')[0]]
+        outp += '\n'
+        outp += str(record.exc_info).split('>, ')[1].split(', <')[0]
 
-        return "\n".join(outp).strip()
+        return outp.strip() + '\n'
 
     def _message(self,
         record: '__LogRecord'    
@@ -245,7 +246,7 @@ class CustomFormatter(__Formatter):
 
 #================================================================
 
-class CustomStreamHandler(__StreamHandler):
+class _StreamHandler(__StreamHandler):
      
     def __init__(self) -> None:
         from sys import stdout
@@ -255,7 +256,7 @@ class CustomStreamHandler(__StreamHandler):
         # Allow all messages
         self.setLevel(level=10)
 
-        self.setFormatter(fmt=CustomFormatter())
+        self.setFormatter(fmt=_Formatter())
         
         # No New Line
         self.terminator = ''
@@ -264,7 +265,7 @@ class CustomStreamHandler(__StreamHandler):
 
 __basicConfig(
     level = 10,
-    handlers = [CustomStreamHandler()]
+    handlers = [_StreamHandler()]
 )
 
 #================================================================
