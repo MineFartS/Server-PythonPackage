@@ -203,11 +203,11 @@ class Torrent:
         return [TorrentFile(self._tdict,f) for f in self._tdict.files]
 
     @property
-    def selected_files(self) -> list[TorrentFile] | None:
+    def selected_files(self) -> list[TorrentFile]:
         try:
             return [f for f in self.files if f.enabled]
         except TimeoutError:
-            pass
+            return []
 
     def stop(self,
         rm_files: bool = True
