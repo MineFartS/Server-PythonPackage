@@ -196,7 +196,9 @@ def clear_cache(instance: Any) -> None:
 
 #========================================================
 
-def singleton[T](cls:Type[T]) -> T:
+def singleton[T](
+    cls: Type[T] | Callable[..., T]
+) -> T:
     return cls()
 
 #========================================================

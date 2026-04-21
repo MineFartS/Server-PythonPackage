@@ -801,11 +801,13 @@ def relscan(
 #========================================================
 # NAME
 
-from socket import gethostname as NAME
+from socket import gethostname
+NAME = singleton(gethostname)
 
 #=================================
 # OS
 
+@singleton
 def OS() -> Literal['windows', 'unix']:
     from os import name
 
