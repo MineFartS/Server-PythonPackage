@@ -61,3 +61,19 @@ def COOKIES() -> 'Path':
     return CookiesTXT
 
 #=================================
+
+def install_requirements(
+    txtfile: Path = None
+) -> None:
+    from .process import RunHidden
+    from .pc import loc
+
+    if txtfile is None:
+        txtfile = loc.script.child('requirements.txt')
+
+    RunHidden(
+        args = ['pip', 'install', '-r', txtfile],
+        terminal = 'pym'
+    )
+
+#=================================
