@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "philh_myftp_biz"
-version = "v2026.04.20"
+version = "v2026.04.21"
 dynamic = [ "dependencies",]
 
 [tool.hatch.metadata.hooks.requirements_txt]
