@@ -831,7 +831,7 @@ class loc:
 
         SERVER = Path('E:/__temp__/')
 
-        if SERVER.exists and (NAME() == 'PC-1'):
+        if SERVER.exists and (NAME == 'PC-1'):
             return SERVER
         else:
             return Path(gettempdir())
