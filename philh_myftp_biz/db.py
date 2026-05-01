@@ -1,40 +1,55 @@
 from typing import Literal, TYPE_CHECKING
+from .classtools import singleton
 from functools import cache
+from .file import temp
+from .web import URL
 
 if TYPE_CHECKING:
     from .pc import Path
 
 #========================================================
 
+@singleton
 class MimeType:
 
-    def Ext(ext:None|str):
+    _url = URL('https://raw.githubusercontent.com/MineFartS/FileTypes/refs/heads/master/compiled.json')
+
+    _file: Path = temp('filetypes', 'json', '0')
+
+    def __call__(self, ext:None|str) -> None | str:
         """Get the mimetype from a file extension"""
-        from .file import temp, JSON
-        from .web import URL
+        from json.decoder import JSONDecodeError
+        from .file import JSON
         from .json import Dict
-
-        url = URL('https://raw.githubusercontent.com/MineFartS/FileTypes/refs/heads/master/compiled.json')
-
-        dbfile: 'Path' = temp(name='filetypes', ext='json', id='0')
 
         if ext:
         
-            url.cache(dbfile)
+            self._url.cache(self._file)
 
-            db: Dict[str] = Dict(JSON(path=dbfile))
+            db: Dict[str] = Dict(JSON(self._file))
 
-            # Get the extension as lowercase
-            return db[ext.lower()]
+            try:
 
-    def Path(path:'Path'):
+                # Get the extension as lowercase
+                return db[ext.lower()]
+            
+            except JSONDecodeError:
+                
+                self._file.delete()
+                
+                return self.__call__(ext)
+        
+    Ext = __call__
+
+    def Path(self, path:'Path') -> None | str:
         """Get the mimetype from a file path"""
-        return MimeType.Ext(path.ext)
+
+        return self.Ext(path.ext)
     
-    def Name(name:str):
+    def Name(self, name:str) -> None | str:
         """Get the mimetype from a file name"""
                 
-        return MimeType.Ext(
+        return self.Ext(
             ext = name[:name.rfind('.')]
         )
 
