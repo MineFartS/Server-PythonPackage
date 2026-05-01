@@ -1,7 +1,8 @@
-from philh_myftp_biz.json import Dict
-
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, NoReturn, Literal
+from ..classtools import singleton
 from ..functools import diskcache
+from ..json import Dict
+from ..web import URL
 
 if TYPE_CHECKING:
     from ..time import from_stamp
@@ -21,10 +22,9 @@ class EpisodeData:
     Released: 'from_stamp|None'
     Number: int
 
-class MediaNotFoundError(Exception):
-    ...
+class MediaNotFoundError(Exception): ...
 
-
+@singleton
 class Omdb:
     """
     OMDB API
@@ -32,20 +32,14 @@ class Omdb:
     'https://www.omdbapi.com/{url}'
     """
 
-    def __init__(self,
-        key: int = 0
-    ) -> None:
-        from ..web import URL
+    url = URL('https://www.omdbapi.com/')
 
-        self.url = URL('https://www.omdbapi.com/')
+    _keys = [
+        'dc888719',
+        '2e0c4a98'
+    ]
 
-        match key:
-
-            case 0: self.key = 'dc888719'
-
-            case 1: self.key = '2e0c4a98'
-
-            case _: raise KeyError()
+    key: Literal[*_keys] = 'dc888719'
 
     def _get(self, params:dict) -> NoReturn | Dict[str]:
         from ..json import Dict

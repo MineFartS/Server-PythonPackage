@@ -1,4 +1,5 @@
 from functools import cached_property
+from ..classtools import singleton
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -53,61 +54,60 @@ class VirusReport:
 
         return (undetected / total)
 
+@singleton
 class VirusTotal:
 
-        def __init__(self) -> None:
+    key = 'c063375af8061ad11694b15fb48327b3fd3c2a4f79cff8669f3de82143cc6562'
+
+    @property
+    def client(self):
+        from vt import Client
+
+        return Client(self.key)
+
+    def _upload(self,
+        file: 'Path',
+        wait: bool = True
+    ) -> VTobj:
+        
+        with file.open("rb") as f:
+
+            with self.client as client:
             
-            self.key = 'c063375af8061ad11694b15fb48327b3fd3c2a4f79cff8669f3de82143cc6562'
+                obj = client.scan_file(f, wait)
 
-        @property
-        def client(self):
-            from vt import Client
+            return obj
+        
+    def _check(self,
+        file: 'Path'
+    ) -> VTobj | None:
+        from vt.error import APIError
+    
+        try: # Check for existing report first
 
-            return Client(self.key)
+            return self.client.get_object(f"/files/{file.hash}")
 
-        def _upload(self,
-            file: 'Path',
-            wait: bool = True
-        ) -> VTobj:
-            
-            with file.open("rb") as f:
+        except APIError as e:
 
-                with self.client as client:
+            if e.args[0] != 'NotFoundError':
                 
-                    obj = client.scan_file(f, wait)
+                raise e
 
-                return obj
-            
-        def _check(self,
-            file: 'Path'
-        ) -> VTobj | None:
-            from vt.error import APIError
+    def scan(self,
+        file: 'Path'
+    ) -> VirusReport:
+        """Retrieve the analysis report for a file"""
+    
+        obj = self._check(file)
+
+        if obj:
+
+            return VirusReport(file, obj)
         
-            try: # Check for existing report first
+        else:
 
-                return self.client.get_object(f"/files/{file.hash}")
+            self._upload(file)
 
-            except APIError as e:
-
-                if e.args[0] != 'NotFoundError':
-                    
-                    raise e
-
-        def scan(self,
-            file: 'Path'
-        ) -> VirusReport:
-            """Retrieve the analysis report for a file"""
-        
             obj = self._check(file)
 
-            if obj:
-
-                return VirusReport(file, obj)
-            
-            else:
-
-                self._upload(file)
-
-                obj = self._check(file)
-
-                return VirusReport(file, obj)
+            return VirusReport(file, obj)

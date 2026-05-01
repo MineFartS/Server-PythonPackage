@@ -1,6 +1,9 @@
-from typing import Literal, TYPE_CHECKING, Any
+from ..functools import TransitoryCache
+from typing import TYPE_CHECKING, Any
 from functools import cached_property
+from ..classtools import singleton
 from dataclasses import dataclass
+from ..web import URL
 
 if TYPE_CHECKING:
     from qbittorrentapi import TorrentDictionary as __TorrentDict
@@ -555,6 +558,7 @@ class Magnet(Torrent, NameParser):
 
     #===================================================
 
+@singleton
 class thePirateBay:
     """
     thePirateBay
@@ -562,36 +566,11 @@ class thePirateBay:
     'https://thepiratebay.org/'
     """
 
-    urls: list[str] = [
-        "thepiratebay11.com",
-        "thepiratebay10.info",
-        "thepiratebay7.com",
-        "thepiratebay0.org",
-        "thehiddenbay.com",
-        "piratebay.live",
-        "tpb.party"
-    ]
-    
-    def __init__(self,
-        url: Literal[*urls] = "thepiratebay11.com", # pyright: ignore[reportInvalidTypeForm]
-        driver: 'Driver' = None,
-        qbit: qBitTorrent = None
-    ) -> None:
-        from ..functools import TransitoryCache
-        from ..web import URL
-        
-        self.url = URL(f'https://{url}/search/')
-        """tpb mirror url"""
+    url = URL("https://thepiratebay11.com/search/")
+    driver: 'Driver' = None
+    qbit: qBitTorrent = None
 
-        self._qbit: qBitTorrent = qbit
-        """qBitTorrent Session"""
-        
-        if driver:
-            self._driver: Driver = driver
-        else:
-            self._driver = Driver()
-
-        self._cache: 'TransitoryCache[List[Magnet]]' = TransitoryCache(expire=36000) # 10 hours
+    cache: 'TransitoryCache[List[Magnet]]' = TransitoryCache(expire=36000) # 10 hours
 
     def search(self, *queries:str) -> List[Magnet]:
         """Search thePirateBay for magnets"""
@@ -627,24 +606,27 @@ class thePirateBay:
         from ..terminal import Log
         from ..db import Size
 
+        if self.driver is None:
+            self.driver = Driver()
+
         # Open the search in a url
-        self._driver.open(
+        self.driver.open(
             url = self.url.child(query)
         )
 
         # Set driver var 'lines' to a list of lines
         try:
-            self._driver.run("window.lines = document.getElementById('searchResult').children[1].children")
+            self.driver.run("window.lines = document.getElementById('searchResult').children[1].children")
         except RuntimeError:
-            self._cache[query] = []
+            self.cache[query] = []
             return []
         
         magnets: list[Magnet] = []
 
         # Iter from 0 to # of lines
-        for x in range(0, self._driver.run('return lines.length')):
+        for x in range(0, self.driver.run('return lines.length')):
 
-            _run = lambda c: self._driver.run(f'return lines[{x}]{c}')
+            _run = lambda c: self.driver.run(f'return lines[{x}]{c}')
 
             try:
 
@@ -661,13 +643,13 @@ class thePirateBay:
                     
                     size = Size.to_bytes(_run(".children[4].textContent")),
 
-                    qbit = self._qbit
+                    qbit = self.qbit
 
                 )]
 
             except KeyError, RuntimeError:
                 Log.VERB('', exc_info=True)
 
-        self._cache[query] = magnets
+        self.cache[query] = magnets
 
         return magnets

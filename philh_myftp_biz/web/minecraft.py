@@ -1,7 +1,9 @@
 from functools import cached_property, cache
+from ..classtools import singleton
 from dataclasses import dataclass
 from typing import Literal, Any
 
+@singleton
 class Mojang:
 
     @staticmethod
@@ -26,7 +28,7 @@ class ModrinthMod:
     @property
     def version(self) -> str:
         # TODO Add more version options
-        return Mojang().java_latest
+        return Mojang.java_latest
 
     @cached_property
     def _data(self) -> dict[str, Any] | None:
@@ -45,6 +47,7 @@ class ModrinthMod:
         if self._data:
             return self._data['files'][0]['url']
 
+@singleton
 class FabricMC:
 
     @cached_property

@@ -1,6 +1,8 @@
 from typing import Literal, TYPE_CHECKING, Callable, Any
 from functools import cache, partial
+from argparse import ArgumentParser
 from .classtools import singleton
+
 
 if TYPE_CHECKING:
     from .db import Color
@@ -273,34 +275,20 @@ def Args() -> list:
 
     return [auto_convert(arg) for arg in argv[1:]]
 
+@singleton
 class ParsedArgs:
 
-    def __init__(self,
-        name: str = 'Program Name',
-        desc: str = 'What the program does',
-        epilog: str = 'Text at the bottom of help'
-    ) -> None:
-        from argparse import ArgumentParser
-        
-        #
-        self.__parser = ArgumentParser(
-            prog = name,
-            description = desc,
-            epilog = epilog
-        )
+    _parser = ArgumentParser()
 
-        self.__handlers: dict[str, Callable[[str], Any]] = {}
+    _handlers: dict[str, Callable[[str], Any]] = {}
 
-        self.__defaults: dict[str, Any] = {}
+    _defaults: dict[str, Any] = {}
 
-        self.__cache: dict[str, Any] = {}
+    _cache: dict[str, Any] = {}
 
-        #
-        self.Flag(
-            name = 'verbose',
-            letter = 'v',
-            desc = 'Advanced Debugging'
-        )
+    # Temporary backwards compatibility
+    def __call__(self, *_):
+        return self
 
     def Arg(self,
         name: str,
@@ -309,11 +297,11 @@ class ParsedArgs:
         handler: Callable[[str], Any] = lambda x: x
     ) -> None:
         
-        self.__handlers[name] = handler
+        self._handlers[name] = handler
 
-        self.__defaults[name] = default
+        self._defaults[name] = default
 
-        self.__parser.add_argument(
+        self._parser.add_argument(
             '--'+name,
             default = -1,
             help = desc,
@@ -332,7 +320,7 @@ class ParsedArgs:
         if letter:
             flags.insert(0, '-'+letter)
         
-        self.__parser.add_argument(
+        self._parser.add_argument(
             *flags,
             help = desc,
             dest = name,
@@ -340,41 +328,46 @@ class ParsedArgs:
         )
 
         if invert:
-            self.__handlers[name] = lambda x: not x
-            self.__defaults[name] = True
+            self._handlers[name] = lambda x: not x
+            self._defaults[name] = True
         else:
-            self.__handlers[name] = lambda x: x
-            self.__defaults[name] = False
+            self._handlers[name] = lambda x: x
+            self._defaults[name] = False
 
     def __getitem__(self,
         key: str
     ):
         
-        if key in self.__cache:
-
-            return self.__cache[key]
+        if key in self._cache:
+            return self._cache[key]
 
         else:
 
-            parsed = self.__parser.parse_known_args()[0]
+            parsed = self._parser.parse_known_args()[0]
             
-            handler = self.__handlers[key]
+            handler = self._handlers[key]
 
             rvalue = getattr(parsed, key)
             
             if rvalue == -1:
                 
-                value = self.__defaults[key]
-                Log.VERB(f'Parsed Arguement: {key=} | {self.__defaults[key]=}')
+                value = self._defaults[key]
+                Log.VERB(f'Parsed Arguement: {key=} | {self._defaults[key]=}')
             
             else:
 
                 value = handler(rvalue)
                 Log.VERB(f'Parsed Arguement: {key=} | {rvalue=} | {value=}')
 
-            self.__cache[key] = value
+            self._cache[key] = value
 
             return value
+
+ParsedArgs.Flag(
+    name = 'verbose',
+    letter = 'v',
+    desc = 'Advanced Debugging'
+)
 
 #========================================================
 
@@ -412,8 +405,6 @@ class Log:
     FAIL = partial(_log, level=40)
 
     CRIT = partial(_log, level=50)
-
-    # TODO Add ability to block certain functions
 
 #========================================================
 
