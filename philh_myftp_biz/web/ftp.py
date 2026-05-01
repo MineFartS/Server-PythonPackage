@@ -1,6 +1,6 @@
+from typing import TYPE_CHECKING, Generator, Literal
 from functools import cached_property
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Generator
 
 if TYPE_CHECKING:
     from ..pc import Path
@@ -158,8 +158,9 @@ class FTP:
     host: str
     username: str
     password: str
-    timeout: int = None
+    timeout: None|int = 300 # 5 minutes
     port: int = 21
+    passive: bool = True
 
     @cached_property
     def _client(self):
@@ -178,6 +179,8 @@ class FTP:
             user = self.username, 
             passwd = self.password
         )
+
+        ftp.set_pasv(self.passive)
 
         ftp.encoding = 'utf-16'
 
