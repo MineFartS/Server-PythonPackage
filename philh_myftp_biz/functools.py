@@ -1,4 +1,3 @@
-from diskcache import Cache as __Cache
 from functools import cached_property
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -7,18 +6,17 @@ from .pc import loc
 #========================================================
 # DISK CACHE
 
-diskcache = __Cache(loc.cache.path).memoize
-
 @dataclass
 class TransitoryCache[T]:
 
+    id: str|int = 0
     expire: int = 18000
 
     @cached_property
     def _file(self):
         from .pc import loc
 
-        return loc.cache.child('philh_myftp_biz.pkl')
+        return loc.cache.child(f'philh_myftp_biz-{self.id}.pkl')
 
     @cached_property
     def _dict(self):

@@ -1,5 +1,4 @@
 pyyaml
-diskcache
 vt-py
 tk
 dill

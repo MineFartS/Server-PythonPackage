@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, NoReturn, Literal
+from ..functools import TransitoryCache
 from ..classtools import singleton
-from ..functools import diskcache
 from ..json import Dict
 from ..web import URL
 
@@ -41,6 +41,10 @@ class Omdb:
 
     key: Literal[*_keys] = 'dc888719'
 
+    mcache: TransitoryCache[MovieData] = TransitoryCache('m', expire=36000)
+
+    scache: TransitoryCache[ShowData]  = TransitoryCache('s', expire=36000)
+
     def _get(self, params:dict) -> NoReturn | Dict[str]:
         from ..json import Dict
         from .. import VERBOSE
@@ -67,13 +71,20 @@ class Omdb:
         else:
             return Dict(response.json())
 
-    @diskcache(expire=18000)
     def movie(self,
         title: str,
         year: int
     ) -> None | MovieData:
         """Get details of a movie"""
         from ..time import from_string
+
+        params = {
+            't': title,
+            'y': year
+        }
+
+        if params in self.mcache:
+            return self.mcache[params]
 
         r = self._get({
             't': title,
@@ -88,9 +99,12 @@ class Omdb:
             movie.Year = int(r['Year'])
             movie.Released = from_string(r['Released'])
 
-            return movie
+        else:
+            movie = None
+            
+        self.mcache[params] = movie
+        return None
 
-    @diskcache(expire=18000)
     def show(self,
         title: str,
         year: int
@@ -98,16 +112,20 @@ class Omdb:
         """Get details of a show"""
         from ..time import from_string
 
-        # Request raw list of seasons
-        r1 = self._get({
+        params = {
             't': title,
             'y': year
-        })
+        }
+
+        if params in self.scache:
+            return self.scache[params]
+
+        # Request raw list of seasons
+        r1 = self._get(params)
 
         # Create new 'Show' obj
         show = ShowData()
 
-        #
         show.Seasons = {}
 
         # Set attributes of 'Show' obj
@@ -143,6 +161,8 @@ class Omdb:
                     episode.Released = None
 
                 show.Seasons [f'{s:02d}'] [e['Episode'].zfill(2)] = episode
+
+        self.scache[params] = show
 
         # Return the 'Show' obj
         return show
