@@ -82,8 +82,18 @@ def Session(max_tries:int|None):
 
 class URL:
 
-    def __init__(self, url:str) -> None:
+    def __init__(self, 
+        url: str, 
+        cache: bool = True
+    ) -> None:
         from urllib.parse import urlparse, parse_qsl
+        from ..functools import TransitoryCache
+        from ..classtools import Absorber
+
+        if cache:
+            self._cache: TransitoryCache[Response] = TransitoryCache('url')
+        else:
+            self._cache = Absorber(None)
 
         self.url = url.split('?')[0]
 
@@ -130,6 +140,12 @@ class URL:
         url += name
 
         return URL(url)
+
+    @property
+    def id(self) -> str:
+        from ..text import hex
+
+        return hex.encode([self.url, self.params])
 
     @property
     def stream(self):
@@ -207,6 +223,9 @@ class URL:
         if len(params) > 0: # TODO deprecated - remove later
             self.params = params
 
+        if self._cache[self.id]:
+            return self._cache[self.id] # pyright: ignore[reportReturnType]
+
         Log.VERB(
             f'Requesting Page\n'+ \
             f'url={self.url}\n'+ \
@@ -214,7 +233,7 @@ class URL:
             f'{headers=}'
         )
 
-        return Session(max_tries).get(
+        r = Session(max_tries).get(
             url = self.url,
             params = self.params,
             headers = headers,
@@ -222,6 +241,10 @@ class URL:
             timeout = timeout,
             allow_redirects = allow_redirects
         )
+
+        self._cache[self.id] = r
+
+        return r
 
     @property
     def online(self) -> bool:

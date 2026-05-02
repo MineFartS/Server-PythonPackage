@@ -1,7 +1,6 @@
-from typing import Literal, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING, Callable
 from .classtools import singleton
 from functools import cache
-from .file import temp
 from .web import URL
 
 if TYPE_CHECKING:
@@ -12,32 +11,16 @@ if TYPE_CHECKING:
 @singleton
 class MimeType:
 
-    _url = URL('https://raw.githubusercontent.com/MineFartS/FileTypes/refs/heads/master/compiled.json')
-
-    _file: Path = temp('filetypes', 'json', '0')
+    url = URL('https://raw.githubusercontent.com/MineFartS/FileTypes/refs/heads/master/compiled.json')
 
     def __call__(self, ext:None|str) -> None | str:
         """Get the mimetype from a file extension"""
-        from json.decoder import JSONDecodeError
-        from .file import JSON
-        from .json import Dict
 
         if ext:
+
+            data: dict[str, str] = self.url.json
         
-            self._url.cache(self._file)
-
-            db: Dict[str] = Dict(JSON(self._file))
-
-            try:
-
-                # Get the extension as lowercase
-                return db[ext.lower()]
-            
-            except JSONDecodeError:
-                
-                self._file.delete()
-                
-                return self.__call__(ext)
+            return data.get(ext.lower())
         
     Ext = __call__
 
