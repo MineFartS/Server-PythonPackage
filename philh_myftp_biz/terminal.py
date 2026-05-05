@@ -2,7 +2,7 @@ from typing import Literal, TYPE_CHECKING, Callable, Any
 from functools import cache, partial
 from argparse import ArgumentParser
 from .classtools import singleton
-
+from .json import SupportsJSON
 
 if TYPE_CHECKING:
     from .db import Color
@@ -267,16 +267,8 @@ class ProgressBar:
 
 #========================================================
 
-@cache
-def Args() -> list:
-    """Read Command Line Arguements with automatic formatting"""
-    from .text import auto_convert
-    from sys import argv
-
-    return [auto_convert(arg) for arg in argv[1:]]
-
 @singleton
-class ParsedArgs:
+class Args(tuple[SupportsJSON]):
 
     _parser = ArgumentParser()
 
@@ -286,8 +278,16 @@ class ParsedArgs:
 
     _cache: dict[str, Any] = {}
 
-    # Temporary backwards compatibility
-    def __call__(self, *_):
+    def __new__(cls):
+        from .text import auto_convert
+        from sys import argv
+
+        args = (auto_convert(a) for a in argv[1:])
+
+        return super().__new__(cls, args)
+
+    # TODO: Temporary backwards compatibility
+    def __call__(self, *_, **__):
         return self
 
     def Arg(self,
@@ -335,10 +335,13 @@ class ParsedArgs:
             self._defaults[name] = False
 
     def __getitem__(self,
-        key: str
+        key: str | int
     ):
         
-        if key in self._cache:
+        if isinstance(key, int):
+            return super().__getitem__(key)
+        
+        elif key in self._cache:
             return self._cache[key]
 
         else:
@@ -363,11 +366,14 @@ class ParsedArgs:
 
             return value
 
-ParsedArgs.Flag(
+Args.Flag(
     name = 'verbose',
     letter = 'v',
     desc = 'Advanced Debugging'
 )
+
+# TODO: Temporary Backwards Compatibility
+ParsedArgs = Args
 
 #========================================================
 
