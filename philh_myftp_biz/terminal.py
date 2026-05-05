@@ -267,16 +267,8 @@ class ProgressBar:
 
 #========================================================
 
-@cache
-def Args() -> list:
-    """Read Command Line Arguements with automatic formatting"""
-    from .text import auto_convert
-    from sys import argv
-
-    return [auto_convert(arg) for arg in argv[1:]]
-
 @singleton
-class ParsedArgs:
+class Args(list):
 
     _parser = ArgumentParser()
 
@@ -286,8 +278,14 @@ class ParsedArgs:
 
     _cache: dict[str, Any] = {}
 
-    # Temporary backwards compatibility
-    def __call__(self, *_):
+    def __init__(self) -> None:
+        from .text import auto_convert
+        from sys import argv
+
+        super().__init__(auto_convert(arg) for arg in argv[1:])
+
+    # TODO: Temporary backwards compatibility
+    def __call__(self, *_, **__):
         return self
 
     def Arg(self,
@@ -363,11 +361,14 @@ class ParsedArgs:
 
             return value
 
-ParsedArgs.Flag(
+Args.Flag(
     name = 'verbose',
     letter = 'v',
     desc = 'Advanced Debugging'
 )
+
+# TODO: Temporary Backwards Compatibility
+ParsedArgs = Args
 
 #========================================================
 
