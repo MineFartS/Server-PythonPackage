@@ -610,6 +610,8 @@ class _cd:
 
         chdir(self._target)
 
+    __call__ = open
+
     def back(self) -> None:
         """Change CWD to the previous path"""
         from os import chdir
