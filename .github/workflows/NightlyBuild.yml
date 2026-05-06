@@ -23,33 +23,11 @@ jobs:
         with:
           fetch-depth: 0 # fetch all history and tags
 
-      - name: Get latest release tag
-        id: get-latest-tag
-        run: |
-          LATEST_TAG=$(git tag --sort=-version:refname | head -n 1)
-          echo "latest_tag=$LATEST_TAG" >> $GITHUB_ENV
-          echo "Latest tag found: $LATEST_TAG"
-
       - name: Scan for Changes
         id: check-diff
         run: |
-          if [ -z "$LATEST_TAG" ]; then
-            echo "No previous tag found."
-            echo "has_changed=true" >> $GITHUB_ENV
-          else
-            CHANGED_FILES=$(git diff --name-only $LATEST_TAG HEAD)
-            if [ -z "$CHANGED_FILES" ]; then
-              echo "has_changed=false" >> $GITHUB_ENV
-            else
-              echo "has_changed=true" >> $GITHUB_ENV
-            fi
-          fi
-
-      - name: Exit if unchanged
-        run: |
-          if [ "$has_changed" = "true" ]; then
-            exit
-          fi
+          CHANGED_FILES=$(git diff $(git describe --tags --abbrev=0) HEAD --name-only)
+          if [ -z "$CHANGED_FILES" ]; then exit; fi
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -62,20 +40,18 @@ jobs:
 
       - name: Set up Python
         uses: actions/setup-python@v5
-        with:
+        with: 
           python-version: '3.*'
-
-      - name: Install Python Packages
-        run: |
-          pip install toml poetry
 
       - name: Initialize Poetry
         run: |
+          pip install poetry
           poetry lock
           poetry install --no-root --no-interaction
 
       - name: Update version in pyproject.toml
         run: |
+          pip install toml
           python -c "
           
           from toml import load, dump
