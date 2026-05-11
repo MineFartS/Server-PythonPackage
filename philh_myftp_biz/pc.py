@@ -81,8 +81,17 @@ class Path:
     
     @property
     def exists(self) -> bool:
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError
         """Check if path exists"""
-        return self._pure.exists()
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+
+            future = executor.submit(self._pure.exists)
+            
+            try:
+                return future.result(timeout=30) # 30 seconds 
+            except TimeoutError:
+                return False
     
     @cached_property
     def is_file(self) -> bool:
