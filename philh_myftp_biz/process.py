@@ -1,4 +1,5 @@
 from typing import Literal, TYPE_CHECKING, Any, Callable, Iterator
+from dataclasses import dataclass
 
 if TYPE_CHECKING:
     from psutil import Process as __SYS_Process
@@ -9,9 +10,12 @@ if TYPE_CHECKING:
 #========================================================
 
 
-class _bkg_task:
+class Thread:
 
-    _kind: __MP_Process | __Thread
+    @property
+    def _Builder(self):
+        from threading import Thread
+        return Thread
 
     def __init__(self,
         func: Callable,
@@ -20,11 +24,13 @@ class _bkg_task:
     ) -> None:
 
         # Create new thread
-        p = self._kind(
+        p = self._Builder(
             target = func,
             kwargs = kwargs,
             args = args
         )
+
+        self.p = p
 
         # Close when main execution ends
         p.daemon = True
@@ -36,20 +42,32 @@ class _bkg_task:
 
         self.running: bool = property(p.is_alive)
 
-class Thread(_bkg_task):
+class MProcess(Thread):
 
     @property
-    def _kind(self):
-        from threading import Thread
-        return Thread
-
-class MProcess(_bkg_task):
-
-    @property
-    def _kind(self):
+    def _Builder(self):
         from multiprocessing import Process
         return Process
 
+@dataclass
+class Future[T]:
+
+    func: Callable[..., T]
+    default: T = None
+    timeout: int = 5
+    
+    def call(self, *args:str, **kwargs:str) -> T:
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError
+
+        if not hasattr(self, 'executor'):
+            self.executor = ThreadPoolExecutor(max_workers=1)
+
+        future = self.executor.submit(self.func, *args, **kwargs)
+
+        try:
+            return future.result(timeout=self.timeout) 
+        except TimeoutError:
+            return self.default
 
 class Sleeper:
     """Call a function before exiting after main thread has ended"""
