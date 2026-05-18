@@ -1,14 +1,10 @@
 from typing import Literal, TYPE_CHECKING, Any, Callable, Iterator
-from dataclasses import dataclass
 
 if TYPE_CHECKING:
     from psutil import Process as __SYS_Process
-    from multiprocessing import Process as __MP_Process
-    from threading import Thread as __Thread
     from .pc import Path
 
 #========================================================
-
 
 class Thread:
 
@@ -49,25 +45,40 @@ class MProcess(Thread):
         from multiprocessing import Process
         return Process
 
-@dataclass
-class Future[T]:
+class Future[T](Thread):
 
-    func: Callable[..., T]
-    default: T = None
-    timeout: int = 5
-    
-    def call(self, *args:str, **kwargs:str) -> T:
-        from concurrent.futures import ThreadPoolExecutor, TimeoutError
+    value: T
 
-        if not hasattr(self, 'executor'):
-            self.executor = ThreadPoolExecutor(max_workers=1)
+    def __init__(self,
+        func: Callable[..., T],
+        *args: Any,
+        **kwargs: Any
+    ):
+        super().__init__(lambda: setattr(
+            self,
+            "value",
+            func(*args, **kwargs)
+        ))
 
-        future = self.executor.submit(self.func, *args, **kwargs)
+    @property
+    def has_value(self) -> bool:
+        return hasattr(self, 'value')
 
-        try:
-            return future.result(timeout=self.timeout) 
-        except TimeoutError:
-            return self.default
+    def __call__(self,
+        timeout: int,
+        default: T = None
+    ):
+        from .time import Stopwatch
+
+        sw = Stopwatch().start()
+
+        while (sw < timeout) and (not self.has_value):
+            pass
+
+        if self.has_value:
+            return self.value
+        else:
+            return default
 
 class Sleeper:
     """Call a function before exiting after main thread has ended"""

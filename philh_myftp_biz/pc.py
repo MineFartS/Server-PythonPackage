@@ -84,13 +84,9 @@ class Path:
         """Check if path exists"""
         from .process import Future
 
-        future = Future(
-            func = self._pure.exists, 
-            default = False,
-            timeout = 5
-        )
+        future = Future(self._pure.exists)
 
-        return future.call()
+        return future(5, False)
     
     @cached_property
     def is_file(self) -> bool:
