@@ -40,6 +40,7 @@ class Driver:
         from ..classtools import attr
         from ..process import SysTask
         from ..terminal import Log
+        from time import sleep
 
         Log.VERB(
             f'Starting Session\n'+ \
@@ -60,8 +61,14 @@ class Driver:
         if headless:
             options.add_argument("--headless")
 
-        # Start Chrome Session with options
-        self._drvr = Firefox(options=options)
+
+        while not hasattr(self, '_drvr'):
+            # Start Chrome Session with options
+            try:
+                self._drvr = Firefox(options=options)
+            except:
+                Log.WARN('Retrying in 3 seconds ...', exc_info=True)
+                sleep(3)
 
         self.Task = SysTask(self._drvr.service.process.pid)
 
