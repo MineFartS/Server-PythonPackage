@@ -20,17 +20,10 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # fetch all history and tags
 
       - name: Scan for Changes
-        id: check-diff
-        run: |
-          CHANGED_FILES=$(git diff $(git describe --tags --abbrev=0) HEAD --name-only)
-          if [ -z "$CHANGED_FILES" ]; then exit; fi
-
-      - name: Checkout code
-        uses: actions/checkout@v4
+        if: github.event.head_commit.message == 'Apply automatic changes'
+        run: exit
 
       - name: Get Current Date
         id: date
