@@ -1,59 +1,65 @@
-from functools import cached_property
-from dataclasses import dataclass
-from typing import Any, Callable
-from .pc import loc
+from typing import Callable, TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from .time import Timeout
 
 #========================================================
 # DISK CACHE
 
-@dataclass
-class TransitoryCache[T]:
+class TransitoryCache[T](dict[str, 'dict[str, T|Timeout]']):
 
-    id: str|int = 0
-    expire: int = 18000
-
-    @cached_property
-    def _file(self):
+    def __init__(self, 
+        id: str|int = 0, 
+        expire: int = 18_000
+    ) -> None:
+        from .file import PKL
         from .pc import loc
 
-        return loc.cache.child(f'philh_myftp_biz-{self.id}.pkl')
+        self.expire = expire
 
-    @cached_property
-    def _dict(self):
-        from .json import Dict
-        from .file import PKL
+        file = loc.cache.child(f'TransitoryCache-{id}.pkl')
 
-        pkl = PKL(
-            path = self._file,
-            default = {}
-        )
+        self.pkl = PKL(file).Dict
 
-        return Dict(pkl)
+        super().__init__(self.pkl.read())
+    
+    def __del__(self) -> None:
 
-    def __getitem__(self, key:Any) -> T | None:
+        data = cast(dict, self)
+        
+        self.pkl.save(data)
+
+    def __getitem__(self, key) -> T | None:
+        from .text import hex
+
+        key = hex.encode(key)
+
+        if key in self:
+
+            item = super().__getitem__(key)
+
+            if item['time'].timed_out:
+                self.__delitem__(key)
+            else:
+                return item['value'] # pyright: ignore[reportReturnType]
+
+    def __setitem__(self, key, value:T) -> None:
         from .time import Timeout
+        from .text import hex
 
-        if self._dict[key]:
+        key = hex.encode(key)
 
-            time: Timeout = self._dict[key]['time']
+        super().__setitem__(key, {
+            'time': Timeout(self.expire),
+            'value': value
+        })
 
-            try:
+    def __contains__(self, key):
+        from .text import hex
 
-                time.check()
-                
-                return self._dict[key]['value']
-            
-            except TimeoutError:
-                del self._dict[key]
+        key = hex.encode(key)
 
-    def __setitem__(self, key:Any, value:T) -> None:
-        from .time import Timeout
-
-        self._dict[key] = {}
-
-        self._dict[key]['time'] = Timeout(self.expire) 
-
-        self._dict[key]['value'] = value
+        return super().__contains__(key)
 
 #========================================================
 
