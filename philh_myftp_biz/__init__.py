@@ -40,6 +40,15 @@ HELP: bool = _arg('-h', '--help')
 
 class _Formatter(__Formatter):
 
+    table: dict[int, tuple[str, str]] = {
+        10: ('VERB', 'GRAY'),
+        20: ('INFO', 'WHITE'),
+        25: ('MAIN', 'YELLOW'),
+        30: ('WARN', 'YELLOW'),
+        40: ('FAIL', 'RED'),
+        50: ('CRIT', 'MAGENTA'),
+    }
+
     @cached_property
     def _wfile(self):
         from .terminal import script_file
@@ -51,59 +60,6 @@ class _Formatter(__Formatter):
         file.open('w').close()
 
         return file
-    
-    def _levelname(self,
-        record: '__LogRecord'
-    ) -> str: # pyright: ignore[reportReturnType]
-        
-        match record.levelno: # pyright: ignore[reportMatchNotExhaustive]
-
-            case 10:
-                return 'VERB'
-
-            case 20: 
-                return 'INFO'
-            
-            case 25: 
-                return 'MAIN'
-            
-            case 30: 
-                return 'WARN'
-            
-            case 40: 
-                return 'FAIL'
-            
-            case 50: 
-                return 'CRIT'
-
-    def _color(self,
-        record: '__LogRecord'
-    ) -> str: # pyright: ignore[reportReturnType]
-        from .db import Color
-        
-        match record.levelno: # pyright: ignore[reportMatchNotExhaustive]
-
-            case 10:
-
-                if '\\Lib\\site-packages\\philh_myftp_biz\\' in record.pathname:
-                    return Color.values['GRAY']
-                else:
-                    return Color.values['WHITE']
-            
-            case 20: 
-                return Color.values['WHITE']
-            
-            case 25: 
-                return Color.values['YELLOW']
-            
-            case 30: 
-                return Color.values['YELLOW']
-            
-            case 40: 
-                return Color.values['RED']
-            
-            case 50: 
-                return Color.values['MAGENTA']
 
     def _traceback(self,
         record: __LogRecord
@@ -145,13 +101,6 @@ class _Formatter(__Formatter):
             .encode(errors='ignore') \
             .decode() \
             .strip('\n')
-
-    def _timestamp(self) -> str:
-        from .time import now
-        
-        n = now()
-
-        return n.stamp(format='%y/%m/%d %H:%M:%S') + f'.{n.centisecond:02d}'
 
     def _stack(self, frames:list[FrameInfo]):
 
@@ -201,6 +150,8 @@ class _Formatter(__Formatter):
         record: '__LogRecord'
     ) -> str:
         from .text import recode
+        from .time import now
+        from .db import Color
         
         # Ignore records from other modules
         if record.name != 'root':
@@ -208,13 +159,14 @@ class _Formatter(__Formatter):
 
         #===============================================
 
-        COLOR = self._color(record)
+        n = now()
 
-        TIME = self._timestamp()
+        TIME = n.stamp(format='%y/%m/%d %H:%M:%S') + f'.{n.centisecond:02d}'
 
         FILE = self._file()
 
-        LEVEL = self._levelname(record)
+        LEVEL, COLOR = self.table[record.levelno]
+        COLOR = Color.values[COLOR]
 
         MESS = self._message(record)
 
@@ -223,13 +175,18 @@ class _Formatter(__Formatter):
         #===============================================
         # output
 
-        # Write to the logfile
-        with self._wfile.open('a') as f:
-
-            line = f"\n{TIME} {FILE} {LEVEL}\n{MESS}\n{TRACE}"
+        try:
             
-            f.write(recode(line))
+            # Write to the logfile
+            with self._wfile.open('a') as f:
+
+                line = f"\n{TIME} {FILE} {LEVEL}\n{MESS}\n{TRACE}"
+                
+                f.write(recode(line))
         
+        except OSError:
+            pass
+
         #===============================================
 
         if VERBOSE or (record.levelno > 10):
