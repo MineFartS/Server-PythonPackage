@@ -82,16 +82,12 @@ class Path:
     @property
     def exists(self) -> bool:
         """Check if path exists"""
-        from .process import Thread
-
-        t = Thread(self._pure.exists)
-
-        return t.read(5, False)
+        return self._pure.exists()
     
     @cached_property
     def is_file(self) -> bool:
         """Check if path is a file"""
-        return not self.is_dir
+        return self._pure.is_file()
     
     @cached_property
     def is_dir(self) -> bool:
