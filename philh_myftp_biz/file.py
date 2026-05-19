@@ -52,10 +52,10 @@ class _Template:
 
             value = self.parsed
 
-            if value:
+            if value != None:
                 return value
-            else:
-                return self.default
+        
+        return self.default
 
     @property
     def raw(self) -> bytes:
@@ -65,6 +65,16 @@ class _Template:
             raw: str = f.read()
 
             return raw.encode('utf-8')
+        
+    @cached_property
+    def Dict(self):
+        from .json import Dict
+        return Dict(self)
+    
+    @cached_property
+    def List(self):
+        from .json import List
+        return List(self)
 
 #========================================================
 
