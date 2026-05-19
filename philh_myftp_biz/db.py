@@ -1,5 +1,6 @@
-from typing import Literal, TYPE_CHECKING, Callable
+from typing import Literal, TYPE_CHECKING
 from .classtools import singleton
+from dataclasses import dataclass
 from functools import cache
 from .web import URL
 
@@ -48,9 +49,7 @@ class Size:
         'GB',
         'TB'
     ]
-    """
-    Type hint for keys in size.conv_factors
-    """
+    """Type hint for keys in size.conv_factors"""
 
     conv_factors: dict[str, int] = {
         'B' : 1,
@@ -160,63 +159,46 @@ class Color:
 #========================================================
 
 class Ring:
-    """
-    RING
-    (Wrapper for keyring)
-    """
+    """Wrapper for keyring"""
     
-    def __init__(self, name:str):
+    def __init__(self, name:str) -> None:
         from .text import hex
 
         self.name: str = 'philh.myftp.biz/' + hex.encode(value=name)
 
     def Key(self, name:str) -> 'Key':
-        """
-        Get Key in Ring by name
-        """
+        """Get Key in Ring by name"""
 
         return Key(ring=self, name=name)
-
-class Key[T]:
-    """
-    KEY
-    (Wrapper for keyring)
-    """
     
-    def __init__(self,
-        ring: Ring,
-        name: str
-    ) -> None:
-        from .text import hex
-        
-        self.ring: Ring = ring
-        self.name: str = hex.encode(value=name)
+    __getitem__ = Key
+
+@dataclass
+class Key[T]:
+    """Wrapper for keyring"""
+    
+    ring: Ring
+    name: str
 
     def save(self, value:T) -> None:
-        """
-        Save value to Key
-
-        Saves as hexadecimal, so all pickleable objects are supported
-        """
-        from .text import hex
+        """Save value to Key"""
         from keyring import set_password
+        from .text import hex
 
         set_password(
             service_name = self.ring.name,
-            username = self.name,
+            username = hex.encode(self.name),
             password = hex.encode(value=value)            
         )
         
     def read(self) -> None | T:
-        """
-        Read value from key
-        """
+        """Read value from key"""
         from keyring import get_password
         from .text import hex
 
         rvalue: str | None = get_password(
             service_name = self.ring.name,
-            username = self.name
+            username = hex.encode(self.name)
         )
         
         try:
