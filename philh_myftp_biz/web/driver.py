@@ -177,13 +177,12 @@ class Driver:
         Log.VERB('Closing Session')
 
         try:
-            # Exit Session
             self._drvr.quit()
         except InvalidSessionIdException:
             pass
 
-    __del__   = close
-    __exit__  = close
+    __del__   = lambda self: self._drvr.quit()
+    __exit__ = close
     __enter__ = lambda self: self
 
     @property
