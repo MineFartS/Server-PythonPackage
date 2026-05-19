@@ -171,19 +171,22 @@ class Driver:
     @single_use
     def close(self, *_) -> None:
         """Close the Session"""
-        from selenium.common.exceptions import InvalidSessionIdException
-        from ..terminal import Log
-
-        Log.VERB('Closing Session')
 
         try:
-            # Exit Session
+            from selenium.common.exceptions import InvalidSessionIdException
+            from ..terminal import Log
+
+            Log.VERB('Closing Session')
+        except ImportError:
+            InvalidSessionIdException = AttributeError
+
+        try:
             self._drvr.quit()
         except InvalidSessionIdException:
             pass
 
-    __del__   = close
-    __exit__  = close
+    __del__ = close
+    __exit__ = close
     __enter__ = lambda self: self
 
     @property
