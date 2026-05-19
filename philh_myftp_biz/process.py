@@ -6,7 +6,9 @@ if TYPE_CHECKING:
 
 #========================================================
 
-class Thread:
+class Thread[T]:
+
+    result: T
 
     @property
     def _Builder(self):
@@ -14,29 +16,49 @@ class Thread:
         return Thread
 
     def __init__(self,
-        func: Callable,
+        func: Callable[..., T],
         *args: str,
         **kwargs: str
-    ) -> None:
+    ) -> None: 
+
+        self._Builder.run = lambda s: setattr(
+            self, 
+            'result', 
+            s._target(*s._args, **s._kwargs)
+        )
 
         # Create new thread
-        p = self._Builder(
+        self.p = self._Builder(
             target = func,
             kwargs = kwargs,
             args = args
         )
 
-        self.p = p
-
         # Close when main execution ends
-        p.daemon = True
+        self.p.daemon = True
 
         # start the task
-        p.start()
+        self.p.start()
 
-        self.wait = p.join
+        self.wait = self.p.join
 
-        self.running: bool = property(p.is_alive)
+        self.running: bool = property(self.p.is_alive)
+
+    def read(self,
+        timeout: int,
+        default: T = None
+    ) -> T:
+        from .time import Timeout
+
+        to = Timeout(timeout)
+
+        while True:
+
+            if 'result' in self.__dict__:
+                return self.result
+            
+            elif to.timed_out:
+                return default
 
 class MProcess(Thread):
 
@@ -44,41 +66,6 @@ class MProcess(Thread):
     def _Builder(self):
         from multiprocessing import Process
         return Process
-
-class Future[T](Thread):
-
-    value: T
-
-    def __init__(self,
-        func: Callable[..., T],
-        *args: Any,
-        **kwargs: Any
-    ):
-        super().__init__(lambda: setattr(
-            self,
-            "value",
-            func(*args, **kwargs)
-        ))
-
-    @property
-    def has_value(self) -> bool:
-        return hasattr(self, 'value')
-
-    def __call__(self,
-        timeout: int,
-        default: T = None
-    ):
-        from .time import Stopwatch
-
-        sw = Stopwatch().start()
-
-        while (sw < timeout) and (not self.has_value):
-            pass
-
-        if self.has_value:
-            return self.value
-        else:
-            return default
 
 class Sleeper:
     """Call a function before exiting after main thread has ended"""

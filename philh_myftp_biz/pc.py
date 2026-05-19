@@ -82,11 +82,11 @@ class Path:
     @property
     def exists(self) -> bool:
         """Check if path exists"""
-        from .process import Future
+        from .process import Thread
 
-        future = Future(self._pure.exists)
+        t = Thread(self._pure.exists)
 
-        return future(5, False)
+        return t.read(5, False)
     
     @cached_property
     def is_file(self) -> bool:

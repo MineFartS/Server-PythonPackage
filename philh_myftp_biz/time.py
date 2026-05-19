@@ -128,7 +128,7 @@ class Timeout(Stopwatch):
     def __init__(self,
         timeout: int,
         msg: str = ''
-    ):
+    ) -> None:
         
         super().__init__()
         self.start()
@@ -136,9 +136,13 @@ class Timeout(Stopwatch):
         self.timeout: int = timeout
         self.msg = msg
 
+    @property
+    def timed_out(self) -> bool:
+        return (self.elapsed >= self.timeout)
+
     def check(self) -> None:
 
-        if self.elapsed >= self.timeout:
+        if self.timed_out:
             
             raise TimeoutError(self.msg)
 
