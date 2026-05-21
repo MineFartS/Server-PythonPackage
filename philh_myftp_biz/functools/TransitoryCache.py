@@ -1,10 +1,7 @@
-from typing import Callable, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from .time import Timeout
-
-#========================================================
-# DISK CACHE
+    from ..time import Timeout
 
 class TransitoryCache[T](dict[str, 'dict[str, T|Timeout]']):
 
@@ -12,8 +9,8 @@ class TransitoryCache[T](dict[str, 'dict[str, T|Timeout]']):
         id: str|int = 0, 
         expire: int = 18_000
     ) -> None:
-        from .file import PKL
-        from .pc import loc
+        from ..file import PKL
+        from ..pc import loc
 
         self.expire = expire
 
@@ -24,7 +21,7 @@ class TransitoryCache[T](dict[str, 'dict[str, T|Timeout]']):
         super().__init__(self.pkl.read())
 
     def __getitem__(self, key) -> T | None:
-        from .text import hex
+        from ..text import hex
 
         key = hex.encode(key)
 
@@ -38,8 +35,8 @@ class TransitoryCache[T](dict[str, 'dict[str, T|Timeout]']):
                 return item['value'] # pyright: ignore[reportReturnType]
 
     def __setitem__(self, key, value:T) -> None:
-        from .time import Timeout
-        from .text import hex
+        from ..time import Timeout
+        from ..text import hex
 
         key = hex.encode(key)
 
@@ -52,36 +49,8 @@ class TransitoryCache[T](dict[str, 'dict[str, T|Timeout]']):
         self.pkl.save(cast(dict, self))
 
     def __contains__(self, key):
-        from .text import hex
+        from ..text import hex
 
         key = hex.encode(key)
 
         return super().__contains__(key)
-
-#========================================================
-
-def single_use(f): # pyright: ignore[reportMissingParameterType]
-    """Ignore all but first executions"""
-    from functools import wraps
-
-    @wraps(f)
-    def wrapper(*args, **kwargs): # pyright: ignore[reportMissingParameterType]
-        
-        if not wrapper.has_run:
-            
-            wrapper.has_run = True
-            
-            return f(*args, **kwargs)
-    
-    wrapper.has_run = False
-
-    return wrapper
-
-def waitfor(
-    func: Callable[..., bool]
-) -> None:
-
-    while not func():
-        pass
-
-#========================================================
