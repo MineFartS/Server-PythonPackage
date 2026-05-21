@@ -1,17 +1,9 @@
+from .functools.supports import SupportsJSON # pyright: ignore[reportUnusedImport]
 from json import load, loads, dump, dumps # pyright: ignore[reportUnusedImport]
 from typing import Callable, Any, Iterator, Self, ItemsView, Callable
 from functools import partialmethod
 
 #========================================================
-
-SupportsJSON = \
-    str| \
-    int| \
-    float| \
-    bool| \
-    None| \
-    dict[str, "SupportsJSON"]| \
-    list["SupportsJSON"]
 
 def is_json(value:str) -> bool:
     """Check if a string contains valid json data"""
