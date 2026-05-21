@@ -5,6 +5,7 @@ from .TransitoryCache import TransitoryCache # pyright: ignore[reportUnusedImpor
 from .Absorber import Absorber # pyright: ignore[reportUnusedImport]
 from .SharedBuffer import SharedBuffer # pyright: ignore[reportUnusedImport]
 from .attr import attr, base_attrs # pyright: ignore[reportUnusedImport]
+from .Partial import Partial # pyright: ignore[reportUnusedImport]
 from .supports import *
 
 #========================================================
