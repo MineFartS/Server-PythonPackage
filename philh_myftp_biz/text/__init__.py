@@ -3,6 +3,8 @@ from functools import cache
 
 from fnmatch import fnmatch as like # pyright: ignore[reportUnusedImport]
 
+from . import contains, hex # pyright: ignore[reportUnusedImport]
+
 def split(
     value: str,
     sep: str = None
@@ -24,10 +26,8 @@ def split(
         return shlex.split(value)
 
 def int_stripper(string:str) -> None | int:
-    """
-    Remove all non-numerical characters from an alphanumeric string
-    """
-    from .num import is_int
+    """Remove all non-numerical characters from an alphanumeric string"""
+    from ..num import is_int
 
     # Copy the string
     string = str(string)
@@ -45,55 +45,6 @@ def int_stripper(string:str) -> None | int:
     if len(string) > 0:
         return int(string)
 
-class contains:
-    """Functions to check if text contains value(s) with list as input"""
-
-    def any(
-        string: str,
-        values: list[str],
-        case: bool = False
-    ) -> bool:
-        """Check if string contains any of the values"""
-        
-        if not case:
-            string = string.lower()
-            values = [str(v).lower() for v in values]
-
-        # Iter through all passed values
-        for v in values:
-
-            # If the string contains the value
-            if v in string:
-
-                # Return True
-                return True
-            
-        # If no values are matched, then return False
-        return False
-    
-    def all(
-        string: str,
-        values: list[str],
-        case: bool = False
-    ) -> bool:
-        """Check if string contains all of the values"""
-
-        if not case:
-            string = string.lower()
-            values = [str(v).lower() for v in values]
-
-        # Iter through all passed values
-        for v in values:
-
-            # If the string does not contain the value
-            if v not in string:
-
-                # Return False
-                return False
-            
-        # If all values are matched, then return True
-        return True
-
 @cache
 def auto_convert(string:str) -> int | float | bool | dict | str:
     """
@@ -108,8 +59,8 @@ def auto_convert(string:str) -> int | float | bool | dict | str:
         - str
     """
 
-    from .num import is_int, is_float
-    from .json import is_json, loads
+    from ..num import is_int, is_float
+    from ..json import is_json, loads
 
     if is_int(string):
         return int(string)
@@ -128,45 +79,6 @@ def auto_convert(string:str) -> int | float | bool | dict | str:
  
     else:
         return string
-
-class hex:
-    """
-    Wrapper for hexadecimal via dill
-    """
-
-    def valid(string:str) -> bool:
-        """
-        Check if string is a valid dill hexadecimal dump
-        """
-
-        try:
-            hex.decode(string)
-            return True
-        except (EOFError, ValueError):
-            return False
-
-    def decode(value:str):
-        """
-        Convert hexadecimal string back into original value
-
-        Trims input by ';' before processing
-        Ex: 'abc;defg;hij' -> 'defg'
-
-        """
-        from dill import loads
-
-        if ';' in value:
-            value = value.split(';')[1]
-
-        return loads(bytes.fromhex(value))
-
-    def encode(value) -> str:
-        """
-        Convert any pickleable object into a string
-        """
-        from dill import dumps
-        
-        return dumps(value).hex()
 
 def random(length:int) -> str:
     """
@@ -277,7 +189,7 @@ def to_slice(string:str) -> None | list[slice|int]:
     '1,3'  : 1, 3
     ```
     """
-    from .num import is_int
+    from ..num import is_int
 
     if string == '.':
 
