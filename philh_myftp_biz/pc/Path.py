@@ -1,6 +1,7 @@
 from typing import Literal, Self, Generator, TYPE_CHECKING, Any
 from functools import cached_property
 from dataclasses import dataclass
+from .. import file
 
 if TYPE_CHECKING:
     from pathlib import PurePath as __PurePath
@@ -566,6 +567,35 @@ class Path:
                 hasher.update(chunk)
             
         return hasher.hexdigest()
+    
+    #========================================================
+    # File Parsers
+
+    XML:  file.XML
+    PKL:  file.PKL
+    JSON: file.JSON
+    INI:  file.INI
+    YAML: file.YAML
+    TXT:  file.TXT
+    ZIP:  file.ZIP
+    CSV:  file.CSV
+    TOML: file.TOML
+
+    def __getattr__(self, name:str):
+        from typing import get_type_hints
+
+        hints = get_type_hints(self.__class__)
+
+        if name in hints:
+
+            cls = hints[name]
+
+            return cls(self)
+        
+        else:
+            return super().__getattribute__(name)
+        
+    #========================================================
 
 @dataclass
 class PathPair:
