@@ -1,29 +1,12 @@
 from typing import Literal, Self, Generator, TYPE_CHECKING, Any
 from functools import cached_property
-from .classtools import singleton
 from dataclasses import dataclass
 
 if TYPE_CHECKING:
     from pathlib import PurePath as __PurePath
-    from .time import from_stamp
+    from ..time import from_stamp
 
 #========================================================
-
-@dataclass
-class PathPair:
-
-    src: Path|Any
-    dst: Path|Any
-
-    def __setattr__(self,
-        key: str, 
-        value: Any
-    ) -> None:
-
-        if isinstance(value, Path):
-            self.__dict__[key] = value
-        else:
-            self.__dict__[key] = Path(value)
 
 class Path:
     """File/Folder"""
@@ -104,7 +87,7 @@ class Path:
 
     @property
     def ctime(self):
-        from .time import from_stamp
+        from ..time import from_stamp
         from os import path
 
         stamp = path.getctime(self.path)
@@ -287,7 +270,7 @@ class Path:
         """
         Get mime type of path
         """
-        from .db import MimeType
+        from ..db import MimeType
 
         return MimeType.Path(self)
 
@@ -295,7 +278,7 @@ class Path:
         """
         Delete the current path
         """
-        from .terminal import Log
+        from ..terminal import Log
 
         # If path is a directory
         if self.is_dir:
@@ -325,7 +308,7 @@ class Path:
         Returns updated path
         """
         from os import rename
-        from .terminal import Log
+        from ..terminal import Log
         
         with self.parent.cd:
 
@@ -392,11 +375,10 @@ class Path:
         self,
         dst: 'Path'
     ) -> None:
-        """
-        Copy the path to another location
-        """
+        """Copy the path to another location"""
         from shutil import copyfile
-        from .terminal import Log
+        from ..terminal import Log
+        from . import relscan
 
         files: list[PathPair] = []
 
@@ -494,7 +476,7 @@ class Path:
         key: Any, 
         value: Any
     ) -> None:
-        from .text import hex
+        from ..text import hex
 
         keyedpath: str = f'{self}:{hex.encode(key)}'
 
@@ -519,7 +501,7 @@ class Path:
     def __getitem__(self,
         key: Any
     ) -> None:
-        from .text import hex
+        from ..text import hex
 
         keyedpath: str = f'{self}:{hex.encode(key)}'
 
@@ -585,6 +567,22 @@ class Path:
             
         return hasher.hexdigest()
 
+@dataclass
+class PathPair:
+
+    src: Path|Any
+    dst: Path|Any
+
+    def __setattr__(self,
+        key: str, 
+        value: Any
+    ) -> None:
+
+        if isinstance(value, Path):
+            self.__dict__[key] = value
+        else:
+            self.__dict__[key] = Path(value)
+
 class _cd:
 
     __via_with = False
@@ -626,8 +624,8 @@ class _mtime:
     def set(self,
         mtime: int | 'from_stamp' = None
     ):
-        from .time import from_stamp
-        from .time import now
+        from ..time import from_stamp
+        from ..time import now
         from os import utime
         
         if isinstance(mtime, from_stamp):
@@ -642,7 +640,7 @@ class _mtime:
 
     @property
     def current(self):
-        from .time import from_stamp
+        from ..time import from_stamp
         from os import path
 
         mtime = path.getmtime( str(self.path) )
@@ -650,7 +648,7 @@ class _mtime:
         return from_stamp(mtime)
 
     def stopwatch(self):
-        from .time import Stopwatch
+        from ..time import Stopwatch
 
         SW = Stopwatch()
 
@@ -672,7 +670,7 @@ class _set_access:
             yield from self.path.descendants
     
     def readonly(self) -> None:
-        from .terminal import Log
+        from ..terminal import Log
         from os import chmod
 
         Log.VERB(f'Updating Access [READ ONLY]: {self.path}')
@@ -682,8 +680,8 @@ class _set_access:
             chmod(str(path), 0o644)
 
     def full(self) -> None:
-        from .process import RunHidden
-        from .terminal import Log
+        from ..process import RunHidden
+        from ..terminal import Log
         from os import chmod
 
         Log.VERB(f'Updating Access [FULL ACCESS]: {self.path}')
@@ -751,115 +749,3 @@ class _visibility:
         attrs = GetFileAttributes(str(self.path))
 
         return bool(attrs & FILE_ATTRIBUTE_HIDDEN)
-
-#========================================================
-
-cwd = lambda: Path('.')
-"""Get the Current Working Directory"""
-
-def relscan(
-    src: Path,
-    dst: Path
-) -> Generator[PathPair]:
-    """
-    Relatively Scan two directories
-
-    EXAMPLE:
-
-    C:/ - |
-    (src) |
-          | - Child1
-
-    relscan(Path('C:/'), Path('D:/')) -> [{
-        'src': Path('C:/Child1')
-        'dst': Path('D:/Child1')
-    }]
-    """
-    from .classtools import SharedBuffer
-    from shutil import copytree
-    from .process import Thread
-
-    buff = SharedBuffer()
-    
-    # Copytree dry run
-    t = Thread(
-
-        func = copytree,
-
-        src = str(src),
-        dst = str(dst), 
-
-        dirs_exist_ok = True,
-        
-        # Append paths to list instead of directly copying
-        copy_function = lambda s, d, **_: buff.add(PathPair(s, d))
-
-    )
-
-    buff.stop_when = lambda: not t.running
-
-    yield from buff
-
-#========================================================
-# NAME
-
-from socket import gethostname
-NAME = singleton(gethostname)
-
-#=================================
-# OS
-
-@singleton
-def OS() -> Literal['windows', 'unix']:
-    from os import name
-
-    match name:
-
-        case 'nt':
-            return 'windows'
-        
-        case _:
-            return 'unix'
-
-#=================================
-# DIRs
-
-@singleton
-class loc:
-
-    @property
-    def temp(self) -> Path:
-        from tempfile import gettempdir
-
-        SERVER = Path('E:/__temp__/')
-
-        if SERVER.exists and (NAME == 'PC-1'):
-            return SERVER
-        else:
-            return Path(gettempdir())
-
-    @cached_property
-    def script(self) -> Path:
-        from .terminal import main_module
-
-        return Path(main_module().__file__).parent
-
-    @cached_property
-    def cache(self) -> Path:
-
-        path = self.script.child('/__pycache__/')
-
-        path.mkdir()
-
-        return path
-    
-    @cached_property
-    def logs(self) -> Path:
-
-        path = self.script.child('/__pylogs__/')
-
-        path.mkdir()
-
-        return path
-
-#========================================================
