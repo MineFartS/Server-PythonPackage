@@ -22,12 +22,6 @@ class TransitoryCache[T](dict[str, 'dict[str, T|Timeout]']):
         self.pkl = PKL(file).Dict
 
         super().__init__(self.pkl.read())
-    
-    def __del__(self) -> None:
-
-        data = cast(dict, self)
-        
-        self.pkl.save(data)
 
     def __getitem__(self, key) -> T | None:
         from .text import hex
@@ -53,6 +47,9 @@ class TransitoryCache[T](dict[str, 'dict[str, T|Timeout]']):
             'time': Timeout(self.expire),
             'value': value
         })
+
+        # Save data to pkl file
+        self.pkl.save(cast(dict, self))
 
     def __contains__(self, key):
         from .text import hex
