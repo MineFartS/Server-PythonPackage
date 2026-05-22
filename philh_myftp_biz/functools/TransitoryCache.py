@@ -1,56 +1,45 @@
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, TypedDict
+from .supports import SupportsStr
+from ..json.Dict import Dict
 
 if TYPE_CHECKING:
     from ..time import Timeout
 
-class TransitoryCache[T](dict[str, 'dict[str, T|Timeout]']):
+class CachedItem[T](TypedDict):
+    time: Timeout
+    value: T
+
+class TransitoryCache[T](Dict[CachedItem[T]]):
 
     def __init__(self, 
-        id: str|int = 0, 
+        id: SupportsStr = 0, 
         expire: int = 18_000
     ) -> None:
-        from ..file import PKL
         from ..pc import loc
 
         self.expire = expire
 
         file = loc.cache.child(f'TransitoryCache-{id}.pkl')
+        super().__init__(file.PKL)
 
-        self.pkl = PKL(file).Dict
+    def __getitem__(self, key:str) -> T | None:
 
-        super().__init__(self.pkl.read())
+        item = super().__getitem__(key)
 
-    def __getitem__(self, key) -> T | None:
-        from ..text import hex
+        if item is None:
+            pass
 
-        key = hex.encode(key)
+        elif item['time'].timed_out:
+            super().__delitem__(key)
 
-        if key in self:
-
-            item = super().__getitem__(key)
-
-            if item['time'].timed_out:
-                self.__delitem__(key)
-            else:
-                return item['value'] # pyright: ignore[reportReturnType]
-
-    def __setitem__(self, key, value:T) -> None:
+        else:
+            return item['value'] # pyright: ignore[reportReturnType]
+            
+    def __setitem__(self, key:str, value:T) -> None:
         from ..time import Timeout
-        from ..text import hex
 
-        key = hex.encode(key)
-
-        super().__setitem__(key, {
+        super().__setattr__(key, {
             'time': Timeout(self.expire),
             'value': value
         })
 
-        # Save data to pkl file
-        self.pkl.save(cast(dict, self))
-
-    def __contains__(self, key):
-        from ..text import hex
-
-        key = hex.encode(key)
-
-        return super().__contains__(key)

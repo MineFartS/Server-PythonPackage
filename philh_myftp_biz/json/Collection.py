@@ -4,7 +4,7 @@ class Collection[T, STRUCT]:
 
     _default: T
 
-    _cache: None|STRUCT = None
+    _cache: None|STRUCT
 
     def __init__(self,
         t: STRUCT = None
@@ -12,7 +12,7 @@ class Collection[T, STRUCT]:
         from ..file import PKL, temp
 
         if isinstance(t, Collection):
-            self.var = t.var
+            self.var = t.var            
 
         elif hasattr(t, 'read') and hasattr(t, 'save'):
             self.var = t
@@ -28,12 +28,9 @@ class Collection[T, STRUCT]:
             self.var.save(t)
 
         self.var.default = self._default
+        self._cache = self.var.read()
 
     def read(self) -> STRUCT:
-        
-        if self._cache is None:
-            self._cache = self.var.read()
-
         return self._cache # pyright: ignore[reportReturnType]
     
     def save(self, data:STRUCT) -> None:

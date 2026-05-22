@@ -77,14 +77,17 @@ class Omdb:
     ) -> None | MovieData:
         """Get details of a movie"""
         from ..time import from_string
+        from ..text import hex
 
         params = {
             't': title,
             'y': year
         }
 
+        key = hex.encode(params)
+
         if params in self.mcache:
-            return self.mcache[params]
+            return self.mcache[key]
 
         r = self._get({
             't': title,
@@ -102,7 +105,7 @@ class Omdb:
         else:
             movie = None
             
-        self.mcache[params] = movie
+        self.mcache[key] = movie
         return None
 
     def show(self,
@@ -111,14 +114,17 @@ class Omdb:
     ) -> None | ShowData:
         """Get details of a show"""
         from ..time import from_string
+        from ..text import hex
 
         params = {
             't': title,
             'y': year
         }
 
+        key = hex.encode(params)
+
         if params in self.scache:
-            return self.scache[params]
+            return self.scache[key]
 
         # Request raw list of seasons
         r1 = self._get(params)
@@ -162,7 +168,7 @@ class Omdb:
 
                 show.Seasons [f'{s:02d}'] [e['Episode'].zfill(2)] = episode
 
-        self.scache[params] = show
+        self.scache[key] = show
 
         # Return the 'Show' obj
         return show
