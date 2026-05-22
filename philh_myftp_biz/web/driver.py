@@ -5,6 +5,7 @@ from ..functools import single_use
 
 if TYPE_CHECKING:
     from . import URL
+    from ..pc import Path
 
 @dataclass
 class Element(WebElement):
@@ -33,7 +34,9 @@ class Driver:
         headless: bool = True,
         eager: bool = False,
         timeout: int = 300,
-        daemon: bool = True
+        daemon: bool = True,
+        user_data_dir: None|Path = None,
+        profile_dir: None|str = None
     ) -> None:
         from selenium.webdriver import FirefoxOptions, Firefox
         from selenium.webdriver.firefox.options import Options
@@ -47,7 +50,9 @@ class Driver:
             f'{headless=}\n'+ \
             f'{eager=}\n'+ \
             f'{timeout=}\n'+ \
-            f'{daemon=}'
+            f'{daemon=}\n'+ \
+            f'{user_data_dir=}\n'+ \
+            f'{profile_dir=}'
         )
 
         if not daemon:
@@ -61,6 +66,15 @@ class Driver:
         if headless:
             options.add_argument("--headless")
 
+        if user_data_dir:
+
+            user_data_dir.mkdir(parents=True, exist_ok=True)
+
+            options.add_argument(f"--user-data-dir={str(user_data_dir)}")
+
+            if profile_dir:
+
+                options.add_argument(f"--profile-directory={profile_dir}")
 
         while not hasattr(self, '_drvr'):
             # Start Chrome Session with options
@@ -209,3 +223,10 @@ class Driver:
             return URL(self._drvr.current_url)
         except WebDriverException:
             pass
+
+    @property
+    def Soup(self):
+        from bs4 import BeautifulSoup
+
+        return BeautifulSoup(self._drvr.page_source, "html.parser")
+
