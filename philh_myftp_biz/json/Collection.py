@@ -1,9 +1,10 @@
-from typing import Callable
 from json import dumps
 
 class Collection[T, STRUCT]:
 
     _default: T
+
+    _cache: None|STRUCT = None
 
     def __init__(self,
         t: STRUCT = None
@@ -28,9 +29,18 @@ class Collection[T, STRUCT]:
 
         self.var.default = self._default
 
-        self.read: Callable[[], STRUCT] = self.var.read
+    def read(self) -> STRUCT:
         
-        self.save: Callable[[STRUCT], None] = self.var.save
+        if self._cache is None:
+            self._cache = self.var.read()
+
+        return self._cache # pyright: ignore[reportReturnType]
+    
+    def save(self, data:STRUCT) -> None:
+
+        self._cache = data
+
+        self.var.save(data)
     
     def __len__(self) -> int:
         return len(self.read())
