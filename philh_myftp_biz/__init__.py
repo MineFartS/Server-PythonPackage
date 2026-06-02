@@ -22,15 +22,26 @@ from .num import MutInt
 @singleton
 class VERBOSE(MutInt):
 
-    def __init__(self):
+    lvalue = _arg('-v', '--verbose')
+
+    def __init__(self) -> None:
         super().__init__(None)
         self.resume()
 
-    def pause(self):
+    def pause(self) -> None:
+        self.lvalue = self.value
         self.value = 0
 
-    def resume(self):
-        self.value = _arg('-v', '--verbose')
+    def resume(self) -> None:
+        self.value = self.lvalue
+
+    def enable(self) -> None:
+        self.value  = 1
+        self.lvalue = 1
+
+    def disable(self) -> None:
+        self.value  = 0
+        self.lvalue = 0
 
 #================================================================
 
