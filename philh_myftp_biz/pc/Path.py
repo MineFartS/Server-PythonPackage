@@ -556,7 +556,7 @@ class Path:
         """Calculate the SHA256 hash of this file"""
         from hashlib import sha256
 
-        if not self.exists:
+        if not self.exists or self.is_dir:
             return
 
         hasher = sha256()
@@ -567,6 +567,15 @@ class Path:
                 hasher.update(chunk)
             
         return hasher.hexdigest()
+    
+    @property
+    def valid(self) -> bool:
+        """Check if the all of the files chunks are accessible"""
+    
+        try:
+            return self.hash != None      
+        except OSError:
+            return False
     
     #========================================================
     # File Parsers
