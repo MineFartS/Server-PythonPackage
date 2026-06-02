@@ -170,18 +170,12 @@ class Path:
         return (self.path == testp)
 
     @property
-    def size(self) -> int:
-        """
-        Get File Size
-
-        Note: Will return TypeError is path is folder
-        """
+    def size(self) -> None|int:
+        """Get File Size"""
         from os import path
 
         if self.is_file:
             return path.getsize(self.path)
-        else:
-            raise TypeError("Cannot get size of a folder")
 
     @property
     def children(self) -> Generator[Path]:
@@ -372,12 +366,8 @@ class Path:
         
         return path.split(sep='/')[i]
 
-    def copy(
-        self,
-        dst: 'Path'
-    ) -> None:
+    def copy(self, dst:Path) -> None:
         """Copy the path to another location"""
-        from shutil import copyfile
         from ..terminal import Log
         from . import relscan
 
@@ -413,17 +403,21 @@ class Path:
                     f'{file.dst=}'
                 )
 
-                # Delete destination file
-                file.dst.delete()
-
                 # Create the parent folder of the destination file
                 file.dst.parent.mkdir()
 
-                # Copy the source file to the destination
-                copyfile(
-                    src = str(file.src),
-                    dst = str(file.dst)
-                )
+                # Update Access
+                file.src.set_access.full()
+                file.dst.set_access.full()
+
+                srcIO = file.src.open('rb')
+                dstIO = file.dst.open('wb')
+
+                for chunk in iter(lambda: srcIO.read(8192), b""):
+                    dstIO.write(chunk)
+
+                srcIO.close()
+                dstIO.close()
 
         except Exception as e:
 
@@ -556,7 +550,7 @@ class Path:
         """Calculate the SHA256 hash of this file"""
         from hashlib import sha256
 
-        if not self.exists:
+        if not self.exists or self.is_dir:
             return
 
         hasher = sha256()
@@ -567,6 +561,15 @@ class Path:
                 hasher.update(chunk)
             
         return hasher.hexdigest()
+    
+    @property
+    def valid(self) -> bool:
+        """Check if the all of the files chunks are accessible"""
+    
+        try:
+            return self.hash != None      
+        except OSError:
+            return False
     
     #========================================================
     # File Parsers
@@ -696,31 +699,31 @@ class _set_access:
         yield self.path
 
         if self.path.is_dir:
-
             yield from self.path.descendants
     
     def readonly(self) -> None:
         from ..terminal import Log
         from os import chmod
 
-        Log.VERB(f'Updating Access [READ ONLY]: {self.path}')
-
-        for path in self.__paths():
-
-            chmod(str(path), 0o644)
+        if self.path.in_use:
+            Log.VERB(f'Failed to Update Access: {self.path}')
+        
+        elif self.path.exists:
+            for path in self.__paths():
+                chmod(str(path), 0o644)
 
     def full(self) -> None:
         from ..process import RunHidden
         from ..terminal import Log
         from os import chmod
 
-        Log.VERB(f'Updating Access [FULL ACCESS]: {self.path}')
-
         if self.path.is_dir:
-
             RunHidden(['icacls', self.path, '/grant', 'Everyone:F', '/t', '/c', '/q'])
 
-        else:
+        elif self.path.in_use:
+            Log.VERB(f'Failed to Update Access: {self.path}')
+
+        elif self.path.exists:
             chmod(str(self.path), 0o777)
 
 @dataclass
