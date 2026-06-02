@@ -170,18 +170,12 @@ class Path:
         return (self.path == testp)
 
     @property
-    def size(self) -> int:
-        """
-        Get File Size
-
-        Note: Will return TypeError is path is folder
-        """
+    def size(self) -> None|int:
+        """Get File Size"""
         from os import path
 
         if self.is_file:
             return path.getsize(self.path)
-        else:
-            raise TypeError("Cannot get size of a folder")
 
     @property
     def children(self) -> Generator[Path]:
