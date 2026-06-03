@@ -54,14 +54,14 @@ class Thread[T]:
             elif to.timed_out:
                 return default
 
-class MProcess(Thread):
+class MProcess[T](Thread[T]):
 
     @property
     def _Builder(self):
         from multiprocessing import Process
         return Process
 
-class Sleeper:
+class Sleeper(Thread[None]):
     """Call a function before exiting after main thread has ended"""
 
     def __init__(self,
@@ -69,16 +69,12 @@ class Sleeper:
         *args: str,
         **kwargs: str
     ) -> None:
-        from threading import Thread
 
         self.func = func
         self.args = args
         self.kwargs = kwargs
 
-        # Create new thread
-        self._thread = Thread(target=self._main)
-        
-        self._thread.start()
+        super().__init__(self._main)
 
     def _main(self) -> None:
         from time import sleep
@@ -87,6 +83,58 @@ class Sleeper:
             sleep(.1)
 
         self.func(*self.args, **self.kwargs)
+
+class Watcher[T](Thread):
+
+    def __init__(self,
+        checker: Callable[[], T],
+        handler: Callable[[T], None],
+        interval: int|float = .3
+    ) -> None:
+        
+        self.checker = checker
+        self.handler = handler
+        self.interval = interval
+
+        super().__init__(self._main)
+
+    def _main(self) -> None:
+        from inspect import signature
+        from ..time import sleep
+
+        lvalue: T = None
+
+        try:
+            params = signature(self.handler).parameters
+        except TypeError:
+            params = []
+        
+        while sleep(self.interval):
+
+            value = self.checker()
+
+            if value != lvalue:
+
+                lvalue = value
+
+                if len(params) == 0:
+                    self.handler()
+                else:
+                    self.handler(value)                    
+
+class Looper(Watcher):
+
+    def __init__(self,
+        func: Callable[[], None],
+        interval: int|float = .3
+    ) -> None:
+        from ..time import now
+
+        super().__init__(
+            checker = now, 
+            handler = func,
+            interval = interval
+        )
 
 def Alive() -> bool:
     """Check if the main thread is running"""
