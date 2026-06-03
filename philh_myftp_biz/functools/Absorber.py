@@ -17,3 +17,16 @@ class Absorber[T]:
 
     __setitem__ = __call__
 
+# @dataclass raises TypeError
+class NullSafe[T](Absorber):
+    
+    def __init__(self, item:T):
+        self.item: T = item
+
+    def __getattr__(self, name:str):
+
+        if self.item is None:
+            return NullSafe(None)
+        else:
+            return getattr(self.item, name)
+ 
