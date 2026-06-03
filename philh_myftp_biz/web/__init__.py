@@ -176,7 +176,7 @@ class URL:
         pbar = ProgressBar(
             total = self.size,
             label = "Downloading File",
-            mode = 'FILE STREAM',
+            mode = 'FSTREAM',
             verbose = True
         )
 

@@ -403,7 +403,7 @@ class Path:
             pbar = ProgressBar(
                 total = sum(f.src.size for f in files), 
                 label = "Copying Files",
-                mode  = 'FILE STREAM',
+                mode  = 'FSTREAM',
                 verbose = True
             )
 

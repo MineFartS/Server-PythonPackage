@@ -31,7 +31,7 @@ class Pipe:
 _modes = Literal[
     'SCOUNTER', # Simple Counter
     'FCOUNTER', # Full Counter
-    'FILE STREAM'
+    'FSTREAM' # FIle Stream
 ]
 
 class ProgressBar:
@@ -49,20 +49,16 @@ class ProgressBar:
         kwargs: dict = {
             "dynamic_ncols": True,
             "disable": (verbose and not VERBOSE),
+            "total": nlen(total),
             "desc": label
         }
 
         match mode:
 
             case 'SCOUNTER':
-                kwargs['iterable'] = range(nlen(total))
                 kwargs['bar_format'] = "{n_fmt}/{total_fmt} | {bar} | {elapsed}"
 
-            case 'FCOUNTER':
-                kwargs['iterable'] = range(nlen(total))
-
-            case 'FILE STREAM':
-                kwargs['total'] = nlen(total)
+            case 'FSTREAM':
                 kwargs['unit'] = "B"
                 kwargs['unit_scale'] = True
 
