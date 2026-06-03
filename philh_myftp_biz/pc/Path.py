@@ -176,6 +176,12 @@ class Path:
 
         if self.is_file:
             return path.getsize(self.path)
+        
+    @property
+    def fsize(self) -> str:
+        from ..db import Size
+
+        return Size.from_bytes(self.size, ndigits=2)
 
     @property
     def children(self) -> Generator[Path]:
