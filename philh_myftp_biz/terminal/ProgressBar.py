@@ -1,26 +1,32 @@
-from typing import Callable, Literal
-from tqdm import tqdm
-import sys
-
+from typing import Literal, Iterable
 from ..classtools import singleton
+from ..functools import NullSafe
+from ..num import nlen
+import sys
 
 @singleton
 class Pipe:
 
     def __init__(self) -> None:
+        from ..process import Looper
         
         self.stdout = sys.stdout
         self.flush = sys.stdout.flush
         sys.stdout = self
 
-        self.pbar: None|ProgressBar = None
+        self.pbar: ProgressBar = None
+
+        Looper(
+            lambda: NullSafe(self.pbar).refresh(),
+            interval = .5
+        )
 
     def write(self, s:str) -> None:
 
         if self.pbar:
-            self.pbar.clear()
-
-        self.stdout.write(s)
+            self.pbar.tqdm.write(s, self.stdout)
+        else:
+            self.stdout.write(s)
 
 _modes = Literal[
     'SCOUNTER', # Simple Counter
@@ -28,57 +34,74 @@ _modes = Literal[
     'FILE STREAM'
 ]
 
-class ProgressBar(tqdm):
+class ProgressBar:
 
     def __init__(self,
-        total: int = 0,
-        mode: _modes = 'SCOUNTER'
+        total: int|float|Iterable = 0,
+        *,
+        mode: _modes = 'SCOUNTER',
+        label: None|str = None,
+        verbose: bool = False
     ) -> None:
-        from ..process import Thread
+        from .. import VERBOSE
+        from tqdm import tqdm
         
         kwargs: dict = {
             "dynamic_ncols": True,
+            "disable": (verbose and not VERBOSE),
+            "desc": label
         }
 
         match mode:
 
             case 'SCOUNTER':
-                kwargs['iterable'] = range(total)
+                kwargs['iterable'] = range(nlen(total))
                 kwargs['bar_format'] = "{n_fmt}/{total_fmt} | {bar} | {elapsed}"
 
             case 'FCOUNTER':
-                kwargs['iterable'] = range(total)
+                kwargs['iterable'] = range(nlen(total))
 
             case 'FILE STREAM':
-                kwargs['total'] = total
+                kwargs['total'] = nlen(total)
                 kwargs['unit'] = "B"
                 kwargs['unit_scale'] = True
 
-        super().__init__(**kwargs)
-
-        self.stop  = self.close
-        self.step  = self.update
-        self.flush: Callable[..., None] = self.refresh
+        self.tqdm = tqdm(**kwargs)
 
         Pipe.pbar = self
 
-        Thread(self.__refresh)
+    def step(self,
+        n: int|float|Iterable = 1
+    ) -> None:
+        
+        Pipe.pbar = self
+        
+        self.tqdm.update(nlen(n))
+
+    def stop(self) -> None:
+
+        if Pipe.pbar == self:
+            Pipe.pbar = None
+
+        self.tqdm.clear()
+        self.tqdm.close()
+
+    def refresh(self) -> None:
+
+        Pipe.pbar = self
+
+        self.tqdm.clear()
+        self.tqdm.refresh()
 
     @property
     def finished(self) -> bool:
 
-        if self.total == 0:
+        if self.tqdm.total == 0:
             return False
         else:
-            return (self.n == self.total)
+            return (self.tqdm.n == self.tqdm.total)
 
     @property
     def running(self) -> bool:
-        return not (self.finished or self.disable)
+        return not (self.finished or self.tqdm.disable)
 
-    def __refresh(self) -> None:
-        from time import sleep
-
-        while self.running:
-            sleep(.3)
-            self.refresh()

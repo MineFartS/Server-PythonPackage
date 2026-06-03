@@ -374,7 +374,7 @@ class Path:
 
     def copy(self, dst:Path) -> None:
         """Copy the path to another location"""
-        from ..terminal import Log
+        from ..terminal import Log, ProgressBar
         from . import relscan
 
         files: list[PathPair] = []
@@ -400,6 +400,13 @@ class Path:
                     dst = dst
                 )]
 
+            pbar = ProgressBar(
+                total = sum(f.src.size for f in files), 
+                label = "Copying Files",
+                mode  = 'FILE STREAM',
+                verbose = True
+            )
+
             # Iter through source and destination pairs
             for file in files:
 
@@ -420,6 +427,7 @@ class Path:
                 dstIO = file.dst.open('wb')
 
                 for chunk in iter(lambda: srcIO.read(8192), b""):
+                    pbar.step(chunk)
                     dstIO.write(chunk)
 
                 srcIO.close()
@@ -566,6 +574,29 @@ class Path:
             for chunk in iter(lambda: f.read(8192), b""):
                 hasher.update(chunk)
             
+        return hasher.hexdigest()
+    
+    def qhash(self) -> None | str:
+        """
+        Quickly calculate the SHA256 hash of this file
+        (Uses 5x 4096-bit samples)
+        """
+        from hashlib import sha256
+
+        if not self.exists or self.is_dir:
+            return
+        elif self.size <= 5*4096:
+            return self.hash
+        
+        hasher = sha256()
+        
+        with self.open("rb") as f:
+            for i in range(5):
+                
+                f.seek(i * (self.size//5))
+                
+                hasher.update(f.read(4096))
+                
         return hasher.hexdigest()
     
     @property

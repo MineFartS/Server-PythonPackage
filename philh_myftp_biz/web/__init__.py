@@ -167,35 +167,26 @@ class URL:
         path: 'Path'
     ) -> None:
         """Download file to disk"""
-        from ..classtools import Absorber
-        from ..terminal import Log
-        from .. import VERBOSE
-        from tqdm import tqdm
+        from ..terminal import Log, ProgressBar
 
         Log.VERB(f'Downloading File:\nurl={self.url}\n{path=}')
 
-        r = self.stream
-
         file = path.open(mode='wb')
 
-        if VERBOSE:
-            pbar = tqdm(
-                total = self.size, # Total Download Size
-                unit = "B",
-                unit_scale = True
-            )
-            chunk_size = 1024
-        else:
-            pbar = Absorber()
-            chunk_size = None
+        pbar = ProgressBar(
+            total = self.size,
+            label = "Downloading File",
+            mode = 'FILE STREAM',
+            verbose = True
+        )
 
-        # Iter through all data in stream
-        for data in r.iter_content(chunk_size):
+        for data in self.stream.iter_content(1024):
 
-            pbar.update(n=len(data))
+            pbar.update(data)
 
-            # Write the data to the dest file
             file.write(data)
+
+        file.close()
 
     @property
     def size(self) -> int:

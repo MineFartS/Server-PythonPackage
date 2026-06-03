@@ -1,4 +1,4 @@
-from typing import Literal, SupportsInt, SupportsFloat
+from typing import Literal, SupportsInt, SupportsFloat, Iterable
 
 #========================================================
 
@@ -44,6 +44,16 @@ class MutInt:
     # TODO division / multiplication
     
 #========================================================
+
+def nlen(num:int|float|Iterable) -> int|float:
+    """
+    If num is float|int, returns num
+    If num is Iterable, returns len(num)
+    """
+    if isinstance(num, (int, float)):
+        return num
+    else:
+        return len(num)
 
 def digit(num:int, i:int) -> int:
     """
