@@ -1,94 +1,84 @@
-from sys import stdout
-from . import Log
+from typing import Callable, Literal
+from tqdm import tqdm
+import sys
 
+from ..classtools import singleton
+
+@singleton
 class Pipe:
 
-    def __init__(self,
-        pbar: 'ProgressBar'
-    ) -> None:
-        self.pbar = pbar
+    def __init__(self) -> None:
+        
+        self.stdout = sys.stdout
+        self.flush = sys.stdout.flush
+        sys.stdout = self
 
-    def write(self, s:str):
-        import sys
+        self.pbar: None|ProgressBar = None
 
-        if self.pbar.finished:
-            sys.stdout = stdout
-        else:
+    def write(self, s:str) -> None:
+
+        if self.pbar:
             self.pbar.clear()
 
-        #
-        stdout.write(s)
+        self.stdout.write(s)
 
-    def flush(self):
-        pass
+_modes = Literal[
+    'SCOUNTER', # Simple Counter
+    'FCOUNTER', # Full Counter
+    'FILE STREAM'
+]
 
-class ProgressBar:
-
-    __bar_format = "{n_fmt}/{total_fmt} | {bar} | {elapsed}"
+class ProgressBar(tqdm):
 
     def __init__(self,
-        total: int = 0
+        total: int = 0,
+        mode: _modes = 'SCOUNTER'
     ) -> None:
         from ..process import Thread
-        from tqdm import tqdm
-        import sys
+        
+        kwargs: dict = {
+            "dynamic_ncols": True,
+        }
 
-        self._tqdm = tqdm(
-            iterable = range(total),
-            bar_format = self.__bar_format,
-            dynamic_ncols = True
-        )
+        match mode:
 
-        self.reset = self._tqdm.reset
-        self.stop  = self._tqdm.close
-        self.step  = self._tqdm.update
-        self.clear = self._tqdm.clear
-        self.flush = self._tqdm.refresh
+            case 'SCOUNTER':
+                kwargs['iterable'] = range(total)
+                kwargs['bar_format'] = "{n_fmt}/{total_fmt} | {bar} | {elapsed}"
 
-        self.total: int|float = self._tqdm.total
+            case 'FCOUNTER':
+                kwargs['iterable'] = range(total)
 
-        sys.stdout = Pipe(pbar=self)
+            case 'FILE STREAM':
+                kwargs['total'] = total
+                kwargs['unit'] = "B"
+                kwargs['unit_scale'] = True
+
+        super().__init__(**kwargs)
+
+        self.stop  = self.close
+        self.step  = self.update
+        self.flush: Callable[..., None] = self.refresh
+
+        Pipe.pbar = self
 
         Thread(self.__refresh)
 
     @property
     def finished(self) -> bool:
 
-        if self._tqdm.total == 0:
+        if self.total == 0:
             return False
         else:
-            return (self._tqdm.n == self._tqdm.total)
+            return (self.n == self.total)
 
     @property
-    def running(self):
-        return not (self.finished or self._tqdm.disable)
-        
-    def __refresh(self):
+    def running(self) -> bool:
+        return not (self.finished or self.disable)
+
+    def __refresh(self) -> None:
         from time import sleep
 
-        lastval = None
-
         while self.running:
-
-            # Wait .3 seconds
             sleep(.3)
-            
-            # Update the timer
-            self._tqdm.refresh()
-
-            # Sync the total
-            self._tqdm.total = self.total
-
-            if lastval != self._tqdm.n:
-
-                n = self._tqdm.n
-                t = self._tqdm.total
-
-                try:
-                    p = round(n/t, 2)
-                except ZeroDivisionError:
-                    p = 0
-
-                Log.VERB(f'ProgressBar: ({p}%, n={n}, t={t})')
-
-                lastval = n
+            self.refresh()
