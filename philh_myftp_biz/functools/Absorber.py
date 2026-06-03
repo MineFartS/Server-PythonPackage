@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 @dataclass
 class Absorber[T]:
@@ -18,15 +19,37 @@ class Absorber[T]:
     __setitem__ = __call__
 
 # @dataclass raises TypeError
-class NullSafe[T](Absorber):
+class NullSafe:
     
-    def __init__(self, item:T):
-        self.item: T = item
+    def __init__(self, 
+        item: Any, 
+        attr: str = None
+    ) -> None:
+        self.__parent = item
+        self.__attr = attr
+
+    @property
+    def __item(self):
+        if self.__attr:
+            return getattr(self.__parent, self.__attr, None)
+        else:
+            return self.__parent
 
     def __getattr__(self, name:str):
 
-        if self.item is None:
+        item = self.__item
+
+        if item is None:
             return NullSafe(None)
         else:
-            return getattr(self.item, name)
- 
+            return getattr(item, name, None)
+        
+    def __call__(self, *args, **kwargs):
+        
+        item = self.__item
+
+        if callable(item):
+            item(*args, **kwargs)
+        else:
+            return NullSafe(None)
+
