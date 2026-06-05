@@ -23,7 +23,7 @@ class Pipe:
 
     def write(self, s:str) -> None:
 
-        if self.pbar:
+        if self.pbar and (not self.pbar.tqdm.disable):
             self.pbar.tqdm.write(s, self.stdout)
         else:
             self.stdout.write(s)
