@@ -317,4 +317,5 @@ class Service(Path):
         self._lockfile.open('w')
         
         if stop:
-            self.stop()
+            try: self.stop()
+            except: pass
