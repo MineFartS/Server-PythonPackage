@@ -28,6 +28,9 @@ class Pipe:
         else:
             self.stdout.write(s)
 
+    def __getattr__(self, name:str):
+        return getattr(self.stdout, name)
+
 _modes = Literal[
     'SCOUNTER', # Simple Counter
     'FCOUNTER', # Full Counter
