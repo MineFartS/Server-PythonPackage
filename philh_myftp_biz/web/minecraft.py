@@ -50,46 +50,16 @@ class ModrinthMod:
 @singleton
 class FabricMC:
 
-    @cached_property
-    def serverURL(self) -> str:
-        """URL of Server jarfile"""
-        return f'https://meta.fabricmc.net/v2/versions/loader/{self.gameV}/{self.loaderV}/{self.installerV}/server/jar'
+    _server_jar: None|str = None
 
     @cached_property
-    def gameV(self) -> str: # pyright: ignore[reportReturnType]
-        """Game Version"""
-        from ..web import URL
+    def server_jar(self) -> str:
+        from .driver import Driver
 
-        request = URL('https://meta.fabricmc.net/v2/versions/game').json
+        if self._server_jar is None:
+            with Driver() as d:
+                d.open('https://fabricmc.net/use/server/')
+                self._server_jar = d.element('xpath', '/html/body/main/div/article/div/div[1]/main/div[1]/div[4]/a')[0].get_attribute('href')
+        
+        return self._server_jar # pyright: ignore[reportReturnType]
 
-        for item in request:
-
-            if item['stable']:
-
-                return item['version']
-            
-    @cached_property
-    def loaderV(self) -> str: # pyright: ignore[reportReturnType]
-        """Loader Version"""
-        from ..web import URL
-
-        request = URL(f'https://meta.fabricmc.net/v1/versions/loader/{self.gameV}').json
-
-        for item in request:
-
-            if item['loader']['stable']:
-
-                return item['loader']['version']
-
-    @cached_property
-    def installerV(self) -> str: # pyright: ignore[reportReturnType]
-        """Installer Version"""
-        from ..web import URL
-
-        request = URL(f'https://meta.fabricmc.net/v2/versions/installer').json
-
-        for item in request:
-
-            if item['stable']:
-
-                return item['version']
