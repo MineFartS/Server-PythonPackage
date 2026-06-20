@@ -17,26 +17,14 @@ class Mojang:
         return url.json # pyright: ignore[reportReturnType]
 
     @property
-    def latest(self) -> URL:
+    def latest_version(self) -> URL:
         return URL(self._data()['latest']['release'])
-    
-    _selected = None
-
-    @property
-    def selected(self):
-        if self._selected is None:
-            self._selected = self.latest
-
-        return self._selected
-    
-    @selected.setter
-    def selected(self, value:str):
-        self._selected = value
 
 @dataclass
 class ModrinthMod:
 
     name: str
+    version: str
     loader: Literal['fabric', 'forge'] = 'fabric'
 
     @cached_property
@@ -48,7 +36,7 @@ class ModrinthMod:
         items = List(url.json)
 
         items.filter(
-            lambda i: (Mojang.selected in i['game_versions'][0])
+            lambda i: (self.version in i['game_versions'][0])
         )
 
         items.filter(
@@ -58,8 +46,10 @@ class ModrinthMod:
         if len(items) > 0:
             return URL(items[0]['files'][0]['url'])
 
-@singleton
+@dataclass
 class FabricMC:
+
+    version: str
 
     @cached_property
     def server_jar(self) -> URL:
@@ -71,7 +61,7 @@ class FabricMC:
             d.open('https://fabricmc.net/use/server/')
 
             Select(d.element('id', 'minecraft-version')[0]) \
-                .select_by_visible_text(Mojang.selected)
+                .select_by_visible_text(self.version)
 
             url: str = d.element(
                 'xpath', 
