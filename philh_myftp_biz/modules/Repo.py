@@ -4,6 +4,8 @@ class Repo:
 
     def __init__(self, path:Path) -> None:
         from git import Repo
+
+        self.path = Path(path)
         
         self._repo = Repo(str(path))
 
@@ -21,6 +23,8 @@ class Repo:
 
         self.new_tag = self._repo.create_tag
 
+        self.REMOTE = self._repo.remotes[0]
+
     def refresh(self):
 
         self.rm('-r', '--cached', '.')
@@ -28,7 +32,18 @@ class Repo:
         self.add(['.'])
 
     def push(self):
+        self.REMOTE.push()
 
-        remote = self._repo.remotes[0]
+    def focus(self, path:str):
 
-        remote.push()
+        # Reset the index to clear any manually staged files
+        self._repo.git.reset()
+
+        abs = self.path.child(path)
+
+        # Stage only the specific subfolder
+        self._repo.git.add(str(abs))
+
+    @property
+    def changes(self) -> int:
+        return len(self.diff(self.head.commit))
