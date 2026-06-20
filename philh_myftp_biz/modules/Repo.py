@@ -52,3 +52,6 @@ class Repo:
     @property
     def changes(self) -> int:
         return len(self.diff(self.head.commit))
+    
+    def update_submodules(self) -> None:
+        self._repo.git.submodule('update', '--remote', '--recursive', '--init')
