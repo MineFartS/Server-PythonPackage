@@ -470,6 +470,9 @@ class Path:
         mode: Literal['r', 'w', 'a', 'rb', 'wb', '+'] = 'r'
     ):
         """builtins.open Wrapper"""
+
+        if 'w' in mode:
+            self.parent.mkdir()
         
         return open(
             file = self.path, 
