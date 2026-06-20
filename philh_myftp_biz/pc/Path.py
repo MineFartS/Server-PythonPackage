@@ -433,6 +433,8 @@ class Path:
                 srcIO.close()
                 dstIO.close()
 
+            pbar.stop()
+
         except Exception as e:
 
             # Delete destination paths
