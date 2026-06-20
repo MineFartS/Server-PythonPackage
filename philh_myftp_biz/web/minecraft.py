@@ -31,21 +31,24 @@ class ModrinthMod:
         return Mojang.java_latest
 
     @cached_property
-    def _data(self) -> dict[str, Any] | None:
+    def url(self) -> str | None:
         from ..web import URL
+        from ..json import List
 
         url = URL(f'https://api.modrinth.com/v2/project/{self.name}/version')
 
-        for item in url.json:
+        items = List(url.json)
 
-            if self.version in item['game_versions']:
+        items.filter(
+            lambda i: (self.version in i['game_versions'][0])
+        )
 
-                return item
+        items.filter(
+            lambda i: i['loaders'][0] == self.loader
+        )
 
-    @property
-    def url(self) -> None | str:
-        if self._data:
-            return self._data['files'][0]['url']
+        if len(items) > 0:
+            return items[0]['files'][0]['url'] # pyright: ignore[reportReturnType]
 
 @singleton
 class FabricMC:
