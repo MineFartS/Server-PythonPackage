@@ -23,12 +23,12 @@ class List[V](Collection[V, list[V]]):
         key: int|slice
     ) -> V | List[V]:
 
-        data: list[V] = self.read()[key]
+        data: V = self.read()[key]
 
         if isinstance(key, slice):
             return List(data)
         else:
-            return data[key]
+            return data
 
     def __iadd__(self, value:V) -> Self:
         

@@ -1,5 +1,5 @@
 from selenium.webdriver.remote.webelement import WebElement
-from typing import Literal, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING, Self
 from dataclasses import dataclass
 from ..functools import single_use
 
@@ -198,10 +198,12 @@ class Driver:
             self._drvr.quit()
         except InvalidSessionIdException:
             pass
+    
+    def __enter__(self) -> Self:
+        return self
 
-    __del__ = close
-    __exit__ = close
-    __enter__ = lambda self: self
+    def __exit__(self, *_) -> None:
+        self.close()  
 
     @property
     def HTML(self) -> str | None:

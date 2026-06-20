@@ -13,7 +13,7 @@ class Mojang:
 
         url = URL('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json')
         
-        return url.get().json()
+        return url.json # pyright: ignore[reportReturnType]
 
     @property
     def java_latest(self) -> str:
@@ -36,7 +36,7 @@ class ModrinthMod:
 
         url = URL(f'https://api.modrinth.com/v2/project/{self.name}/version')
 
-        for item in url.get().json():
+        for item in url.json:
 
             if self.version in item['game_versions']:
 
@@ -60,7 +60,7 @@ class FabricMC:
         """Game Version"""
         from ..web import URL
 
-        request = URL('https://meta.fabricmc.net/v2/versions/game').json()
+        request = URL('https://meta.fabricmc.net/v2/versions/game').json
 
         for item in request:
 
@@ -73,7 +73,7 @@ class FabricMC:
         """Loader Version"""
         from ..web import URL
 
-        request = URL(f'https://meta.fabricmc.net/v1/versions/loader/{self.gameV}').json()
+        request = URL(f'https://meta.fabricmc.net/v1/versions/loader/{self.gameV}').json
 
         for item in request:
 
@@ -86,7 +86,7 @@ class FabricMC:
         """Installer Version"""
         from ..web import URL
 
-        request = URL(f'https://meta.fabricmc.net/v2/versions/installer').json()
+        request = URL(f'https://meta.fabricmc.net/v2/versions/installer').json
 
         for item in request:
 

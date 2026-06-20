@@ -21,3 +21,4 @@ pytz
 xmltodict
 GitPython
 parse-torrent-title
+bs4

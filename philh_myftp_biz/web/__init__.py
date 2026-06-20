@@ -182,7 +182,7 @@ class URL:
 
         for data in self.stream.iter_content(1024):
 
-            pbar.update(data)
+            pbar.step(data)
 
             file.write(data)
 
