@@ -86,7 +86,7 @@ class Omdb:
 
         key = hex.encode(params)
 
-        if params in self.mcache:
+        if key in self.mcache:
             return self.mcache[key]
 
         r = self._get({
@@ -123,7 +123,7 @@ class Omdb:
 
         key = hex.encode(params)
 
-        if params in self.scache:
+        if key in self.scache:
             return self.scache[key]
 
         # Request raw list of seasons
