@@ -28,9 +28,12 @@ class Collection[T, STRUCT]:
             self.var.save(t)
 
         self.var.default = self._default
-        self._cache = self.var.read()
 
     def read(self) -> STRUCT:
+
+        if not hasattr(self, '_cache'):
+            self._cache = self.var.read()
+
         return self._cache # pyright: ignore[reportReturnType]
     
     def save(self, data:STRUCT) -> None:
