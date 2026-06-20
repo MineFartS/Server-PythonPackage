@@ -2,6 +2,7 @@ from functools import cached_property, cache
 from ..classtools import singleton
 from dataclasses import dataclass
 from typing import Literal, Any
+from . import URL
 
 @singleton
 class Mojang:
@@ -16,23 +17,30 @@ class Mojang:
         return url.json # pyright: ignore[reportReturnType]
 
     @property
-    def java_latest(self) -> str:
-        return self._data()['latest']['release']
+    def latest(self) -> URL:
+        return URL(self._data()['latest']['release'])
+    
+    _selected = None
+
+    @property
+    def selected(self):
+        if self._selected is None:
+            self._selected = self.latest
+
+        return self._selected
+    
+    @selected.setter
+    def selected(self, value:str):
+        self._selected = value
 
 @dataclass
 class ModrinthMod:
 
     name: str
     loader: Literal['fabric', 'forge'] = 'fabric'
-    
-    @property
-    def version(self) -> str:
-        # TODO Add more version options
-        return Mojang.java_latest
 
     @cached_property
-    def url(self) -> str | None:
-        from ..web import URL
+    def url(self) -> URL | None:
         from ..json import List
 
         url = URL(f'https://api.modrinth.com/v2/project/{self.name}/version')
@@ -40,7 +48,7 @@ class ModrinthMod:
         items = List(url.json)
 
         items.filter(
-            lambda i: (self.version in i['game_versions'][0])
+            lambda i: (Mojang.selected in i['game_versions'][0])
         )
 
         items.filter(
@@ -48,21 +56,26 @@ class ModrinthMod:
         )
 
         if len(items) > 0:
-            return items[0]['files'][0]['url'] # pyright: ignore[reportReturnType]
+            return URL(items[0]['files'][0]['url'])
 
 @singleton
 class FabricMC:
 
-    _server_jar: None|str = None
-
     @cached_property
-    def server_jar(self) -> str:
+    def server_jar(self) -> URL:
+        from selenium.webdriver.support.ui import Select
         from .driver import Driver
 
-        if self._server_jar is None:
-            with Driver() as d:
-                d.open('https://fabricmc.net/use/server/')
-                self._server_jar = d.element('xpath', '/html/body/main/div/article/div/div[1]/main/div[1]/div[4]/a')[0].get_attribute('href')
-        
-        return self._server_jar # pyright: ignore[reportReturnType]
+        with Driver() as d:
 
+            d.open('https://fabricmc.net/use/server/')
+
+            Select(d.element('id', 'minecraft-version')[0]) \
+                .select_by_visible_text(Mojang.selected)
+
+            url: str = d.element(
+                'xpath', 
+                '/html/body/main/div/article/div/div[1]/main/div[1]/div[4]/a'
+            )[0].get_attribute('href')
+
+            return URL(url)
