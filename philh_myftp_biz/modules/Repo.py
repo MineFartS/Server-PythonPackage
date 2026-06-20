@@ -9,8 +9,6 @@ class Repo:
         
         self._repo = Repo(str(path))
 
-        self.add  = self._repo.index.add
-
         self.diff = self._repo.index.diff
 
         self.commit = self._repo.index.commit
@@ -25,23 +23,30 @@ class Repo:
 
         self.REMOTE = self._repo.remotes[0]
 
+        self.push = self.REMOTE.push
+
+        self.reset = self._repo.git.reset
+        """Unstage all files"""
+
     def refresh(self):
 
         self.rm('-r', '--cached', '.')
 
         self.add(['.'])
 
-    def push(self):
-        self.REMOTE.push()
-
     def focus(self, path:str):
 
         # Reset the index to clear any manually staged files
-        self._repo.git.reset()
+        self.reset()
+
+        # Stage only the specific subfolder
+        self.add(path)
+
+    def add(self, path:str):
+        """Stage specific subfolder"""
 
         abs = self.path.child(path)
 
-        # Stage only the specific subfolder
         self._repo.git.add(str(abs))
 
     @property
