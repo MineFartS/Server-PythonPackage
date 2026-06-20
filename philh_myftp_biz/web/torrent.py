@@ -337,7 +337,7 @@ class qBitTorrent:
                 return self._rclient
             
             except LoginFailed, Forbidden403Error, APIConnectionError:
-                Log.VERB('qBitTorrentAPI Connection Error')
+                Log.VERB('qBitTorrentAPI Connection Error', exc_info=True)
 
             timeout.check()
 
