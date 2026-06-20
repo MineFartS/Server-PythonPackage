@@ -9,6 +9,7 @@ class Collection[T, STRUCT]:
     def __init__(self,
         t: STRUCT = None
     ) -> None:
+        from types import GeneratorType
         from ..file import PKL, temp
 
         if isinstance(t, Collection):
@@ -19,7 +20,7 @@ class Collection[T, STRUCT]:
 
         else:
 
-            if isinstance(t, (tuple, filter)):
+            if isinstance(t, (tuple, filter, GeneratorType)):
                 t = list(t)
 
             self.var = PKL(
