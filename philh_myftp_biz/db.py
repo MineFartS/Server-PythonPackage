@@ -16,10 +16,13 @@ class MimeType:
 
     def __call__(self, ext:None|str) -> None | str:
         """Get the mimetype from a file extension"""
+        from .import VERBOSE
 
         if ext:
 
+            VERBOSE.pause()
             data: dict[str, str] = self.url.json
+            VERBOSE.resume()
         
             return data.get(ext.lower())
         
