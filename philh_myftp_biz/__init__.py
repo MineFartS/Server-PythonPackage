@@ -64,9 +64,8 @@ class _Formatter(__Formatter):
     def _wfile(self):
         from .terminal import script_file
         from .pc import loc
-        from time import time
 
-        file = loc.logs.child(f'{script_file().name}.{time():.0f}.log')
+        file = loc.logs.child(script_file().name + '.log')
 
         file.open('w').close()
 
