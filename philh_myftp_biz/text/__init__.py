@@ -154,27 +154,11 @@ def abbr(
         return string[:num] + end
 
 def from_function(func: Callable) -> None | str:
-    from ast import parse, walk, Lambda, unparse
     from inspect import getsourcelines
 
-    source = ''.join(getsourcelines(func)[0])
+    line = ''.join(getsourcelines(func)[0]).strip()
 
-    # If function is lambda
-    if func.__name__ == '<lambda>':
-    
-        # Parse the source code into an AST
-        tree = parse(source[source.find('lambda'):])
-        
-        for node in walk(tree):
-
-            if isinstance(node, Lambda):
-                
-                return unparse(node).strip()
-
-    # If function declared using "def"    
-    else:
-
-        return source
+    return 'lambda' + line.split('lambda', 1)[1]
 
 @cache
 def to_slice(string:str) -> None | list[slice|int]:
