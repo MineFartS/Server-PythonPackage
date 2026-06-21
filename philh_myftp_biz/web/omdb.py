@@ -34,12 +34,7 @@ class Omdb:
 
     url = URL('https://www.omdbapi.com/')
 
-    _keys = [
-        'dc888719',
-        '2e0c4a98'
-    ]
-
-    key: Literal[*_keys] = 'dc888719'
+    key: Literal['dc888719','2e0c4a98'] = 'dc888719'
 
     mcache: TransitoryCache[MovieData] = TransitoryCache('m', expire=36000)
 
@@ -77,17 +72,14 @@ class Omdb:
     ) -> None | MovieData:
         """Get details of a movie"""
         from ..time import from_string
-        from ..text import hex
 
         params = {
             't': title,
             'y': year
         }
 
-        key = hex.encode(params)
-
-        if key in self.mcache:
-            return self.mcache[key]
+        if params in self.mcache:
+            return self.mcache[params]
 
         r = self._get({
             't': title,
@@ -105,7 +97,7 @@ class Omdb:
         else:
             movie = None
             
-        self.mcache[key] = movie
+        self.mcache[params] = movie
         return None
 
     def show(self,
@@ -114,17 +106,14 @@ class Omdb:
     ) -> None | ShowData:
         """Get details of a show"""
         from ..time import from_string
-        from ..text import hex
 
         params = {
             't': title,
             'y': year
         }
 
-        key = hex.encode(params)
-
-        if key in self.scache:
-            return self.scache[key]
+        if params in self.scache:
+            return self.scache[params]
 
         # Request raw list of seasons
         r1 = self._get(params)
@@ -168,7 +157,7 @@ class Omdb:
 
                 show.Seasons [f'{s:02d}'] [e['Episode'].zfill(2)] = episode
 
-        self.scache[key] = show
+        self.scache[params] = show
 
         # Return the 'Show' obj
         return show
