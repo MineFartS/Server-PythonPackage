@@ -1,3 +1,4 @@
+from typing import Literal
 from json import dumps
 
 class Collection[T, STRUCT]:
@@ -10,25 +11,23 @@ class Collection[T, STRUCT]:
         t: STRUCT = None
     ) -> None:
         from types import GeneratorType
-        from ..file import PKL, temp
 
         if isinstance(t, Collection):
-            self.var = t.var            
+            self.var = t.var
+            self.var.default = self._default
 
         elif hasattr(t, 'read') and hasattr(t, 'save'):
             self.var = t
+            self.var.default = self._default
 
+        elif isinstance(t, (tuple, filter, GeneratorType)):
+            self._cache = list(t)
+        
+        elif t is None:
+            self._cache = self._default
+        
         else:
-
-            if isinstance(t, (tuple, filter, GeneratorType)):
-                t = list(t)
-
-            self.var = PKL(
-                path = temp('Collection', 'pkl')
-            )
-            self.var.save(t)
-
-        self.var.default = self._default
+            self._cache = t
 
     def read(self) -> STRUCT:
 
@@ -41,7 +40,8 @@ class Collection[T, STRUCT]:
 
         self._cache = data
 
-        self.var.save(data)
+        if hasattr(self, 'var'):
+            self.var.save(data)
     
     def __len__(self) -> int:
         return len(self.read())
