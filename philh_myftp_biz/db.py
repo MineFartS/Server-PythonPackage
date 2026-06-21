@@ -1,7 +1,7 @@
+from functools import cache, cached_property
 from typing import Literal, TYPE_CHECKING
 from .classtools import singleton
 from dataclasses import dataclass
-from functools import cache
 from .web import URL
 
 if TYPE_CHECKING:
@@ -12,19 +12,16 @@ if TYPE_CHECKING:
 @singleton
 class MimeType:
 
-    url = URL('https://raw.githubusercontent.com/MineFartS/FileTypes/refs/heads/master/compiled.json')
+    @cached_property
+    def _map(self) -> dict[str, str]:
+        url = URL('https://raw.githubusercontent.com/MineFartS/FileTypes/refs/heads/master/compiled.json')
+        return url.json # pyright: ignore[reportReturnType]
 
     def __call__(self, ext:None|str) -> None | str:
         """Get the mimetype from a file extension"""
-        from .import VERBOSE
 
         if ext:
-
-            VERBOSE.pause()
-            data: dict[str, str] = self.url.json
-            VERBOSE.resume()
-        
-            return data.get(ext.lower())
+            return self._map.get(ext.lower())
         
     Ext = __call__
 
