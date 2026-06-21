@@ -4,7 +4,7 @@ from functools import cached_property
 from .TransitoryCache import TransitoryCache # pyright: ignore[reportUnusedImport]
 from .Absorber import Absorber, NullSafe # pyright: ignore[reportUnusedImport]
 from .SharedBuffer import SharedBuffer # pyright: ignore[reportUnusedImport]
-from .attr import attr, base_attrs # pyright: ignore[reportUnusedImport]
+from .attr import attr, base_attrs, LinkedProperty # pyright: ignore[reportUnusedImport]
 from .Partial import Partial # pyright: ignore[reportUnusedImport]
 from .supports import *
 

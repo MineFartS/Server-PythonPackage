@@ -108,3 +108,23 @@ class attr:
             )
         except TypeError:
             return str(self.value)
+
+#========================================================
+
+class LinkedProperty(property):
+
+    def __init__(self,
+        obj: Any,
+        name: str
+    ) -> None:
+        super().__init__()
+        self.obj = obj
+        self.name = name
+
+    def fset(self, value):
+        setattr(self.obj, self.name, value)
+
+    def fget(self, default=None):
+        return getattr(self.obj, self.name, default)
+
+
