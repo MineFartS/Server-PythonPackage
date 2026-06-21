@@ -1,7 +1,7 @@
+from ..functools import singleton, LinkedProperty
 from ..functools import TransitoryCache
 from typing import TYPE_CHECKING, Any
 from functools import cached_property
-from ..classtools import singleton
 from dataclasses import dataclass
 from ..web import URL
 
@@ -140,27 +140,44 @@ class Torrent:
     def __init__(self,
         qbit: qBitTorrent,
         hash: str
-    ):
+    ) -> None:
         
         self.qbit = qbit
         self.timeout = qbit.timeout
 
         self.hash = hash
 
+    def __repr__(self) -> str:
+        from ..classtools import loc
+        from ..text import abbr
+
+        return f"<Torrent '{abbr(num=30, string=self.title)}' @{loc(obj=self)}>"
+
     #===================================================
 
-    def __qbit_getter(name:str, defv:Any):
-        return property(lambda s: getattr(s.qbit, name, defv))
+    def __getattr__(self, name:str):
 
-    _client: 'Client' = __qbit_getter('_client', None)
+        match name:
+            
+            case 'priority':
+                return getattr(self._tdict, 'priority', -1)
 
-    priority: int = __qbit_getter('priority', None)
+            case 'seeders':
+                return getattr(self._tdict, 'num_complete', -1)
+            
+            case 'leechers':
+                return getattr(self._tdict, 'num_incomplete', -1)
+            
+            case 'title':
+                return getattr(self._tdict, 'name', "")
+            
+            case _:
+                return getattr(self, name) # Raises Error
 
-    seeders: int = __qbit_getter('num_complete', -1)
-
-    leechers: int = __qbit_getter('num_incomplete', -1)
-
-    title: str = __qbit_getter('name', None)
+    priority: int
+    seeders: int
+    leechers: int
+    title: str
 
     #===================================================
 
@@ -169,12 +186,9 @@ class Torrent:
             self._tdict.start()
 
     @property
-    def _tdict(self) -> '__TorrentDict | None':
-        
-        for t in self._client.torrents_info():
-        
+    def _tdict(self) -> '__TorrentDict | None':        
+        for t in self.qbit._client.torrents_info():
             if t.hash == self.hash:
-
                 return t
 
     @property
@@ -505,15 +519,14 @@ class Magnet(Torrent, NameParser):
 
     #===================================================
     
-    def __torrent_getter(name:str):
-        return property(lambda s: getattr(
-            s.qbit, name,
-            getattr(s, '_'+name)
-        ))
+    def __getattr__(self, name:str):
+        if name in ['seeders', 'leechers']:
+            return getattr(self._tdict, name, -1)
+        else:
+            return getattr(self, name) # Raise Error
 
-    seeders: int = __torrent_getter('seeders')
-
-    leechers: int = __torrent_getter('leechers')
+    seeders: int
+    leechers: int
 
     #===================================================
 
@@ -536,7 +549,7 @@ class Magnet(Torrent, NameParser):
             self._tdict.start()
         
         else:
-            self._client.torrents_add(
+            self.qbit._client.torrents_add(
                 urls = self.url,
                 save_path = path
             )
