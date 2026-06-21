@@ -3,11 +3,15 @@ from ..pc import Path
 class Repo:
 
     def __init__(self, path:Path) -> None:
+        from git.exc import NoSuchPathError
         from git import Repo
 
         self.path = Path(path)
         
-        self._repo = Repo(str(path))
+        try:
+            self._repo = Repo(str(path))
+        except NoSuchPathError:
+            raise FileNotFoundError(self.path) from None
 
         self.diff = self._repo.index.diff
 
