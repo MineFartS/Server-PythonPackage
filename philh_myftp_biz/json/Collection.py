@@ -1,4 +1,4 @@
-from typing import Literal
+from ..file import _Template as File
 from json import dumps
 
 class Collection[T, STRUCT]:
@@ -7,18 +7,19 @@ class Collection[T, STRUCT]:
 
     _cache: None|STRUCT
 
+    var: File
+
     def __init__(self,
-        t: STRUCT = None
+        t: STRUCT | File = None
     ) -> None:
         from types import GeneratorType
 
         if isinstance(t, Collection):
             self.var = t.var
-            self.var.default = self._default
 
-        elif hasattr(t, 'read') and hasattr(t, 'save'):
+        elif isinstance(t, File):
+            t.default = self._default
             self.var = t
-            self.var.default = self._default
 
         elif isinstance(t, (tuple, filter, GeneratorType)):
             self._cache = list(t)
@@ -36,7 +37,10 @@ class Collection[T, STRUCT]:
 
         return self._cache # pyright: ignore[reportReturnType]
     
-    def save(self, data:STRUCT) -> None:
+    def save(self, data:STRUCT|Collection) -> None:
+
+        if isinstance(data, Collection):
+            data = data.read()
 
         self._cache = data
 

@@ -1,7 +1,7 @@
-from ..functools import singleton, LinkedProperty
 from ..functools import TransitoryCache
 from typing import TYPE_CHECKING, Any
 from functools import cached_property
+from ..functools import singleton
 from dataclasses import dataclass
 from ..web import URL
 
@@ -41,7 +41,7 @@ class TorrentFile:
         self.size: float = file.size
         """File Size"""
 
-        self.title: str = file.name[file.name.find('/')+1:]
+        self.name: str = file.name[file.name.find('/')+1:]
         """File Name"""
 
         self._id: str = file.id
@@ -133,7 +133,7 @@ class TorrentFile:
         from ..classtools import loc
         from ..text import abbr
 
-        return f"<File '{abbr(num=30, string=self.title)}' @{loc(obj=self)}>"
+        return f"<File '{abbr(num=30, string=self.name)}' @{loc(obj=self)}>"
 
 class Torrent:
 
@@ -151,7 +151,7 @@ class Torrent:
         from ..classtools import loc
         from ..text import abbr
 
-        return f"<Torrent '{abbr(num=30, string=self.title)}' @{loc(obj=self)}>"
+        return f"<Torrent '{abbr(num=30, string=self.name)}' @{loc(obj=self)}>"
 
     #===================================================
 
@@ -168,16 +168,16 @@ class Torrent:
             case 'leechers':
                 return getattr(self._tdict, 'num_incomplete', -1)
             
-            case 'title':
+            case 'name':
                 return getattr(self._tdict, 'name', "")
             
             case _:
-                return getattr(self, name) # Raises Error
+                return super().__getattribute__(name) # Raises Error
 
     priority: int
     seeders: int
     leechers: int
-    title: str
+    name: str
 
     #===================================================
 
@@ -385,7 +385,7 @@ class qBitTorrent:
 
             if func(torrent):
             
-                Log.VERB(f'Deleting Queue Item: {rm_files=} | {torrent.title=}')
+                Log.VERB(f'Deleting Queue Item: {rm_files=} | {torrent.name=}')
                 
                 torrent.stop(rm_files)
 
@@ -523,7 +523,7 @@ class Magnet(Torrent, NameParser):
         if name in ['seeders', 'leechers']:
             return getattr(self._tdict, name, -1)
         else:
-            return getattr(self, name) # Raise Error
+            return super().__getattribute__(name) # Raise Error
 
     seeders: int
     leechers: int
@@ -590,29 +590,21 @@ class thePirateBay:
         from ..array import List
         from .. import VERBOSE
 
-        VERBOSE.pause()
-        
-        magnets = []
+        magnets = List()
 
-        _queries = []
+        VERBOSE.pause()
 
         for q in queries:
-            _queries += [
-                q,
-                q.replace('.', '').replace("'", ''),
-                q.replace('.', ' ').replace("'", ' ')
-            ]
-
-        for q in _queries:
             magnets += self.rsearch(q)
+            magnets += self.rsearch(q.replace('.', '').replace("'", ''))
+            magnets += self.rsearch(q.replace('.', ' ').replace("'", ' '))
 
         VERBOSE.resume()
 
-        _magnets = List(magnets)
+        magnets.flatten()
+        magnets.uniquify()
 
-        _magnets.uniquify()
-
-        return _magnets
+        return magnets
 
     def rsearch(self, query:str) -> list[Magnet]:
         """Search thePirateBay for magnets"""

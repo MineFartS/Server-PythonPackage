@@ -1,5 +1,4 @@
-from typing import Callable, Any, Iterator, Self, Callable
-from functools import partialmethod
+from typing import Callable, Any, Iterator, Self, Iterable
 from .Collection import Collection
 
 class List[V](Collection[V, list[V]]):
@@ -30,6 +29,14 @@ class List[V](Collection[V, list[V]]):
         else:
             return data
 
+    def extend(self, items:Iterable[V]) -> None:
+        
+        data: list[V] = self.read()
+        
+        data.extend(items)
+
+        self.save(data)
+
     def __iadd__(self, value:V) -> Self:
         
         data: list[V] = self.read()
@@ -52,18 +59,6 @@ class List[V](Collection[V, list[V]]):
     
     def __list__(self):
         return self.read()
-
-    def __updater[T](
-        _func: Callable[..., List[T]]
-    ):
-
-        def method(self:List[T], *args, **kwargs): # pyright: ignore[reportMissingParameterType]
-
-            self.save(_func(self, *args, **kwargs).read())
-
-            return self
-
-        return partialmethod(method)
     
     #=======================================
 
@@ -76,8 +71,11 @@ class List[V](Collection[V, list[V]]):
         sdata = sorted(data, key=func)
 
         return List(sdata)
-
-    sort = __updater(sorted)
+    
+    def sort(self,
+        func: Callable[[V], Any] = lambda x: x
+    ) -> None:
+        self.save(self.sorted(func))
 
     #=======================================
 
@@ -102,7 +100,10 @@ class List[V](Collection[V, list[V]]):
 
         return List(filtered)
     
-    filter = __updater(filtered)
+    def filter(self,
+        func: Callable[[V], Any] = lambda x: x
+    ) -> None:
+        self.save(self.filtered(func))
 
     #=======================================
 
@@ -114,7 +115,8 @@ class List[V](Collection[V, list[V]]):
 
         return List(data)
     
-    reverse = __updater(reversed)
+    def reverse(self) -> None:
+        self.save(self.reversed())
 
     #=======================================
 
@@ -136,8 +138,9 @@ class List[V](Collection[V, list[V]]):
         shuffle(data)
 
         return List(data)
-
-    shuffle = __updater(shuffled)
+    
+    def shuffle(self) -> None:
+        self.save(self.shuffled())
 
     #=======================================
 
@@ -152,8 +155,9 @@ class List[V](Collection[V, list[V]]):
                 data += item
 
         return data
-
-    uniquify = __updater(uniquified)
+    
+    def uniquify(self) -> None:
+        self.save(self.uniquified())
 
     #=======================================
 
@@ -163,7 +167,8 @@ class List[V](Collection[V, list[V]]):
         data: chain[V] = chain.from_iterable(self.read())
 
         return List(data)
-
-    flatten = __updater(flattened)
+    
+    def flatten(self) -> None:
+        self.save(self.flattened())
 
     #=======================================
