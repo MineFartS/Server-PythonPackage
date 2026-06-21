@@ -37,6 +37,18 @@ class List[V](Collection[V, list[V]]):
 
         self.save(data)
 
+    def pop(self, x:int=-1):
+        
+        data: list[V] = self.read()
+
+        if len(data) == 0:
+            val = None
+        else:
+            val = data.pop(x)
+            self.save(data)
+
+        return val
+
     def __iadd__(self, value:V) -> Self:
         
         data: list[V] = self.read()
