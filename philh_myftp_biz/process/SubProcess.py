@@ -85,8 +85,6 @@ class SubProcess:
 
         self._task = SysTask(self._process.pid)
 
-        self.wait = self._process.wait
-
         self.stop = self._task.stop
 
         self.send = self._process.communicate
@@ -184,6 +182,19 @@ class SubProcess:
     @property
     def running(self) -> bool:
         return self._task.exists
+    
+    def wait(self):
+        while self.running:
+            pass
+
+    def __getstate__(self):
+
+        state = self.__dict__.copy()
+
+        state['_process'] = None
+        state['send'] = None
+
+        return state
 
 class Run(SubProcess):
     _hide = False
