@@ -1,10 +1,8 @@
-from typing import Literal, TYPE_CHECKING, Callable, Any
-from argparse import ArgumentParser
-from ..classtools import singleton
-from ..json import SupportsJSON
+from typing import Literal, TYPE_CHECKING
 from functools import cache
 
 if TYPE_CHECKING:
+    from ..pc.Path import Path
     from ..db import Color
 
 from sys import stdout, stderr # pyright: ignore[reportUnusedImport]
@@ -197,6 +195,14 @@ def main_module():
         name = fullname.split('.')[0]
 
         return modules[name]
+
+def set_package(path:str|Path):
+    from ..pc.Path import Path
+    import sys
+
+    path = Path(path)
+    sys.path.insert(0, str(path.parent))
+    main_module().__package__ = path.name
 
 @cache
 def script_file():
