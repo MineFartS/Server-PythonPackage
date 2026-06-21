@@ -5,6 +5,7 @@ from fnmatch import fnmatch as like # pyright: ignore[reportUnusedImport]
 
 from . import contains, hex # pyright: ignore[reportUnusedImport]
 from .regex import Pattern # pyright: ignore[reportUnusedImport]
+from .io import UnconsumingIO # pyright: ignore[reportUnusedImport]
 
 def split(
     value: str,

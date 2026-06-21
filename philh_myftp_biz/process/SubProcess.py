@@ -2,6 +2,7 @@ from typing import Literal, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..pc import Path
+    from ..text import UnconsumingIO
 
 class SubProcess:
     """Subprocess Wrapper"""
@@ -15,12 +16,12 @@ class SubProcess:
         dir: 'Path|None' = None
     ) -> None:
         from subprocess import Popen, PIPE
+        from ..text import UnconsumingIO
         from ..array import stringify
         from .SysTask import SysTask
         from sys import executable
         from ..terminal import Log
         from ..pc import Path, cwd
-        from .Thread import Thread
 
         # =====================================
 
@@ -91,63 +92,14 @@ class SubProcess:
 
         # =====================================
 
-        self.stdout  = ''
-        self.stderr  = ''
-        self.stdcomb = ''
-
-        # Start Status Monitor
-        Thread(self.__monitor)
+        self.stdout  = UnconsumingIO(self._process.stdout, True)
+        self.stderr  = UnconsumingIO(self._process.stderr, True)
 
         # =====================================
 
         # Wait for process to complete if required
         if self._wait:
             self.wait()
-
-    def __monitor(self) -> None:
-        from ..terminal import _cls_cmd, cls, write
-        from .Thread import Alive
-
-        stdout = iter(self._process.stdout.read, -1)
-        stderr = iter(self._process.stderr.read, -1)
-
-        while self.running and Alive():
-
-            outline = next(stdout, '')
-
-            if _cls_cmd in outline:
-
-                # Reset stream buffers
-                self.stdout = ''
-                self.stderr = ''
-                self.stdcomb = ''
-
-                #
-                if not self._hide:
-                    cls()
-
-            elif len(outline) > 0:
-
-                #
-                self.stdout += outline
-                self.stdcomb += outline
-
-                #
-                if not self._hide:
-                    write(outline, 'out')
-
-            errline = next(stderr, '')
-
-            if len(errline) > 0:
-
-                self.stderr += errline
-                self.stdcomb += errline
-
-                if not self._hide:
-                    write(errline, 'err')
-
-        #
-        self.stop()
 
     @property
     def finished(self) -> bool:
@@ -158,17 +110,15 @@ class SubProcess:
 
     def output(self,
         format: Literal['json', 'hex'] = None,
-        stream: Literal['out', 'err', 'comb'] = 'out'
+        stream: Literal['out', 'err'] = 'out'
     ) -> 'str | dict | list | bool | Any':
-        """
-        Read the output from the Subprocess
-        """
+        """Read the output from the Subprocess"""
         from ..text import hex
         from .. import json
 
-        _stream: str = getattr(self, 'std'+stream)
+        _stream: UnconsumingIO = getattr(self, 'std'+stream)
 
-        output = _stream.encode().strip()
+        output = _stream.read()
 
         if format == 'json':
             return json.loads(output)
@@ -177,7 +127,7 @@ class SubProcess:
             return hex.decode(output)
         
         else:
-            return output.decode()
+            return output
 
     @property
     def running(self) -> bool:
