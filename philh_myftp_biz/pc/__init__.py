@@ -1,6 +1,6 @@
+from ..classtools import singleton, bylazy
 from typing import Literal, Generator
 from functools import cached_property
-from ..classtools import singleton
 
 from .Path import Path, PathPair
 #========================================================
@@ -55,12 +55,12 @@ def relscan(
 # NAME
 
 from socket import gethostname
-NAME = singleton(gethostname)
+NAME = bylazy(gethostname)
 
 #=================================
 # OS
 
-@singleton
+@bylazy
 def OS() -> Literal['windows', 'unix']:
     from os import name
 
