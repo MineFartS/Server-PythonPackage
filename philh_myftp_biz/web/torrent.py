@@ -198,6 +198,7 @@ class Torrent:
 
         Waits for at least one file to be found before returning
         """
+        from qbittorrentapi.exceptions import NotFound404Error
         from ..time import Timeout
         from ..terminal import Log
 
@@ -212,8 +213,12 @@ class Torrent:
         self._tdict.setForceStart(True)
 
         # Wait for files to populate
-        while len(self._tdict.files) == 0:
-            timeout.check()
+        while True:
+            try:
+                timeout.check()
+                if len(self._tdict.files) > 0: break
+            except NotFound404Error:
+                Log.VERB('', exc_info=True)
 
         self._tdict.setForceStart(False)
 
@@ -404,7 +409,8 @@ class qBitTorrent:
 
         torrents = List(Torrent(self, t.hash) for t in self._client.torrents_info())
 
-        torrents.sort(func).reverse()
+        torrents.sort(func)
+        torrents.reverse()
 
         # Iterate through reversed list of torrents
         for t in torrents:
