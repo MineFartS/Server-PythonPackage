@@ -13,18 +13,11 @@ if TYPE_CHECKING:
     from .driver import Driver
     from ..pc import Path
 
-qualities: dict[str, int] = {
-    'hdtv': 0,
-    'tvrip': 0,
-    '2160p': 2160,
-    '1440p': 1440,
-    '1080p': 1080,
-    '720p': 720,
-    '480p': 480,
-    '360p': 360,
-    '4K': 2160
+qualities: list[str] = {
+    'hdtv', 'tvrip', '2160p', 
+    '1440p', '1080p', '720p',
+    '480p', '360p', '4K'
 }
-"""QUALITY LOOKUP TABLE"""
 
 class TorrentFile:
     """Downloading Torrent File"""
@@ -467,12 +460,9 @@ class NameParser:
             return int(m[0])
 
     @cached_property
-    def quality(self) -> None | int:
-
-        for term, quality in qualities.items():
-            
-            if term in self.name:
-                
+    def quality(self) -> None | str:
+        for quality in qualities:
+            if quality in self.name:
                 return quality
             
     @cached_property
@@ -514,25 +504,14 @@ class Magnet(Torrent, NameParser):
 
         #===================================================
 
-        self._leechers: int = leechers
-        self._seeders: int = seeders
+        self.leechers = leechers
+        self.seeders = seeders
         self.size: str = size
         self.url: str = url
 
         NameParser.__init__(self, name.lower().strip('\n'))
 
         #===================================================
-
-    #===================================================
-    
-    def __getattr__(self, name:str):
-        if name in ['seeders', 'leechers']:
-            return getattr(self._tdict, name, -1)
-        else:
-            return super().__getattribute__(name) # Raise Error
-
-    seeders: int
-    leechers: int
 
     #===================================================
 
