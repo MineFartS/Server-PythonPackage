@@ -1,4 +1,4 @@
-from ..classtools import singleton, bylazy
+from ..classtools import singleton
 from typing import Literal, Generator
 from functools import cached_property
 
@@ -52,25 +52,23 @@ def relscan(
     yield from buff
 
 #========================================================
-# NAME
+# Lazy Values
 
-from socket import gethostname
-NAME = bylazy(gethostname)
+NAME: str
 
-#=================================
-# OS
+OS: Literal['windows', 'unix']
 
-@bylazy
-def OS() -> Literal['windows', 'unix']:
-    from os import name
+def __getattr__(attr:str):
+    from socket import gethostname
+    import os
 
-    match name:
+    match attr:
 
-        case 'nt':
-            return 'windows'
+        case 'OS':
+            return 'windows' if (os.name == 'nt') else 'unix'
         
-        case _:
-            return 'unix'
+        case 'NAME':
+            return gethostname()
 
 #=================================
 # DIRs

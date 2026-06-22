@@ -5,12 +5,12 @@ import builtins
 
 #========================================================
 
-base_attrs: list[str] = []
+dunders: list[str] = []
 
 for obj in vars(builtins).values():
-    base_attrs += dir(obj)
+    dunders += dir(obj)
 
-base_attrs = list(set(n for n in base_attrs if n.startswith('__')))
+dunders = list(set(n for n in dunders if n.startswith('__')))
 
 #========================================================
 
@@ -81,7 +81,7 @@ class attr:
 
     def set(self, value:Any) -> None:
 
-        if self.name in base_attrs:
+        if self.name in dunders:
     
             self.parent.__class__ = type(
                 self.parent.__class__.__name__,

@@ -4,7 +4,7 @@ from functools import cached_property
 from .TransitoryCache import TransitoryCache # pyright: ignore[reportUnusedImport]
 from .Absorber import Absorber, NullSafe # pyright: ignore[reportUnusedImport]
 from .SharedBuffer import SharedBuffer # pyright: ignore[reportUnusedImport]
-from .attr import attr, base_attrs, LinkedProperty # pyright: ignore[reportUnusedImport]
+from .attr import attr, dunders, LinkedProperty # pyright: ignore[reportUnusedImport]
 from .Partial import Partial # pyright: ignore[reportUnusedImport]
 from .supports import *
 
@@ -88,37 +88,17 @@ def singleton[T](
 ) -> T:
     return cls()
 
-class bylazy[T]:
-    """
-    Lazy initialize value like in Kotlin
-    
-    EXAMPLE:
-        Kotlin: `val test by lazy = {"test123"}`
-        Python: `test = bylazy(lambda: "test123")`
-    """
-
-    __cache: T
-
-    def __new__(self,
-        func: Callable[..., T]
-    ) -> T: # Tricks Pylance into thinking this object is T
-        return super().__new__(func) # pyright: ignore[reportReturnType]
-
-    def __init__(self,
-        func: Callable[..., T]
-    ) -> None:
-        self.__func = func
-
-    def __getattribute__(self, name:str):
-
-        try:
-            cache = super().__getattribute__('__cache')
-        except AttributeError:
-            func: Callable[..., T] = super().__getattribute__('__func')
-            cache = func()
-            super().__setattr__('__cache', cache)
-
-        return getattr(cache, name)
-
 #========================================================
+
+def return_type[T](func: Callable[..., T]) -> None | Type[T]:
+    from inspect import getsource
+    import ast
+
+    source = getsource(func)
+    tree = ast.parse(source)
+
+    # Find the return node and guess its type
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Return) and isinstance(node.value, ast.Constant):
+            return type(node.value.value) # pyright: ignore[reportReturnType]
 
