@@ -1,6 +1,5 @@
 from qbittorrentapi import TorrentDictionary
 from functools import cached_property
-from typing import Callable
 from ...terminal import Log
 
 from .qbit import qBitTorrent as qbit
@@ -47,9 +46,12 @@ class Torrent(TorrentDictionary):
         return (self.state_enum.value == 'stalledDL')
 
     #===================================================
-         
-    def wait(self) -> None:
 
+    @cached_property
+    def files(self) -> List[TorrentFile]:
+
+        #=====================
+        
         to = qbit._timeout()
 
         self.setForceStart(True)
@@ -59,18 +61,15 @@ class Torrent(TorrentDictionary):
 
         self.setForceStart(False)
 
-    #===================================================
+        #=====================
 
-    @cached_property
-    def files(self) -> List[TorrentFile]:
+        files = list(super().files)
 
-        items = List()
-
-        for f in super().files:
+        for f in files:
             f.__class__ = TorrentFile
-            items += f
+            f.torrent = self
 
-        return items
+        return List(files) # pyright: ignore[reportReturnType]
 
     @property
     def enabled_files(self) -> List[TorrentFile]:
@@ -90,31 +89,41 @@ class Torrent(TorrentDictionary):
             case 'leechers':
                 return self.num_incomplete
             
-            case 'size':
+            case 'size' | 'name':
                 return ""
             
-            case 'stop':
-                return self.delete
+            case _:
+                return super().__getattribute__(name)
 
     seeders: int
     leechers: int
     size: str
     name: str
     url: str
-    stop: Callable[[], None]
 
     #===================================================
+
+    @property
+    def exists(self) -> bool:
+        return \
+            hasattr(self, 'hash') and \
+            len(qbit.torrents_info(torrent_hashes=self.hash)) > 0
+
+    #===================================================
+
+    def stop(self, rm_files:bool=True) -> None:
+        return self.delete(delete_files=rm_files)
 
     @Log.on_call
     def start(self) -> None | Torrent:
 
         qbit.torrents_add(self.url)
         
-        torrents = self.torrents_info(torrent_hashes=self.hash)
+        torrents = qbit.torrents_info(torrent_hashes=self.hash)
 
         if len(torrents) > 0:
             t = torrents[0]
             t.__class__ = Torrent
-            return t
+            return t # pyright: ignore[reportReturnType]
 
     #===================================================

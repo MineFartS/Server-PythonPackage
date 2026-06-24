@@ -6,7 +6,7 @@ from ...web import URL
 if TYPE_CHECKING:
     from ...array import List
     from ..driver import Driver
-    from .magnet import Torrent
+    from .torrent import Torrent
 
 url = URL("https://thepiratebay11.com/search/")
 driver: 'Driver' = None
@@ -33,7 +33,7 @@ def search(*queries:str) -> List[Torrent]:
 def _search(query:str) -> Generator[Torrent]:
     """Search thePirateBay for magnets"""
     from urllib.parse import urlparse, parse_qs
-    from .magnet import Torrent
+    from .torrent import Torrent
     from ...db import Size
 
     global driver, url

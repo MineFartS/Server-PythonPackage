@@ -2,23 +2,18 @@ from ...functools import singleton
 from typing import TYPE_CHECKING
 from ...terminal import Log
 
-from qbittorrentapi import TorrentDictionary as __TorrentDict
-from qbittorrentapi import TorrentState as __TorrentState
-from qbittorrentapi import TorrentFile as __TorrentFile
-from qbittorrentapi import Client as __Client
-
 from ...array import SortFunc, FilterFunc, List
 
 from qbittorrentapi.log import LogAPIMixIn
+from qbittorrentapi.sync import SyncAPIMixIn
+from qbittorrentapi.transfer import TransferAPIMixIn
+from qbittorrentapi.torrents import TorrentsAPIMixIn
+from qbittorrentapi.torrentcreator import TorrentCreatorAPIMixIn
 from qbittorrentapi.rss import RSSAPIMixIn
 from qbittorrentapi.search import SearchAPIMixIn
-from qbittorrentapi.sync import SyncAPIMixIn
-from qbittorrentapi.torrentcreator import TorrentCreatorAPIMixIn
-from qbittorrentapi.torrents import TorrentsAPIMixIn
-from qbittorrentapi.transfer import TransferAPIMixIn
 
 if TYPE_CHECKING:
-    from .magnet import Torrent
+    from .torrent import Torrent
 
 @singleton
 class qBitTorrent(
@@ -88,12 +83,12 @@ class qBitTorrent(
 
     @property
     def queue(self) -> List[Torrent]:
+        from .torrent import Torrent
 
-        items = List()
+        items = list(self.torrents_info())
 
-        for t in self.torrents_info():
+        for t in items:
             t.__class__ = Torrent
-            items += t
 
-        return items
+        return List(items) # pyright: ignore[reportReturnType]
     

@@ -1,5 +1,6 @@
 from qbittorrentapi import TorrentFile as __TorrentFile
 from functools import cached_property
+from .qbit import qBitTorrent as qbit
 from typing import TYPE_CHECKING
 from ...terminal import Log
 
@@ -7,9 +8,6 @@ if TYPE_CHECKING:
     from . import Torrent
 
 class TorrentFile(__TorrentFile):
-
-    def __init__(self) -> None:
-        pass
         
     id: str
     torrent: Torrent
@@ -17,7 +15,10 @@ class TorrentFile(__TorrentFile):
     def __repr__(self) -> str:
         from ...classtools import loc
         from ...text import abbr
-        return f"<File '{abbr(num=30, string=self.name)}' @{loc(obj=self)}>"
+
+        name = getattr(self, 'name', None)
+
+        return f"<File '{abbr(30, name)}' @{loc(obj=self)}>"
 
     #===================================================
 
@@ -43,12 +44,19 @@ class TorrentFile(__TorrentFile):
 
     #===================================================
 
+    def _set_priority(self, priority:int):
+        qbit.torrents_file_priority(
+            torrent_hash = self.torrent.hash,
+            file_ids = [self.id],
+            priority = priority
+        )
+
     @Log.on_call
     def start(self) -> None:
-        self.torrent.file_priority(self.id, 1)
+        self._set_priority(1)
 
     @Log.on_call
     def stop(self) -> None:
-        self.torrent.file_priority(self.id, 0)
+        self._set_priority(0)
 
     #===================================================
