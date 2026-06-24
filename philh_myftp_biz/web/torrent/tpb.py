@@ -14,8 +14,6 @@ class thePirateBay:
     url = URL("https://thepiratebay11.com/search/")
     driver: 'Driver' = None
 
-    cache: TransitoryCache[List[Magnet]] = TransitoryCache('torrent', expire=36000) # 10 hours
-
     def search(self, *queries:str) -> List[Magnet]:
         """Search thePirateBay for magnets"""
         from ...array import List
@@ -54,7 +52,6 @@ class thePirateBay:
         try:
             self.driver.run("window.lines = document.getElementById('searchResult').children[1].children")
         except RuntimeError:
-            self.cache[query] = []
             return []
         
         magnets: list[Magnet] = []
@@ -83,7 +80,5 @@ class thePirateBay:
 
             except KeyError, RuntimeError:
                 Log.VERB(exc_info=True)
-
-        self.cache[query] = magnets
 
         return magnets

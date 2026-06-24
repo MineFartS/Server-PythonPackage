@@ -22,10 +22,12 @@ class TransitoryCache[T](Dict[CachedItem[T]]):
         file = loc.cache.child(f'TransitoryCache-{id}.pkl')
         super().__init__(file.PKL)
 
-    def _repair(self):
+    def _repair(self) -> None:
+        from _pickle import UnpicklingError
+        
         try:
             self.read()
-        except EOFError:
+        except EOFError, UnpicklingError:
             self.save({})
 
     def __getitem__(self, key:SupportsJSON) -> T | None:
