@@ -16,7 +16,12 @@ class Torrent(TorrentDictionary):
         from ...classtools import loc
         from ...text import abbr
 
-        return f"<Torrent '{abbr(num=30, string=self.name)}' @{loc(obj=self)}>"
+        return f"<Torrent '{abbr(30, self.name)}' @{loc(self)}>"
+    
+    __str__ = __repr__
+
+    def __format__(self, spec):
+        return str(self).__format__(spec)
 
     #===================================================
 
@@ -72,6 +77,9 @@ class Torrent(TorrentDictionary):
         return self.files.filtered(lambda f: f.enabled)
 
     #===================================================
+
+    def __setattr__(self, name:str, value):
+        self.__dict__[name] = value
 
     def __getattr__(self, name:str):
         match name:
