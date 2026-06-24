@@ -131,6 +131,9 @@ def similarity(
     """
     from difflib import SequenceMatcher
 
+    if a == b:
+        return 1
+
     return SequenceMatcher(None, str(a), str(b)).ratio()
 
 @cache

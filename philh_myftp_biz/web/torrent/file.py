@@ -25,10 +25,6 @@ class TorrentFile(__TorrentFile):
     @cached_property
     def path(self):
         return self.torrent.path.child(self.name)
-    
-    @cached_property
-    def name(self):
-        return self.path.name
 
     @property
     def downloading(self) -> None | bool:

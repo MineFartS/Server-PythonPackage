@@ -30,14 +30,6 @@ class Torrent(TorrentDictionary):
         return Path(self.save_path)
 
     @property
-    def errored(self) -> bool:
-        return self.state_enum.is_errored
-    
-    @property
-    def downloading(self) -> bool:
-        return self.state_enum.is_downloading
-
-    @property
     def finished(self) -> None | bool:
         return (self.state_enum.is_uploading or self.state_enum.is_complete)
 
@@ -84,13 +76,19 @@ class Torrent(TorrentDictionary):
         match name:
 
             case 'seeders':
-                return self.num_complete
+                return getattr(self, 'num_complete', -1)
             
             case 'leechers':
-                return self.num_incomplete
+                return getattr(self, 'num_incomplete', -1)
             
             case 'size' | 'name':
                 return ""
+            
+            case "errored" | "downloading":
+                try:
+                    return getattr(self.state_enum, 'is_'+name)
+                except AttributeError:
+                    pass
             
             case _:
                 return super().__getattribute__(name)
@@ -100,6 +98,8 @@ class Torrent(TorrentDictionary):
     size: str
     name: str
     url: str
+    errored: None | bool
+    downloading: None | bool
 
     #===================================================
 
@@ -115,15 +115,19 @@ class Torrent(TorrentDictionary):
         return self.delete(delete_files=rm_files)
 
     @Log.on_call
-    def start(self) -> None | Torrent:
+    def start(self) -> Torrent:
 
         qbit.torrents_add(self.url)
         
-        torrents = qbit.torrents_info(torrent_hashes=self.hash)
+        to = qbit._timeout()
 
-        if len(torrents) > 0:
-            t = torrents[0]
-            t.__class__ = Torrent
-            return t # pyright: ignore[reportReturnType]
+        torrents = []
+
+        while len(torrents) == 0:
+            torrents = qbit.torrents_info(torrent_hashes=self.hash)
+            to.check()
+
+        torrents[0].__class__ = Torrent
+        return torrents[0] # pyright: ignore[reportReturnType]
 
     #===================================================
