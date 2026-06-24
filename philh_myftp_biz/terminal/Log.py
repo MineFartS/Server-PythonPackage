@@ -32,3 +32,15 @@ WARN = partial(_log, level=30)
 FAIL = partial(_log, level=40)
 
 CRIT = partial(_log, level=50)
+
+def on_call(func, logger=VERB):
+    from functools import wraps
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        
+        logger(f"Calling '{func.__name__}'\n{args=}\n{kwargs=}")
+        
+        return func(*args, **kwargs)
+            
+    return wrapper
