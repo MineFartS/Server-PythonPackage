@@ -1,89 +1,63 @@
-from typing import Literal, Self, Generator, TYPE_CHECKING, Any
+from typing import Literal, Generator, TYPE_CHECKING, Any
 from functools import cached_property
 from dataclasses import dataclass
 from .. import file
 
 if TYPE_CHECKING:
-    from pathlib import PurePath as __PurePath
     from ..time import from_stamp
 
 #========================================================
 
 class Path:
-    """File/Folder"""
 
     path: str
     
-    def __init__(self,
-        *input: 'str|__PurePath'
-    ) -> None:
-        from pathlib import Path as _Path
+    @staticmethod
+    def _parse(path:Any) -> str:
         from os import path as _path
 
-        # ==================================
-
-        if len(input) > 1:
-            self.path = _path.join(*input)
-
-        elif isinstance(input[0], Path):
-            self.path = input[0].path
-
-        elif hasattr(input[0], 'as_posix'):
-            self.path = input[0].as_posix()
-
+        if isinstance(path, Path):
+            fpath = path.path
+        elif hasattr(path, 'as_posix'):
+            fpath = path.as_posix()
         else:
-            self.path = input[0]
+            fpath = str(path)
 
-        # ==================================
+        fpath: str = fpath.replace('\\', '/').replace('//', '/')
 
-        self.path = self.path.replace('\\', '/').replace('//', '/')
+        if _path.isdir(fpath) and (fpath[-1] != '/'):
+            fpath += '/'
 
-        # Append trailing slash
-        if _path.isdir(self.path) and (self.path[-1] != '/'):
-            self.path += '/'
+        return fpath
 
+    def __init__(self, path:Any) -> None:
+        from pathlib import Path as PurePath
+
+        self.path = self._parse(path)
         self.wpath: str = self.path.replace('/', '\\')
 
-        # ==================================
+        self._pure = PurePath(self.path)
 
-        # Declare 'pathlib.Path' attribute
-        self._pure = _Path(self.path)
+        self.set_access = _set_access(self)
+        self.mtime = _mtime(self)
+        self.visibility = _visibility(self)
 
-        # Declare 'set_access'
-        self.set_access = _set_access(path=self)
-        """Filesystem Access"""
-
-        # Declare 'mtime'
-        self.mtime = _mtime(path=self)
-        """Modified Time"""
-
-        # Declare 'visibility'
-        self.visibility = _visibility(path=self)
-        """Visibility"""
-
-        # ==================================
+        self.name = self._pure.stem
+        self.ext = self._pure.suffix.strip('.')
 
     @property
     def exists(self) -> bool:
-        """Check if path exists"""
         return self._pure.exists()
     
     @cached_property
     def is_file(self) -> bool:
-        """Check if path is a file"""
         return self._pure.is_file()
     
     @cached_property
     def is_dir(self) -> bool:
-        """Check if path is a folder"""
+        return self.path[-1]=='/' or self._pure.is_dir()
 
-        if self.path[-1] == '/':
-            return True
-        else:
-            return self._pure.is_dir()
-
-    def __str__(self):
-        return self.path
+    __str__ = lambda s: s.path
     __repr__ = __str__
 
     @property
@@ -97,55 +71,34 @@ class Path:
 
     @cached_property
     def cd(self) -> '_cd':
-        """
-        Change the working directory to path
-        
-        If path is a file, then it will change to the file's parent directory
-        """
+        """Change the working directory to path"""
         if self.is_file:
             return _cd(self.parent)
         else:
             return _cd(self)
     
     def is_child(self, parent:Path) -> bool:
-        """
-        Check if this path is a child or descendant of a parent directory
-        """
-        
+        """Check if this path is a child or descendant of a parent directory"""
         try:
             return self._pure.is_relative_to(str(parent))
-        
         except ValueError:
             return False
         
     def is_parent(self, child:Path) -> bool:
-        """
-        Check if this path is a parent of ancestor of a path
-        """
+        """Check if this path is a parent or ancestor of a path"""
         return child.is_child(self)
 
     def related_to(self, path:Path) -> bool:
-        """
-        Check if this path is related to another
-        
-        ---
-        Returns True is any of the following:
-        - Is parent of
-        - Is child of
-        - Is same path
-        """
-
-        PARENT = self.is_parent(path)
-        CHILD  = self.is_child(path)
-        SAME   = (self == path)
-
-        return any([PARENT, CHILD, SAME])
+        """Check if this path is related to another"""
+        return any([
+            self.is_parent(path),
+            self.is_child(path),
+            (self == path)
+        ])
     
     def child(self,
         name: str
     ) -> Path:
-        """Get child of path"""
-
         if self.is_file:
             raise TypeError("Parent path cannot be a file")
 
@@ -154,20 +107,8 @@ class Path:
     def __format__(self, spec:str) -> str:
         return f'{self.path:{spec}}'
 
-    def __eq__(self,
-        other: Path|Any
-    ) -> bool:
-
-        if isinstance(other, Path):
-            testp = other.path
-
-        elif hasattr(other, 'as_posix'):
-            testp = other.as_posix()
-        
-        else:
-            testp = str(other)
-        
-        return (self.path == testp)
+    def __eq__(self, other:Any) -> bool:
+        return (self.path == self._parse(other))
 
     @property
     def size(self) -> None|int:
@@ -185,131 +126,56 @@ class Path:
 
     @property
     def children(self) -> Generator[Path]:
-        """
-        Get children of current directory
-        ```
-        Curdir - |
-                 | - Child
-                 |
-                 | - Child
-        ```
-        """
-
         if self.is_file:
-
             raise TypeError('Cannot get children of a file')
-
-        else:
-
-            for p in self._pure.iterdir():
-                
-                yield Path(p)
+        
+        return (Path(p) for p in self._pure.iterdir())
 
     @property
     def descendants(self) -> Generator[Path]:
-        """
-        Get descendants of current directory
-        ```
-        Curdir - |           | - Descendant
-                 | - Child - |
-                 |           |
-                 |           | - Descendant
-                 |           
-                 | - Child - |
-                             | - Descendant
-        ```
-        """
-
+        if self.is_file:
+            raise TypeError('Cannot get children of a file')
+        
         for root, dirs, files in self._pure.walk():
-
             for item in (*dirs, *files):
-            
                 yield Path(root, item)
 
     @property
     def is_empty(self) -> bool:
-        """
-        Check if the current directory has any children
-        """
-
-        item: Path|None = next(self.children, None)
-
-        return (item is None)
+        """Check if the current directory has any children"""
+        return (next(self.children, None) is None)
 
     @cached_property
     def parent(self) -> Path:
-        """
-        Get parent of current path
-        """ 
-        return Path(self._pure.parent.as_posix() + '/')
+        return Path(self._pure.parent)
 
     def sibling(self, item:str) -> Path:
-        """
-        Get sibling of current path
-
-        CurPath - |
-                  |
-        Sibling - |
-                  |
-        """
         return self.parent.child(item)
     
-    @property
-    def ext(self) -> str|None:
-        """
-        Get file extension of path
-        """
-
-        seg: str = self.seg()
-
-        if '.' in seg:
-
-            return seg[seg.rfind('.')+1:].lower()
-
     @cached_property
     def type(self) -> None | str:
-        """
-        Get mime type of path
-        """
         from ..db import MimeType
-
         return MimeType.Path(self)
 
     def delete(self) -> None:
-        """
-        Delete the current path
-        """
         from ..terminal import Log
 
-        # If path is a directory
         if self.is_dir:
             from shutil import rmtree as delete
-        
-        # If path is a file
         else:
             from os import remove as delete
 
-        # If the path exists
         if self.exists:
 
-            # Update Access
             self.set_access.full()
 
             Log.VERB(f'Deleting: {self}')
 
-            #            
             delete(self.path)
 
-    def rename(self,
-        dst: Path|str
-    ) -> Path:
-        """
-        Change the name of the current path
-        
-        Returns updated path
-        """
-        from os import rename
+    def rename(self, dst:Any) -> Path:
         from ..terminal import Log
+        from os import rename
         
         with self.parent.cd:
 
@@ -319,9 +185,8 @@ class Path:
 
             if self != dst:
 
-                if dst.exists:
-                    dst.delete()
-                
+                dst.delete()
+
                 rename(
                     src = self.path, 
                     dst = dst.path
@@ -329,51 +194,17 @@ class Path:
 
         return dst
 
-    @cached_property
-    def name(self) -> str:
-        """
-        Get the name of the current path
-
-        Ex: 'C:/example.txt' -> 'example' 
-        """
-
-        name = self._pure.name
-
-        # Check if file has ext
-        if self.ext:
-            # Return name without ext
-            return name[:name.rfind('.')]
-
-        else:
-            # Return filename
-            return name
-
     def seg(self,
         i: int = -1
     ) -> str:
         """
         Returns segment of path split by '/'
         (Ignores last slash)
-
-        EXAMPLES:
-        ```
-        >>> Path('C:/example/test.log').seg(-1)
-        'test.log'
-
-        >>> Path('C:/example/').seg(-1)
-        'example'
-        ```
         """
         
-        if self.path[-1] == '/':
-            path = self.path[:-1]
-        else:
-            path = self.path
-        
-        return path.split(sep='/')[i]
+        return self.path.trim('/').split(sep='/')[i]
 
     def copy(self, dst:Path) -> None:
-        """Copy the path to another location"""
         from ..terminal import Log, ProgressBar
         from . import relscan
 
@@ -383,7 +214,6 @@ class Path:
 
             # If the source is a directory
             if self.is_dir:
-
                 files = relscan(self, dst)
 
             # If the source is file and destination is folder 
@@ -419,7 +249,6 @@ class Path:
                 # Create the parent folder of the destination file
                 file.dst.parent.mkdir()
 
-                # Update Access
                 file.src.set_access.full()
                 file.dst.set_access.full()
 
@@ -436,42 +265,29 @@ class Path:
             pbar.stop()
 
         except Exception as e:
+            (f.dst.delete() for f in files)
+            raise e
 
-            # Delete destination paths
-            for file in files:
-                file.dst.delete()
-
-            raise OSError(f'Failed to copy \n"{self}" \nto \n"{dst}" ') from e
-
-    def move(self,
-        dst: Self
-    ) -> None:
-        """
-        Move the path to another location
-        """
+    def move(self, dst:Any) -> None:
         self.copy(dst)
         self.delete()
 
     @property
     def in_use(self) -> bool:
-        """
-        Check if path is in use by another process
-        """
         from os import rename
 
-        if self.exists:
-            try:
-                rename(self.path, self.path)
-                return False
-            except PermissionError:
-                return True
-        else:
+        if not self.exists:
             return False
+        
+        try:
+            rename(self.path, self.path)
+            return False
+        except PermissionError:
+            return True
 
     def open(self,
         mode: Literal['r', 'w', 'a', 'rb', 'wb', '+'] = 'r'
     ):
-        """builtins.open Wrapper"""
 
         if 'w' in mode:
             self.parent.mkdir()
@@ -492,66 +308,32 @@ class Path:
     ) -> None:
         from ..text import hex
 
-        keyedpath: str = f'{self}:{hex.encode(key)}'
+        og_mtime = self.mtime.get()
 
-        try:
+        with open(f'{self}:{hex.encode(key)}', 'w') as store:
+            store.write(hex.encode(value))
 
-            # Store current mtime
-            og_mtime = _mtime(self).get()
-
-            with open(file=keyedpath, mode='w') as store:
-
-                edata: str = hex.encode(value)
-
-                store.write(edata)
-
-            # Restore mtime
-            _mtime(path=self).set(mtime=og_mtime)
-        
-        except OSError as e:
-
-            raise OSError(f"Error setting var '{key}' at '{self.file}'") from e
+        _mtime(path=self).set(mtime=og_mtime)
 
     def __getitem__(self,
         key: Any
     ) -> None:
         from ..text import hex
 
-        keyedpath: str = f'{self}:{hex.encode(key)}'
-
         try:
-
-            rvalue: str = open(file=keyedpath).read()
-            
-            return hex.decode(rvalue)
-        
+            with open(f'{self}:{hex.encode(key)}') as store:                
+                return hex.decode(store.read())        
         except OSError:
             pass
 
     def mkdir(self) -> None:
-        """
-        Make this directory
-        (will make parent directory if file)
-        """
         from os import makedirs
-
-        if self.is_file:
-
-            folder = self.parent.path
-
-        else:
-
-            folder = self.path
-
         makedirs(
-            name = folder,
+            name = (self.parent if self.is_file else self).path,
             exist_ok = True
         )
 
-    def link(self,
-        link: Path
-    ) -> None:
-        """Create a Symbolic Link"""
+    def link(self, link:Path) -> None:
         from os import link as _link
 
         if link.exists:
@@ -559,84 +341,48 @@ class Path:
 
         link.parent.mkdir()
 
-        _link(
-            src = str(self),
-            dst = str(link)
-        )
+        _link(str(self), str(link))
 
     @property
     def hash(self) -> None | str:
-        """Calculate the SHA256 hash of this file"""
         from hashlib import sha256
 
         if not self.exists or self.is_dir:
             return
 
-        hasher = sha256()
-        
-        with self.open("rb") as f:
-
-            for chunk in iter(lambda: f.read(8192), b""):
-                hasher.update(chunk)
-            
-        return hasher.hexdigest()
-    
-    def qhash(self) -> None | str:
-        """
-        Quickly calculate the SHA256 hash of this file
-        (Uses 5x 4096-bit samples)
-        """
-        from hashlib import sha256
-
-        if not self.exists or self.is_dir:
-            return
-        elif self.size <= 5*4096:
-            return self.hash
-        
-        hasher = sha256()
-        
-        with self.open("rb") as f:
-            for i in range(5):
-                
-                f.seek(i * (self.size//5))
-                
-                hasher.update(f.read(4096))
-                
-        return hasher.hexdigest()
-    
-    @property
-    def valid(self) -> bool:
-        """Check if the all of the files chunks are accessible"""
-    
         try:
-            return self.hash != None      
+        
+            hasher = sha256()
+            
+            with self.open("rb") as f:
+                for chunk in iter(lambda: f.read(8192), b""):
+                    hasher.update(chunk)
+            
+            return hasher.hexdigest()
+        
         except OSError:
-            return False
+            pass
     
     #========================================================
     # File Parsers
 
-    XML:  file.XML
-    PKL:  file.PKL
+    XML : file.XML
+    PKL : file.PKL
     JSON: file.JSON
-    INI:  file.INI
+    INI : file.INI
     YAML: file.YAML
-    TXT:  file.TXT
-    ZIP:  file.ZIP
-    CSV:  file.CSV
+    TXT : file.TXT
+    ZIP : file.ZIP
+    CSV : file.CSV
     TOML: file.TOML
 
     def __getattr__(self, name:str):
         from typing import get_type_hints
 
-        hints = get_type_hints(self.__class__)
+        clazz: Any = get_type_hints(self.__class__).get(name)
 
-        if name in hints:
-
-            cls = hints[name]
-
-            return cls(self)
-        
+        if clazz:
+            return clazz(self)
         else:
             return super().__getattribute__(name)
         
@@ -648,15 +394,8 @@ class PathPair:
     src: Path|Any
     dst: Path|Any
 
-    def __setattr__(self,
-        key: str, 
-        value: Any
-    ) -> None:
-
-        if isinstance(value, Path):
-            self.__dict__[key] = value
-        else:
-            self.__dict__[key] = Path(value)
+    def __setattr__(self, key:str, value:Any) -> None:
+        self.__dict__[key] = Path(value)
 
 class _cd:
 
@@ -670,13 +409,10 @@ class _cd:
             self.back()
 
     def __init__(self, path:Path) -> None:
-
         self._target = str(path)
-
         self.open()
 
     def open(self) -> None:
-        """Change CWD to the given path"""
         from os import getcwd, chdir
 
         self._back = getcwd()
@@ -686,9 +422,7 @@ class _cd:
     __call__ = open
 
     def back(self) -> None:
-        """Change CWD to the previous path"""
         from os import chdir
-        
         chdir(self._back)
 
 @dataclass
@@ -698,29 +432,29 @@ class _mtime:
 
     def set(self,
         mtime: int | 'from_stamp' = None
-    ):
+    ) -> None:
         from ..time import from_stamp
         from ..time import now
         from os import utime
-        
-        if isinstance(mtime, from_stamp):
-            mtime = mtime.unix
+
 
         if mtime:
-            utime(self.path.path, (mtime, mtime))
-
+            utime(
+                str(self.path), 
+                (int(mtime), int(mtime))
+            )
         else:
-            now = now().unix
-            utime(self.path.path, (now, now))
+            nowt = now().unix
+            utime(str(self.path), (nowt, nowt))
 
     @property
     def current(self):
         from ..time import from_stamp
         from os import path
 
-        mtime = path.getmtime( str(self.path) )
-
-        return from_stamp(mtime)
+        return from_stamp(
+            path.getmtime( str(self.path) )
+        )
 
     def stopwatch(self):
         from ..time import Stopwatch
