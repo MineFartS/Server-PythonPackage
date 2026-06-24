@@ -34,6 +34,15 @@ def waitfor(
     while not func():
         pass
 
+def copy_attrs(
+    src: Any, 
+    dst: Any, 
+    force: bool = False
+) -> None:
+    for name, value in vars(src).items():
+        if force or not hasattr(dst, name):
+            setattr(dst, name, value)
+
 #========================================================
 
 def attrs(obj:Any) -> Generator[attr, Any, None]:
