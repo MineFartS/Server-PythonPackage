@@ -2,6 +2,7 @@ from ..functools.supports import SupportsJSON # pyright: ignore[reportUnusedImpo
 from json import load, loads, dump, dumps # pyright: ignore[reportUnusedImport]
 from .List import List # pyright: ignore[reportUnusedImport]
 from .Dict import Dict # pyright: ignore[reportUnusedImport]
+from .ltable import LookupTable # pyright: ignore[reportUnusedImport]
 
 def is_json(value:str) -> bool:
     """Check if a string contains valid json data"""
