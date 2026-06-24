@@ -22,13 +22,21 @@ class TransitoryCache[T](Dict[CachedItem[T]]):
         file = loc.cache.child(f'TransitoryCache-{id}.pkl')
         super().__init__(file.PKL)
 
+    def _repair(self):
+        try:
+            self.read()
+        except EOFError:
+            self.save({})
+
     def __getitem__(self, key:SupportsJSON) -> T | None:
         from ..json import dumps
 
         _key = dumps(key)
 
-        item = super().__getitem__(_key)
+        self._repair()
 
+        item = super().__getitem__(_key)
+         
         if item is None:
             pass
 
@@ -42,6 +50,8 @@ class TransitoryCache[T](Dict[CachedItem[T]]):
         from ..time import Timeout
         from ..json import dumps
 
+        self._repair()
+
         super().__setitem__(
             key = dumps(key), 
             value = {
@@ -52,6 +62,8 @@ class TransitoryCache[T](Dict[CachedItem[T]]):
 
     def __contains__(self, key:SupportsJSON) -> bool:
         from ..json import dumps
+
+        self._repair()
 
         return super().__contains__(dumps(key))
 
