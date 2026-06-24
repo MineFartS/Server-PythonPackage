@@ -88,8 +88,12 @@ class qBitTorrent(
 
     @property
     def queue(self) -> List[Torrent]:
-        return List(Torrent(self, t) for t in self.torrents_info())
 
-    def by_hash(self, hash:str) -> Torrent | None:
-        if (torrents := self.torrents_info(torrent_hashes=hash)):
-            return Torrent(self, torrents[0])
+        items = List()
+
+        for t in self.torrents_info():
+            t.__class__ = Torrent
+            items += t
+
+        return items
+    

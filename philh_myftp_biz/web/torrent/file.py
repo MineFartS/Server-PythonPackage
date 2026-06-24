@@ -1,5 +1,5 @@
 from qbittorrentapi import TorrentFile as __TorrentFile
-from ...functools import copy_attrs
+from functools import cached_property
 from typing import TYPE_CHECKING
 from ...terminal import Log
 
@@ -8,29 +8,26 @@ if TYPE_CHECKING:
 
 class TorrentFile(__TorrentFile):
 
-    def __init__(self,
-        torrent: Torrent,
-        tfile: __TorrentFile
-    ) -> None:
-        from functools import partial
+    def __init__(self) -> None:
+        pass
         
-        self.torrent = torrent
-        
-        self.file_priority = partial(torrent.file_priority, tfile.id)
-
-        self.path = torrent.path.child(tfile.name)
-        self.name = self.path.name
-
-        copy_attrs(tfile, self)
+    id: str
+    torrent: Torrent
 
     def __repr__(self) -> str:
         from ...classtools import loc
         from ...text import abbr
         return f"<File '{abbr(num=30, string=self.name)}' @{loc(obj=self)}>"
 
-    id: str
-
     #===================================================
+
+    @cached_property
+    def path(self):
+        return self.torrent.path.child(self.name)
+    
+    @cached_property
+    def name(self):
+        return self.path.name
 
     @property
     def downloading(self) -> None | bool:
@@ -48,10 +45,10 @@ class TorrentFile(__TorrentFile):
 
     @Log.on_call
     def start(self) -> None:
-        self.file_priority(priority=1)
+        self.torrent.file_priority(self.id, 1)
 
     @Log.on_call
     def stop(self) -> None:
-        self.file_priority(priority=0)
+        self.torrent.file_priority(self.id, 0)
 
     #===================================================

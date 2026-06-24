@@ -65,16 +65,14 @@ class thePirateBay:
 
             try:
 
-                # Yield a magnet instance
-                t = Torrent(None)
+                t = Torrent()
                 t.name = _run(".children[1].textContent")
                 t.seeders = int(_run(".children[5].textContent"))
                 t.leechers = int(_run(".children[6].textContent"))
                 t.size = Size.to_bytes(_run(".children[4].textContent"))
+                t.url = _run(".children[3].children[0].children[0].href")
 
-                url = _run(".children[3].children[0].children[0].href")
-
-                XT: str = parse_qs(urlparse(url).query)['xt'][0]
+                XT: str = parse_qs(urlparse(t.url).query)['xt'][0]
                 if XT.startswith('urn:btih:'): # v1
                     t.hash = XT[len('urn:btih:'):].lower()
                 elif XT.startswith('urn:btmh:'): # v2

@@ -1,6 +1,6 @@
 from qbittorrentapi import TorrentDictionary
 from functools import cached_property
-from ...functools import copy_attrs
+from typing import Callable
 from ...terminal import Log
 
 from .qbit import qBitTorrent as qbit
@@ -9,18 +9,8 @@ from ...json import List
 
 class Torrent(TorrentDictionary):
 
-    def __init__(self,
-        tdict: None | TorrentDictionary
-    ) -> None:
-        if tdict:
-            self._load(tdict)
-
-    def _load(self, tdict:TorrentDictionary):
-        from ...pc import Path
-        self.stop = tdict.delete
-        self.path = Path(tdict.save_path)
-
-        copy_attrs(tdict, self)
+    def __init__(self) -> None:
+        pass
 
     def __repr__(self) -> str:
         from ...classtools import loc
@@ -29,6 +19,11 @@ class Torrent(TorrentDictionary):
         return f"<Torrent '{abbr(num=30, string=self.name)}' @{loc(obj=self)}>"
 
     #===================================================
+
+    @property
+    def path(self):
+        from ...pc import Path
+        return Path(self.save_path)
 
     @property
     def errored(self) -> bool:
@@ -63,7 +58,14 @@ class Torrent(TorrentDictionary):
 
     @cached_property
     def files(self) -> List[TorrentFile]:
-        return List(TorrentFile(self, f) for f in super().files)
+
+        items = List()
+
+        for f in super().files:
+            f.__class__ = TorrentFile
+            items += f
+
+        return items
 
     @property
     def enabled_files(self) -> List[TorrentFile]:
@@ -82,23 +84,29 @@ class Torrent(TorrentDictionary):
             
             case 'size':
                 return ""
+            
+            case 'stop':
+                return self.delete
 
     seeders: int
     leechers: int
     size: str
     name: str
+    url: str
+    stop: Callable[[], None]
 
     #===================================================
 
     @Log.on_call
-    def start(self) -> None:
+    def start(self) -> None | Torrent:
 
-        torrent = qbit.by_hash(self.hash)
+        qbit.torrents_add(self.url)
+        
+        torrents = self.torrents_info(torrent_hashes=self.hash)
 
-        if torrent is None:
-
-            qbit.torrents_add(self.url)
-
-            self._load(qbit.by_hash(self.hash))
+        if len(torrents) > 0:
+            t = torrents[0]
+            t.__class__ = Torrent
+            return t
 
     #===================================================
