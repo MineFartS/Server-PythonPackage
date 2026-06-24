@@ -7,6 +7,7 @@ from ..web import URL
 
 if TYPE_CHECKING:
     from qbittorrentapi import TorrentDictionary as __TorrentDict
+    from qbittorrentapi import TorrentState as __TorrentState
     from qbittorrentapi import TorrentFile as __TorrentFile
     from ..array import SortFunc, FilterFunc, List
     from qbittorrentapi import Client as __Client
@@ -18,6 +19,8 @@ qualities: list[str] = {
     '1440p', '1080p', '720p',
     '480p', '360p', '4K'
 }
+
+#======================================================================
 
 class TorrentFile:
 
@@ -37,60 +40,50 @@ class TorrentFile:
 
         self.id: str = file.id
 
-    @property
-    def _tdict(self):
-        return self._torrent._tdict
+    def __repr__(self) -> str:
+        from ..classtools import loc
+        from ..text import abbr
+        return f"<File '{abbr(num=30, string=self.name)}' @{loc(obj=self)}>"
+
+    #===================================================
 
     @property
     def _file(self) -> None | __TorrentFile:
-        if self._tdict:
-            return self._tdict.files[self.id]
-
-    @property
-    def progress(self) -> None | float:
-        if self._file:
-            return self._file.progress
-
-    def start(self,
-        force: bool = False
-    ) -> None:
-        from ..terminal import Log
-
-        Log.VERB(f'Downloading File: {force=} | {self}]')
-
-        self._tdict.file_priority(
-            file_ids = self.id,
-            priority = (7 if force else 1)
-        )
-
-    @property
-    def enabled(self) -> None | bool:
-        if self._file:
-            return (self._file.priority > 0)
+        if (tdict := self._torrent._tdict):
+            return tdict.files[self.id]
 
     @property
     def downloading(self) -> bool:
-        return bool(self.enabled and (not self.finished))
-
-    def stop(self) -> None:
-        from ..terminal import Log
-
-        Log.VERB(f'Stopping File: {self}')
-
-        if self._tdict:
-            self._tdict.file_priority(
-                file_ids = self.id,
-                priority = 0
-            )
+        return (self.priority >= 1) and (not self.finished)
 
     @property
     def finished(self) -> bool:
         return (self.progress == 1)
 
-    def __repr__(self) -> str:
-        from ..classtools import loc
-        from ..text import abbr
-        return f"<File '{abbr(num=30, string=self.name)}' @{loc(obj=self)}>"
+    #===================================================
+
+    @property
+    def progress(self) -> None | float:
+        if (file := self._file):
+            return file.progress
+        
+    #===================================================
+
+    @property
+    def priority(self) -> int:
+        if (file := self._file):
+            return file.priority
+        else:
+            return -1
+
+    @priority.setter
+    def priority(self, val:int) -> None:
+        if (tdict := self._torrent._tdict):
+            tdict.file_priority(self.id, val)
+
+    #===================================================
+
+#======================================================================
 
 @dataclass
 class Torrent:
@@ -116,15 +109,17 @@ class Torrent:
             case 'name':
                 return getattr(self._tdict, name, "")
             
-            case 'errored' | 'downloading':
-                return getattr(
-                    getattr(self._tdict, 'state_enum', None),
-                    'is_' + name,
-                    None
-                )
+            case 'state_enum':
+                return getattr(self._tdict, name, None)
             
-            case 'start' | 'reannounce' | 'recheck':
+            case 'errored' | 'downloading':
+                return getattr(self.state_enum, f'is_{name}', None)
+            
+            case 'start' | 'reannounce' | 'recheck' | 'top_priority':
                 return getattr(self._tdict, name, lambda:...)
+            
+            case 'force':
+                return getattr(self._tdict, 'setForceStart', lambda _:...)
             
             case _:
                 return super().__getattribute__(name) # Raises Error
@@ -135,16 +130,21 @@ class Torrent:
     
     name: ClassVar[str]
     
+    state_enum: ClassVar[__TorrentState]
+    
     errored: ClassVar[None|bool]
     downloading: ClassVar[None|bool]
 
     start: ClassVar[Callable[[], None]]
     reannounce: ClassVar[Callable[[], None]]
     recheck: ClassVar[Callable[[], None]]
+    top_priority: ClassVar[Callable[[], None]]
+
+    force: ClassVar[Callable[[bool], None]]
 
     #===================================================
 
-    @cached_property
+    @property
     def _tdict(self) -> None | __TorrentDict:
         return next(
             (t for t in self.qbit._client.torrents_info() if t.hash==self.hash), 
@@ -157,37 +157,35 @@ class Torrent:
         timeout = Timeout(self.qbit.timeout)
 
         while self._tdict is None:
-            del self._tdict
             timeout.check()
 
-        self._tdict.setForceStart(True)
+        self.force(True)
 
         while len(self._tdict.files) == 0:
             timeout.check()
 
-        self._tdict.setForceStart(False)
+        self.force(False)
 
-    @cached_property
+    @property
     def files(self) -> List[TorrentFile]:
         from ..json import List
 
-        if self._tdict:
-            return List(TorrentFile(self, f) for f in self._tdict.files)
+        if (tdict := self._tdict):
+            return List(TorrentFile(self, f) for f in tdict.files)
         else:
             return List()
 
     @property
     def enabled_files(self) -> List[TorrentFile]:
-        return self.files.filtered(lambda f: f.enabled)
+        return self.files.filtered(lambda f: f.priority>=1)
 
     def stop(self, rm_files:bool=True) -> None:
-        if self._tdict:
-            self._tdict.delete(rm_files)
+        if (tdict := self._tdict):
+            tdict.delete(rm_files)
 
     @property
     def finished(self) -> None | bool:
-        if self._tdict:
-            state = self._tdict.state_enum
+        if (state := self.state_enum):
             return (state.is_uploading or state.is_complete)
 
     @property
@@ -196,8 +194,10 @@ class Torrent:
 
     @property
     def stalled(self) -> None | bool:
-        if self._tdict:
-            return (self._tdict.state_enum.value == 'stalledDL')
+        if (state := self.state_enum):
+            return (state.value == 'stalledDL')
+
+#======================================================================
 
 @dataclass
 class qBitTorrent:
@@ -280,12 +280,14 @@ class qBitTorrent:
         torrents.sort(func)
         torrents.reverse()
 
-        (t._tdict.top_priority() for t in torrents)
+        (t.top_priority() for t in torrents)
 
     @property
     def queue(self) -> List[Torrent]:
         from ..array import List
         return List(Torrent(self, t.hash) for t in self._client.torrents_info())
+
+#======================================================================
 
 class NameParser:
         
@@ -329,6 +331,8 @@ class NameParser:
         for quality in qualities:
             if quality in self.name:
                 return quality
+
+#======================================================================
 
 class Magnet(Torrent, NameParser):
 
@@ -409,6 +413,8 @@ class Magnet(Torrent, NameParser):
 
     #===================================================
 
+#======================================================================
+
 @singleton
 class thePirateBay:
     """
@@ -421,7 +427,7 @@ class thePirateBay:
     driver: 'Driver' = None
     qbit: qBitTorrent = None
 
-    cache: 'TransitoryCache[List[Magnet]]' = TransitoryCache(expire=36000) # 10 hours
+    cache: 'TransitoryCache[List[Magnet]]' = TransitoryCache('torrent', expire=36000) # 10 hours
 
     def search(self, *queries:str) -> List[Magnet]:
         """Search thePirateBay for magnets"""
@@ -496,3 +502,5 @@ class thePirateBay:
         self.cache[query] = magnets
 
         return magnets
+
+#======================================================================
