@@ -10,8 +10,6 @@ class Pipe:
     def __init__(self) -> None:
         from ..process import Looper
         
-        self.stdout = sys.stdout
-        self.flush = sys.stdout.flush
         sys.stdout = self
 
         self.pbar: ProgressBar = None
@@ -24,12 +22,12 @@ class Pipe:
     def write(self, s:str) -> None:
 
         if self.pbar and (not self.pbar.tqdm.disable):
-            self.pbar.tqdm.write(s, self.stdout)
+            self.pbar.tqdm.write(s, sys.__stdout__)
         else:
-            self.stdout.write(s)
+            sys.__stdout__.write(s)
 
     def __getattr__(self, name:str):
-        return getattr(self.stdout, name)
+        return getattr(sys.__stdout__, name)
 
 _modes = Literal[
     'SCOUNTER', # Simple Counter
