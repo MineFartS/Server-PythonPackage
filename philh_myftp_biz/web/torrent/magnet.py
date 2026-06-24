@@ -10,10 +10,13 @@ from ...json import List
 class Torrent(TorrentDictionary):
 
     def __init__(self,
-        tdict: TorrentDictionary
+        tdict: None | TorrentDictionary
     ) -> None:
-        from ...pc import Path
+        if tdict:
+            self._load(tdict)
 
+    def _load(self, tdict:TorrentDictionary):
+        from ...pc import Path
         self.stop = tdict.delete
         self.path = Path(tdict.save_path)
 
@@ -68,48 +71,22 @@ class Torrent(TorrentDictionary):
 
     #===================================================
 
-class Magnet(Torrent):
+    def __getattr__(self, name:str):
+        match name:
 
-    def __init__(self,
-        name: str = '',
-        seeders: int = -1,
-        leechers: int = -1,
-        url: str = '',
-        size: str = -1
-    ) -> None:
-        from urllib.parse import urlparse, parse_qs
-        from .name import NameParser
+            case 'seeders':
+                return self.num_complete
+            
+            case 'leechers':
+                return self.num_incomplete
+            
+            case 'size':
+                return ""
 
-        #===================================================
-
-        # Get the first value of the 'xt' parameter
-        XT: str = parse_qs(urlparse(url).query)['xt'][0]
-
-        if XT.startswith('urn:btih:'): # v1
-            self.hash = XT[len('urn:btih:'):].lower()
-        
-        elif XT.startswith('urn:btmh:'): # v2
-            self.hash = XT[len('urn:btmh:'):].lower()
-
-        #===================================================
-        
-        self.leechers = leechers
-        self.seeders = seeders
-        self.size  = size
-        self.url = url
-
-        #===================================================
-
-        np = NameParser(name.lower().strip('\n'))
-
-        self.name = np.name
-        self.title = np.title
-        self.season = np.season
-        self.episode = np.episode
-        self.year = np.year
-        self.quality = np.quality
-
-        #===================================================
+    seeders: int
+    leechers: int
+    size: str
+    name: str
 
     #===================================================
 
@@ -119,19 +96,9 @@ class Magnet(Torrent):
         torrent = qbit.by_hash(self.hash)
 
         if torrent is None:
+
             qbit.torrents_add(self.url)
 
-        Torrent.__init__(self, 
-            qbit, 
-            qbit.by_hash(self.hash)
-        )
-
-        Torrent.start(self)
-
-    def __repr__(self) -> str:
-        from ...classtools import loc
-        from ...text import abbr
-
-        return f"<Magnet '{abbr(30, self.name)}' @{loc(self)}>"
+            self._load(qbit.by_hash(self.hash))
 
     #===================================================
