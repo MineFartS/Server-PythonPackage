@@ -6,9 +6,10 @@ WARN: 30
 FAIL: 40
 CRIT: 50
 ```"""
-from functools import partial
-from typing import Any
+from functools import partial, wraps
+from ..functools import cpath
 from logging import log
+from typing import Any
 
 def _log(
     msg: Any = '',
@@ -33,14 +34,17 @@ FAIL = partial(_log, level=40)
 
 CRIT = partial(_log, level=50)
 
-def on_call(func, logger=VERB):
-    from functools import wraps
+def on_call(func=None, *, logger=VERB):
+    
+    def decorator(f):
+        
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            logger(f"Calling '{f.__name__}'\n{args=}\n{kwargs=}")
+            return f(*args, **kwargs)
+        return wrapper
 
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        
-        logger(f"Calling '{func.__name__}'\n{args=}\n{kwargs=}")
-        
-        return func(*args, **kwargs)
-            
-    return wrapper
+    if func is None: # WITH parentheses
+        return decorator
+    else: # WITHOUT parentheses
+        return decorator(func)
