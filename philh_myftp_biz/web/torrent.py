@@ -1,8 +1,8 @@
-from typing import TYPE_CHECKING, ClassVar, Callable
-from ..functools import TransitoryCache
+from typing import TYPE_CHECKING, ClassVar, Callable, Literal
+from ..functools import TransitoryCache, singleton
 from functools import cached_property
-from ..functools import singleton
 from dataclasses import dataclass
+from ..json import LookupTable
 from ..web import URL
 
 if TYPE_CHECKING:
@@ -28,17 +28,14 @@ class TorrentFile:
         torrent: Torrent,
         file: __TorrentFile
     ) -> None:
-        from ..pc import Path
         
-        self._torrent = torrent
-
-        self.path = Path(f'{torrent._tdict.save_path}/{file.name}')
+        self.torrent = torrent
         
-        self.name: str = file.name[file.name.find('/')+1:]
-
         self.size: float = file.size
-
         self.id: str = file.id
+
+        self.path = torrent.save_path.child(file.name)
+        self.name = self.path.name
 
     def __repr__(self) -> str:
         from ..classtools import loc
@@ -49,37 +46,40 @@ class TorrentFile:
 
     @property
     def _file(self) -> None | __TorrentFile:
-        if (tdict := self._torrent._tdict):
+        if (tdict := self.torrent._tdict):
             return tdict.files[self.id]
-
-    @property
-    def downloading(self) -> bool:
-        return (self.priority >= 1) and (not self.finished)
-
-    @property
-    def finished(self) -> bool:
-        return (self.progress == 1)
-
-    #===================================================
-
-    @property
-    def progress(self) -> None | float:
-        if (file := self._file):
-            return file.progress
         
     #===================================================
 
     @property
-    def priority(self) -> int:
+    def downloading(self) -> None | bool:
         if (file := self._file):
-            return file.priority
-        else:
-            return -1
+            return (file.priority != 0) and (file.progress < 1)
 
-    @priority.setter
-    def priority(self, val:int) -> None:
-        if (tdict := self._torrent._tdict):
-            tdict.file_priority(self.id, val)
+    @property
+    def finished(self) -> None | bool:
+        if (file := self._file):
+            return file.progress == 1
+    
+    @property
+    def enabled(self) -> None | bool:
+        if (file := self._file):
+            return file.priority > 0
+
+    #===================================================
+
+    def _set_priority(self, p:int) -> None:
+        self.torrent.qbit._client.torrents_filePrio(
+            torrent_hash = self.torrent.hash, 
+            file_ids = [self.id],
+            priority = p
+        )
+
+    def start(self) -> None:
+        self._set_priority(1)
+
+    def stop(self) -> None:
+        self._set_priority(0)
 
     #===================================================
 
@@ -177,7 +177,7 @@ class Torrent:
 
     @property
     def enabled_files(self) -> List[TorrentFile]:
-        return self.files.filtered(lambda f: f.priority>=1)
+        return self.files.filtered(lambda f: f.enabled)
 
     def stop(self, rm_files:bool=True) -> None:
         if (tdict := self._tdict):
@@ -196,6 +196,13 @@ class Torrent:
     def stalled(self) -> None | bool:
         if (state := self.state_enum):
             return (state.value == 'stalledDL')
+
+    @cached_property
+    def save_path(self) -> None | Path:
+        from ..pc import Path
+
+        if (tdict := self._tdict):
+            return Path(tdict.save_path)
 
 #======================================================================
 
