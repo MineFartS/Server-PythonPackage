@@ -156,9 +156,8 @@ def abbr(
 def from_function(func: Callable) -> None | str:
     from inspect import getsourcelines
 
-    line = ''.join(getsourcelines(func)[0]).strip()
-
-    return 'lambda' + line.split('lambda', 1)[1]
+    parts = ''.join(getsourcelines(func)[0]).strip().split('lambda', 1)
+    return 'lambda' + parts[len(parts)-1]
 
 @cache
 def to_slice(string:str) -> None | list[slice|int]:
