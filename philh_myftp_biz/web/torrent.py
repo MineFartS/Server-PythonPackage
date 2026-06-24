@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Callable
 from ..functools import TransitoryCache
 from functools import cached_property
 from ..functools import singleton
@@ -22,14 +22,14 @@ qualities: list[str] = {
 class TorrentFile:
 
     def __init__(self,
-        torrent: '__TorrentDict',
-        file: '__TorrentFile'
+        torrent: Torrent,
+        file: __TorrentFile
     ) -> None:
         from ..pc import Path
         
         self._torrent = torrent
 
-        self.path = Path(f'{torrent.save_path}/{file.name}')
+        self.path = Path(f'{torrent._tdict.save_path}/{file.name}')
         
         self.name: str = file.name[file.name.find('/')+1:]
 
@@ -38,12 +38,16 @@ class TorrentFile:
         self.id: str = file.id
 
     @property
-    def _file(self) -> None | __TorrentFile:
-        if self._torrent.sync_local():
-            return self._torrent.files[self.id]
+    def _tdict(self):
+        return self._torrent._tdict
 
     @property
-    def progress(self) -> None | float:        
+    def _file(self) -> None | __TorrentFile:
+        if self._tdict:
+            return self._tdict.files[self.id]
+
+    @property
+    def progress(self) -> None | float:
         if self._file:
             return self._file.progress
 
@@ -54,7 +58,7 @@ class TorrentFile:
 
         Log.VERB(f'Downloading File: {force=} | {self}]')
 
-        self._torrent.file_priority(
+        self._tdict.file_priority(
             file_ids = self.id,
             priority = (7 if force else 1)
         )
@@ -73,10 +77,11 @@ class TorrentFile:
 
         Log.VERB(f'Stopping File: {self}')
 
-        self._torrent.file_priority(
-            file_ids = self.id,
-            priority = 0
-        )
+        if self._tdict:
+            self._tdict.file_priority(
+                file_ids = self.id,
+                priority = 0
+            )
 
     @property
     def finished(self) -> bool:
@@ -105,17 +110,21 @@ class Torrent:
 
         match name:
             
-            case 'priority':
-                return getattr(self._tdict, 'priority', -1)
-
-            case 'seeders':
-                return getattr(self._tdict, 'num_complete', -1)
-            
-            case 'leechers':
-                return getattr(self._tdict, 'num_incomplete', -1)
+            case 'priority' | 'seeders' | 'leechers':
+                return getattr(self._tdict, name, -1)
             
             case 'name':
-                return getattr(self._tdict, 'name', "")
+                return getattr(self._tdict, name, "")
+            
+            case 'errored' | 'downloading':
+                return getattr(
+                    getattr(self._tdict, 'state_enum', None),
+                    'is_' + name,
+                    None
+                )
+            
+            case 'start' | 'reannounce' | 'recheck':
+                return getattr(self._tdict, name, lambda:...)
             
             case _:
                 return super().__getattribute__(name) # Raises Error
@@ -123,16 +132,20 @@ class Torrent:
     priority: ClassVar[int]
     seeders: ClassVar[int]
     leechers: ClassVar[int]
+    
     name: ClassVar[str]
+    
+    errored: ClassVar[None|bool]
+    downloading: ClassVar[None|bool]
+
+    start: ClassVar[Callable[[], None]]
+    reannounce: ClassVar[Callable[[], None]]
+    recheck: ClassVar[Callable[[], None]]
 
     #===================================================
 
-    def start(self) -> None:
-        if self._tdict:
-            self._tdict.start()
-
-    @property
-    def _tdict(self) -> None | __TorrentDict:       
+    @cached_property
+    def _tdict(self) -> None | __TorrentDict:
         return next(
             (t for t in self.qbit._client.torrents_info() if t.hash==self.hash), 
             None
@@ -144,6 +157,7 @@ class Torrent:
         timeout = Timeout(self.qbit.timeout)
 
         while self._tdict is None:
+            del self._tdict
             timeout.check()
 
         self._tdict.setForceStart(True)
@@ -153,43 +167,28 @@ class Torrent:
 
         self._tdict.setForceStart(False)
 
-    @property
+    @cached_property
     def files(self) -> List[TorrentFile]:
-        from ..terminal import Log
         from ..json import List
 
-        Log.VERB(f'Scanning Files: {self}')
-
-        return List(TorrentFile(self._tdict, f) for f in self._tdict.files)
+        if self._tdict:
+            return List(TorrentFile(self, f) for f in self._tdict.files)
+        else:
+            return List()
 
     @property
-    def selected_files(self) -> List[TorrentFile]:
+    def enabled_files(self) -> List[TorrentFile]:
         return self.files.filtered(lambda f: f.enabled)
 
-    def stop(self,
-        rm_files: bool = True
-    ) -> None:
-        from ..terminal import Log
-
-        Log.VERB(f'Stopping: {rm_files=} | {self}')
-
-        self._tdict.delete(rm_files)
+    def stop(self, rm_files:bool=True) -> None:
+        if self._tdict:
+            self._tdict.delete(rm_files)
 
     @property
-    def finished(self) -> None | bool:        
+    def finished(self) -> None | bool:
         if self._tdict:
             state = self._tdict.state_enum
             return (state.is_uploading or state.is_complete)
-
-    @property
-    def errored(self) -> None | bool:
-        if self._tdict:
-            return self._tdict.state_enum.is_errored
-        
-    @property
-    def downloading(self) -> None | bool:
-        if self._tdict:
-            return self._tdict.state_enum.is_downloading
 
     @property
     def exists(self) -> bool:
@@ -199,22 +198,6 @@ class Torrent:
     def stalled(self) -> None | bool:
         if self._tdict:
             return (self._tdict.state_enum.value == 'stalledDL')
-
-    def reannounce(self) -> None:
-        from ..terminal import Log
-
-        Log.VERB(f'Reannouncing: {self}')
-
-        if self._tdict:
-            self._tdict.reannounce()
-
-    def recheck(self) -> None:
-        from ..terminal import Log
-
-        Log.VERB(f'Rechecking: {self}')
-
-        if self._tdict:
-            self._tdict.recheck()
 
 @dataclass
 class qBitTorrent:
