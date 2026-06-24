@@ -1,5 +1,5 @@
+from typing import TYPE_CHECKING, ClassVar
 from ..functools import TransitoryCache
-from typing import TYPE_CHECKING, Any
 from functools import cached_property
 from ..functools import singleton
 from dataclasses import dataclass
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from qbittorrentapi import TorrentDictionary as __TorrentDict
     from qbittorrentapi import TorrentFile as __TorrentFile
     from ..array import SortFunc, FilterFunc, List
-    from qbittorrentapi import Client
+    from qbittorrentapi import Client as __Client
     from .driver import Driver
     from ..pc import Path
 
@@ -20,7 +20,6 @@ qualities: list[str] = {
 }
 
 class TorrentFile:
-    """Downloading Torrent File"""
 
     def __init__(self,
         torrent: '__TorrentDict',
@@ -28,117 +27,71 @@ class TorrentFile:
     ) -> None:
         from ..pc import Path
         
-        self.path = Path(f'{torrent.save_path}/{file.name}')
-        """Download Path"""
-        
-        self.size: float = file.size
-        """File Size"""
-
-        self.name: str = file.name[file.name.find('/')+1:]
-        """File Name"""
-
-        self._id: str = file.id
-        """File ID"""
-
         self._torrent = torrent
-        """Torrent"""
+
+        self.path = Path(f'{torrent.save_path}/{file.name}')
+        
+        self.name: str = file.name[file.name.find('/')+1:]
+
+        self.size: float = file.size
+
+        self.id: str = file.id
 
     @property
-    def _file(self) -> 'None|__TorrentFile':
-        from qbittorrentapi.exceptions import TorrentFileNotFoundError
-
-        try:
-            return self._torrent.files[self._id]
-        
-        except TorrentFileNotFoundError:
-            pass
+    def _file(self) -> None | __TorrentFile:
+        if self._torrent.sync_local():
+            return self._torrent.files[self.id]
 
     @property
-    def progress(self) -> None | float:
-        from qbittorrentapi.exceptions import NotFound404Error
-        
-        try:
-            if self._file:
-                return self._file.progress
-        
-        except NotFound404Error:
-            pass
+    def progress(self) -> None | float:        
+        if self._file:
+            return self._file.progress
 
     def start(self,
         force: bool = False
     ) -> None:
-        """
-        Start downloading the file
-        """
         from ..terminal import Log
 
         Log.VERB(f'Downloading File: {force=} | {self}]')
 
         self._torrent.file_priority(
-            file_ids = self._id,
+            file_ids = self.id,
             priority = (7 if force else 1)
         )
 
     @property
-    def enabled(self) -> bool:
-
+    def enabled(self) -> None | bool:
         if self._file:
-
-            priority: int = self._file.priority
-
-            return (priority > 0)
-        
-        else:
-            return False
+            return (self._file.priority > 0)
 
     @property
     def downloading(self) -> bool:
-
-        return (self.enabled and (not self.finished))
+        return bool(self.enabled and (not self.finished))
 
     def stop(self) -> None:
-        """
-        Stop downloading the file
-
-        Ignores error if the magnet is not found
-        """
-        from qbittorrentapi.exceptions import NotFound404Error
         from ..terminal import Log
 
         Log.VERB(f'Stopping File: {self}')
 
-        try:
-            self._torrent.file_priority(
-                file_ids = self._id,
-                priority = 0
-            )
-        except NotFound404Error:
-            pass
+        self._torrent.file_priority(
+            file_ids = self.id,
+            priority = 0
+        )
 
     @property
     def finished(self) -> bool:
-        """
-        Check if the file is finished downloading
-        """
         return (self.progress == 1)
 
     def __repr__(self) -> str:
         from ..classtools import loc
         from ..text import abbr
-
         return f"<File '{abbr(num=30, string=self.name)}' @{loc(obj=self)}>"
 
+@dataclass
 class Torrent:
 
-    def __init__(self,
-        qbit: qBitTorrent,
-        hash: str
-    ) -> None:
-        
-        self.qbit = qbit
-        self.timeout = qbit.timeout
-
-        self.hash = hash
+    qbit: qBitTorrent
+    hash: str
 
     def __repr__(self) -> str:
         from ..classtools import loc
@@ -167,113 +120,85 @@ class Torrent:
             case _:
                 return super().__getattribute__(name) # Raises Error
 
-    priority: int
-    seeders: int
-    leechers: int
-    name: str
+    priority: ClassVar[int]
+    seeders: ClassVar[int]
+    leechers: ClassVar[int]
+    name: ClassVar[str]
 
     #===================================================
 
-    def start(self):
+    def start(self) -> None:
         if self._tdict:
             self._tdict.start()
 
     @property
-    def _tdict(self) -> '__TorrentDict | None':        
-        for t in self.qbit._client.torrents_info():
-            if t.hash == self.hash:
-                return t
-
-    @property
-    def files(self) -> list[TorrentFile]:
-        """
-        List of all files in Magnet Download
-
-        Waits for at least one file to be found before returning
-        """
-        from qbittorrentapi.exceptions import NotFound404Error
+    def _tdict(self) -> None | __TorrentDict:       
+        return next(
+            (t for t in self.qbit._client.torrents_info() if t.hash==self.hash), 
+            None
+        )
+            
+    def wait(self) -> None:
         from ..time import Timeout
-        from ..terminal import Log
 
-        Log.VERB(f'Scanning Files: {self}')
+        timeout = Timeout(self.qbit.timeout)
 
-        timeout = Timeout(self.timeout)
-
-        # Wait for torrent creation
         while self._tdict is None:
             timeout.check()
-            
+
         self._tdict.setForceStart(True)
 
-        # Wait for files to populate
-        while True:
-            try:
-                timeout.check()
-                if len(self._tdict.files) > 0: break
-            except NotFound404Error:
-                Log.VERB('', exc_info=True)
+        while len(self._tdict.files) == 0:
+            timeout.check()
 
         self._tdict.setForceStart(False)
 
-        return [TorrentFile(self._tdict,f) for f in self._tdict.files]
+    @property
+    def files(self) -> List[TorrentFile]:
+        from ..terminal import Log
+        from ..json import List
+
+        Log.VERB(f'Scanning Files: {self}')
+
+        return List(TorrentFile(self._tdict, f) for f in self._tdict.files)
 
     @property
-    def selected_files(self) -> list[TorrentFile]:
-        try:
-            return [f for f in self.files if f.enabled]
-        except TimeoutError:
-            return []
+    def selected_files(self) -> List[TorrentFile]:
+        return self.files.filtered(lambda f: f.enabled)
 
     def stop(self,
         rm_files: bool = True
     ) -> None:
-        """Stop downloading a Magnet"""
         from ..terminal import Log
 
         Log.VERB(f'Stopping: {rm_files=} | {self}')
 
-        self._tdict.delete(delete_files=rm_files)
+        self._tdict.delete(rm_files)
 
     @property
-    def finished(self) -> None | bool:
-        """Check if a magnet is finished downloading"""
-        
+    def finished(self) -> None | bool:        
         if self._tdict:
-
             state = self._tdict.state_enum
-            
             return (state.is_uploading or state.is_complete)
 
     @property
-    def errored(self) -> bool:
-        """Check if a magnet is errored"""
-
+    def errored(self) -> None | bool:
         if self._tdict:
             return self._tdict.state_enum.is_errored
-        else:
-            return False
         
     @property
     def downloading(self) -> None | bool:
-        """Check if a magnet is downloading"""
-        
         if self._tdict:
             return self._tdict.state_enum.is_downloading
 
     @property
     def exists(self) -> bool:
-        """Check if a magnet is in the download queue"""
-        
         return (self._tdict != None)
 
     @property
-    def stalled(self) -> bool:
-        """Check if a magnet is stalled"""
-        
+    def stalled(self) -> None | bool:
         if self._tdict:
             return (self._tdict.state_enum.value == 'stalledDL')
-        else:
-            return False
 
     def reannounce(self) -> None:
         from ..terminal import Log
@@ -281,7 +206,6 @@ class Torrent:
         Log.VERB(f'Reannouncing: {self}')
 
         if self._tdict:
-
             self._tdict.reannounce()
 
     def recheck(self) -> None:
@@ -290,84 +214,60 @@ class Torrent:
         Log.VERB(f'Rechecking: {self}')
 
         if self._tdict:
-
             self._tdict.recheck()
 
+@dataclass
 class qBitTorrent:
-    """Client for qBitTorrent Web Server"""
 
-    def __init__(self,
-        host: str,
-        username: str,
-        password: str,
-        port: int = 8080,
-        timeout: int = 3600 # 1 hour
-    ) -> None:
-        from ..terminal import Log
-
-        Log.VERB(
-            f'Connecting to qBitTorrentAPI\n'+ \
-            f'{host=} | {port=}\n'+ \
-            f'{username=}\n'+ \
-            f'{timeout=}'
-        )
-
-        self.host: str = host
-        self.port: int = port
-        self.timeout: int = timeout
-
-        self.__login = (username, password)
-
-    @cached_property
-    def _rclient(self) -> 'Client':
-        from qbittorrentapi import Client
-
-        return Client(
-            host = self.host,
-            port = self.port,
-            username = self.__login[0],
-            password = self.__login[1],
-            VERIFY_WEBUI_CERTIFICATE = False,
-            REQUESTS_ARGS = {'timeout': (self.timeout, self.timeout)}
-        )
+    host: str
+    username: str
+    password: str
+    port: int = 8080
+    timeout: int = 3600 # 1 hour
 
     @property
-    def _client(self) -> 'Client':
-        """Wait for server connection, then returns qbittorrentapi.Client"""
+    def _client(self) -> __Client:
         from qbittorrentapi.exceptions import LoginFailed, Forbidden403Error, APIConnectionError
+        from qbittorrentapi import Client
         from ..time import Timeout
         from ..terminal import Log
+        from random import randint
 
         timeout = Timeout(self.timeout)
 
+        if not hasattr(self, '_rclient'):
+
+            self._rclient = Client(
+                host = self.host,
+                port = self.port,
+                username = self.username,
+                password = self.password,
+                VERIFY_WEBUI_CERTIFICATE = False,
+                REQUESTS_ARGS = {'timeout': (self.timeout, self.timeout)}
+            )
+
+            self._rclient.app_setPreferences({
+                'listen_port': randint(a=10000, b=60000)
+            })
+
         while True:
-
             try:
-
                 self._rclient.torrents_info()
-
                 return self._rclient
-            
             except LoginFailed, Forbidden403Error, APIConnectionError:
-                Log.VERB('qBitTorrentAPI Connection Error', exc_info=True)
+                Log.VERB(exc_info=True)
 
             timeout.check()
 
     @property
     def connected(self) -> bool:
         """Check if qBitTorrent is connected to the internet"""
-
-        tinfo = self._client.transfer.info()
-
-        conn_status = tinfo.connection_status
-
-        return (conn_status == 'connected')
+        return (self._client.transfer.info().connection_status == 'connected')
 
     def clear(self,
         rm_files: bool = True,
         func: FilterFunc['Torrent'] = lambda t: True
     ) -> None:
-        """Remove all Magnets from the download queue"""
         from ..text import from_function
         from ..terminal import Log
 
@@ -377,72 +277,54 @@ class qBitTorrent:
             'func='+from_function(func)
         )
 
-        for t in self._client.torrents_info():
-
-            torrent = Torrent(self, t.hash)
-
+        for torrent in self.queue:
             if func(torrent):
-            
-                Log.VERB(f'Deleting Queue Item: {rm_files=} | {torrent.name=}')
-                
+                Log.VERB(f'Deleting Queue Item: {rm_files=} | {torrent.name=}')                
                 torrent.stop(rm_files)
 
     def sort(self,
         func: SortFunc['Torrent']
     ) -> None:
-        """Sort the download queue"""
         from ..text import from_function
         from ..terminal import Log
-        from ..array import List
 
         Log.VERB(
             f'Sorting Download Queue:\n'+ \
             'func='+from_function(func)
         )
 
-        torrents = List(Torrent(self, t.hash) for t in self._client.torrents_info())
-
+        torrents = self.queue
         torrents.sort(func)
         torrents.reverse()
 
-        # Iterate through reversed list of torrents
-        for t in torrents:
-            # Move to top of queue
-            t._tdict.top_priority()
+        (t._tdict.top_priority() for t in torrents)
 
     @property
-    def queue(self) -> list[Torrent]:
-        return [Torrent(self, t.hash) for t in self._client.torrents_info()]
+    def queue(self) -> List[Torrent]:
+        from ..array import List
+        return List(Torrent(self, t.hash) for t in self._client.torrents_info())
 
-    def randomize_port(self) -> None:
-        from random import randint
-        
-        # Update preference
-        self._client.app_setPreferences(preferences={
-            'listen_port': randint(a=10000, b=60000)
-        })
-
-@dataclass
 class NameParser:
         
-    name: str
-
-    @cached_property
-    def _parsed(self) -> dict[str, Any]:
+    def __init__(self, name:str) -> None:
         from PTN import parse
-        return parse(self.name)
-    
-    @cached_property
-    def title(self) -> str | None:
-        return self._parsed.get('title')
+
+        self._get = parse(name).get
+        
+        self.name = name
+
+        self.title: str|None = self._get('title')
+
+        self.season: int|list[int]|None = self._get('season')
+
+        self.episode: int|list[int]|None = self._get('episode')
 
     @cached_property
     def year(self) -> list[int] | int | None:
         from re import findall
 
-        if self._parsed.get('year'):
-
-            return self._parsed['year']
+        if self._get('year'):
+            return self._get('year')
 
         m = findall(
             pattern = "(?:19[0-9]|20[0-2])[0-9]",
@@ -452,7 +334,7 @@ class NameParser:
         if len(m) > 1:
 
             years = list(range(int(m[0]), int(m[-1]) + 1))
-
+            
             if len(years) > 0:
                 return years
         
@@ -464,19 +346,8 @@ class NameParser:
         for quality in qualities:
             if quality in self.name:
                 return quality
-            
-    @cached_property
-    def season(self) -> int | list[int] | None:
-
-        return self._parsed.get('season')
-    
-    @cached_property
-    def episode(self) -> int | list[int] | None:
-
-        return self._parsed.get('episode')
 
 class Magnet(Torrent, NameParser):
-    """Handler for MAGNET URLs"""
 
     def __init__(self,
         qbit: qBitTorrent,
@@ -503,11 +374,11 @@ class Magnet(Torrent, NameParser):
         Torrent.__init__(self, qbit, _hash) # pyright: ignore[reportPossiblyUnboundVariable]
 
         #===================================================
-
+        
         self.leechers = leechers
         self.seeders = seeders
-        self.size: str = size
-        self.url: str = url
+        self.size  = size
+        self.url = url
 
         NameParser.__init__(self, name.lower().strip('\n'))
 
@@ -518,7 +389,6 @@ class Magnet(Torrent, NameParser):
     def start(self,
         path: 'None|str|Path' = None
     ) -> None:
-        """Start Downloading a Magnet"""
         from ..terminal import Log
 
         Log.VERB(
