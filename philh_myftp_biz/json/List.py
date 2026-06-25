@@ -156,20 +156,21 @@ class List[V](Collection[V, list[V]]):
 
     #=======================================
 
-    def uniquified(self) -> List[V]:
+    def uniquified(self,
+        func: Callable[[V], Any] = lambda x: x
+    ) -> List[V]:
 
-        data = List()
+        data = {}
 
         for item in self.read():
+            data[func(item)] = item
 
-            if item not in data:
-
-                data += item
-
-        return data
+        return List(data.values())
     
-    def uniquify(self) -> None:
-        self.save(self.uniquified())
+    def uniquify(self,
+        func: Callable[[V], Any] = lambda x: x             
+    ) -> None:
+        self.save(self.uniquified(func))
 
     #=======================================
 
