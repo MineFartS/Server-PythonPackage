@@ -55,23 +55,19 @@ def _search(query:str) -> Generator[Torrent]:
 
         try:
 
-            _url = _run(".children[3].children[0].children[0].href")
+            t = Torrent(hash=None)
 
-            XT: str = parse_qs(urlparse(_url).query)['xt'][0]
+            t.url: str = _run(".children[3].children[0].children[0].href")
+            t.size = Size.to_bytes(_run(".children[4].textContent"))
+            t.name = _run(".children[1].textContent")
+            t.seeders = int(_run(".children[5].textContent"))
+            t.leechers = int(_run(".children[6].textContent"))
+
+            XT: str = parse_qs(urlparse(t.url).query)['xt'][0]
             if XT.startswith('urn:btih:'): # v1
-                hash = XT[len('urn:btih:'):].lower()
+                t.hash = XT[len('urn:btih:'):].lower()
             elif XT.startswith('urn:btmh:'): # v2
-                hash = XT[len('urn:btmh:'):].lower()
-            else:
-                hash = ""
-
-            t = Torrent(
-                raw=None, url=_url, _hash=hash,
-                size = Size.to_bytes(_run(".children[4].textContent")),
-                _name = _run(".children[1].textContent"),
-                _seeders = int(_run(".children[5].textContent")),
-                _leechers = int(_run(".children[6].textContent"))
-            )
+                t.hash = XT[len('urn:btmh:'):].lower()
 
             yield t
 

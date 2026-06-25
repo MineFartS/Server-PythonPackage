@@ -90,7 +90,7 @@ class qBitTorrent(
         items = []
 
         for t in self.torrents_info():
-            items += [Torrent(t)]
+            items += [Torrent(hash=t.hash)]
 
         return List(items) # pyright: ignore[reportReturnType]
     

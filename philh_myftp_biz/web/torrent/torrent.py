@@ -1,15 +1,19 @@
 from qbittorrentapi import TorrentDictionary
-from functools import cached_property
+from ...functools import cached_property
 from .qbit import qBitTorrent as qbit
 from dataclasses import dataclass
 from .file import TorrentFile
 from ...terminal import Log
+from typing import ClassVar
 from ...json import List
 
 @dataclass
 class Torrent:
 
-    raw: None | TorrentDictionary
+    hash: str
+
+    size: ClassVar[str] = ""
+    url : ClassVar[str] = ""
 
     def __repr__(self) -> str:
         from ...classtools import loc
@@ -24,25 +28,24 @@ class Torrent:
     
     #===================================================
 
-    def refresh(self):
-        for torr in qbit.queue:
+    @cached_property
+    def raw(self) -> TorrentDictionary | None:
+        for torr in qbit.torrents_info():
             if torr.hash == self.hash:
-                self.raw = torr.raw
-                return
-        self.raw = None
+                return torr
 
     #===================================================
 
     @cached_property
     def path(self):
         from ...pc import Path
-        self.refresh()
+        del self.raw
         return Path(self.raw.save_path)
 
     @property
     @Log.on_call
     def finished(self) -> None | bool:
-        self.refresh()
+        del self.raw
         state = self.raw.state_enum
         return (state.is_uploading or state.is_complete)
 
@@ -51,7 +54,7 @@ class Torrent:
     @cached_property
     @Log.on_call
     def files(self) -> List[TorrentFile]:
-        self.refresh()
+        del self.raw
 
         to = qbit._timeout()
 
@@ -65,7 +68,7 @@ class Torrent:
             files = []
 
             for f in self.raw.files:
-                files += [TorrentFile(self, f)]
+                files += [TorrentFile(self, f.id)]
 
             return List(files)
         
@@ -81,73 +84,46 @@ class Torrent:
 
     #===================================================
 
-    size: str = ""
-    url : str = ""
-
-    @property
-    def hash(self) -> str:
-        if self.raw:
-            return self.raw.hash
-        else:
-            return self._hash
-
-    _hash: str = None
-
-    @property
+    @cached_property
     def name(self) -> str:
-        self.refresh()
-        if self.raw:
-            return self.raw.name
-        else:
-            return self._name
+        del self.raw
+        return self.raw.name
 
-    _name: str = None
-
-    @property
+    @cached_property
     def seeders(self) -> int:
-        self.refresh()
-        if self.raw:
-            return self.raw.num_complete
-        else:
-            return self._seeders
+        del self.raw
+        return self.raw.num_complete
     
-    _seeders: int = None
-    
-    @property
+    @cached_property
     def leechers(self) -> int:
-        self.refresh()
-        if self.raw:
-            return self.raw.num_incomplete
-        else:
-            return self._leechers
-    
-    _leechers: int = None
+        del self.raw
+        return self.raw.num_incomplete
     
     #===================================================
 
     @property
     @Log.on_call
     def errored(self) -> bool:
-        self.refresh()
+        del self.raw
         return self.raw.state_enum.is_errored
     
     @property
     @Log.on_call
     def downloading(self) -> bool:
-        self.refresh()
+        del self.raw
         return self.raw.state_enum.is_downloading
 
     @property
     @Log.on_call
     def exists(self) -> bool:
-        self.refresh()
+        del self.raw
         return len(qbit.torrents_info(torrent_hashes=self.hash)) > 0
 
     #===================================================
 
     @Log.on_call
     def stop(self, rm_files:bool=True) -> None:
-        self.refresh()
+        del self.raw
         return self.raw.delete(delete_files=rm_files)
 
     @Log.on_call
@@ -160,7 +136,7 @@ class Torrent:
             to = qbit._timeout()
 
             while self.raw is None:
-                self.refresh()
+                del self.raw
                 to.check()
 
         return self

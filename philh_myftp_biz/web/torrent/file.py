@@ -1,5 +1,5 @@
 from qbittorrentapi import TorrentFile as __TorrentFile
-from functools import cached_property
+from ...functools import cached_property
 from .qbit import qBitTorrent as qbit
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class TorrentFile:
     
     torrent: Torrent
-    raw: None | __TorrentFile
+    id: str
 
     def __repr__(self) -> str:
         from ...classtools import loc
@@ -22,45 +22,39 @@ class TorrentFile:
 
     #===================================================
 
-    def refresh(self) -> None:
-        for f in self.torrent.files:
-            if f.raw.id == self.raw.id:
-                self.raw = f.raw
-                return
-        self.raw = None
+    @property
+    def raw(self) -> None | __TorrentFile:
+        for file in qbit.torrents_files(self.torrent.hash):
+            if file.id == self.id:
+                return file
 
     #===================================================
 
     @cached_property
     def path(self) -> Path:
-        self.refresh()
         return self.torrent.path.child(self.raw.name)
     
     @cached_property
     def name(self) -> str:
-        return self.path.name
+        return self.raw.name
     
     @cached_property
     def size(self) -> float:
-        self.refresh()
         return self.raw.size
 
     @property
     @Log.on_call
     def downloading(self) -> bool:
-        self.refresh()
-        return (self.raw.priority != 0) and (self.progress < 1)
+        return (self.raw.priority != 0) and (self.raw.progress < 1)
 
     @property
     @Log.on_call
     def finished(self) -> bool:
-        self.refresh()
         return self.raw.progress == 1
     
     @property
     @Log.on_call
     def enabled(self) -> bool:
-        self.refresh()
         return self.raw.priority > 0
 
     #===================================================
