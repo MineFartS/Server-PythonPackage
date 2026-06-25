@@ -61,19 +61,23 @@ class Torrent:
 
         self.raw.setForceStart(True)
 
-        while len(self.raw.files) == 0:
-            to.check()
+        try:
+            
+            while len(self.raw.files) == 0:
+                to.check()
 
-        self.raw.setForceStart(False)
+            files = []
 
-        #=====================
+            for f in self.raw.files:
+                files += [TorrentFile(self, f)]
 
-        files = []
+            return List(files)
+        
+        except TimeoutError:
+            return List()
 
-        for f in self.raw.files:
-            files += [TorrentFile(self, f)]
-
-        return List(files) # pyright: ignore[reportReturnType]
+        finally:
+            self.raw.setForceStart(False)
 
     @property
     def enabled_files(self) -> List[TorrentFile]:
