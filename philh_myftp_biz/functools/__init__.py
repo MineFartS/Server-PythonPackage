@@ -52,14 +52,35 @@ def attrs(obj:Any) -> Generator[attr, Any, None]:
 
         yield attr(obj, name)
 
-def cpath(obj:Any) -> str:
+def cpath(obj) -> str:
     """
-    Get Full path of instance
+    Class Path
 
-    Ex: path(print) -> '__builtins__.print'
+    Ex: `cpath(print) -> '__builtins__.print'`
     """
+    from types import FunctionType
 
-    return obj.__class__.__module__ + '.' + obj.__class__.__qualname__
+    if not isinstance(obj, (type, FunctionType)):
+        obj = obj.__class__
+
+    return obj.__module__ + '.' + obj.__qualname__
+
+def spath(x:int) -> str:
+    """
+    Stack Path
+
+    Ex: `spath(0) -> 'test.py:14'`
+    """
+    from traceback import extract_stack
+
+    stack = filter(
+        lambda x: "<frozen " not in x.filename, 
+        extract_stack()
+    )
+
+    frame = list(stack)[x]
+
+    return f'{frame.filename.split('\\')[-1]}:{frame.lineno}'
 
 def loc(obj:Any) -> str:
     """Get the hexadecimal location of an instance in memory"""

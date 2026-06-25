@@ -7,7 +7,7 @@ FAIL: 40
 CRIT: 50
 ```"""
 from functools import partial, wraps
-from ..functools import cpath
+from ..functools import cpath, spath
 from logging import log
 from typing import Any
 
@@ -40,7 +40,7 @@ def on_call(func=None, *, logger=VERB):
         
         @wraps(f)
         def wrapper(*args, **kwargs):
-            logger(f"Calling '{f.__name__}'\n{args=}\n{kwargs=}")
+            logger(f"Calling '{cpath(f)} @ {spath(0)} '\n{args=}\n{kwargs=}")
             return f(*args, **kwargs)
         return wrapper
 
