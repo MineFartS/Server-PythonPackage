@@ -1,5 +1,5 @@
 from typing import Any, Generator, Callable, Type
-from functools import cached_property
+from functools import cached_property as _cached_property
 
 from .TransitoryCache import TransitoryCache # pyright: ignore[reportUnusedImport]
 from .Absorber import Absorber, NullSafe # pyright: ignore[reportUnusedImport]
@@ -43,7 +43,13 @@ def copy_attrs(
         if force or not hasattr(dst, name):
             setattr(dst, name, value)
 
-#========================================================
+class cached_property(_cached_property):
+
+    def __set__(self, inst, value) -> None:
+        inst.__dict__[self.attrname] = value
+
+    def __delete__(self, inst) -> None:
+        inst.__dict__.pop(self.attrname, None)
 
 def attrs(obj:Any) -> Generator[attr, Any, None]:
     """Get all attributes of an instance or object"""
@@ -107,7 +113,7 @@ def clear_cache(instance: Any) -> None:
 
     for name, value in vars(instance).items():
 
-        if isinstance(value, cached_property):
+        if isinstance(value, _cached_property):
 
             delattr(instance, name)
 
