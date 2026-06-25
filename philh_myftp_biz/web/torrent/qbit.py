@@ -85,10 +85,10 @@ class qBitTorrent(
     def queue(self) -> List[Torrent]:
         from .torrent import Torrent
 
-        items = list(self.torrents_info())
+        items = []
 
-        for t in items:
-            t.__class__ = Torrent
+        for t in self.torrents_info():
+            items += [Torrent(t)]
 
         return List(items) # pyright: ignore[reportReturnType]
     

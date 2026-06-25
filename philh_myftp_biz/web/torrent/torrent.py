@@ -1,15 +1,16 @@
 from qbittorrentapi import TorrentDictionary
 from functools import cached_property
-from ...terminal import Log
-
 from .qbit import qBitTorrent as qbit
+from dataclasses import dataclass
 from .file import TorrentFile
+from ...terminal import Log
+from typing import ClassVar
 from ...json import List
 
-class Torrent(TorrentDictionary):
+@dataclass
+class Torrent:
 
-    def __init__(self) -> None:
-        pass
+    raw: None | TorrentDictionary
 
     def __repr__(self) -> str:
         from ...classtools import loc
@@ -19,47 +20,58 @@ class Torrent(TorrentDictionary):
     
     __str__ = __repr__
 
-    def __format__(self, spec):
+    def __format__(self, spec) -> str:
         return str(self).__format__(spec)
-
+    
     #===================================================
 
-    @property
-    def path(self):
-        from ...pc import Path
-        return Path(self.save_path)
-
-    @property
-    def finished(self) -> None | bool:
-        return (self.state_enum.is_uploading or self.state_enum.is_complete)
-
-    @property
-    def stalled(self) -> None | bool:
-        return (self.state_enum.value == 'stalledDL')
+    def refresh(self):
+        for torr in qbit.queue:
+            if torr.hash == self.hash:
+                self.raw = torr.raw
+                return
+        self.raw = None
 
     #===================================================
 
     @cached_property
-    def files(self) -> List[TorrentFile]:
+    def path(self):
+        from ...pc import Path
+        self.refresh()
+        return Path(self.raw.save_path)
 
-        #=====================
-        
+    @property
+    def finished(self) -> None | bool:
+        self.refresh()
+        state = self.raw.state_enum
+        return (state.is_uploading or state.is_complete)
+
+    @property
+    def stalled(self) -> None | bool:
+        self.refresh()
+        return (self.raw.state_enum.value == 'stalledDL')
+
+    #===================================================
+
+    @property
+    def files(self) -> List[TorrentFile]:
+        self.refresh()
+
         to = qbit._timeout()
 
-        self.setForceStart(True)
+        self.raw.setForceStart(True)
 
-        while len(super().files) == 0:
+        while len(self.raw.files) == 0:
             to.check()
 
-        self.setForceStart(False)
+        self.raw.setForceStart(False)
 
         #=====================
 
-        files = list(super().files)
+        files = []
 
-        for f in files:
-            f.__class__ = TorrentFile
-            f.torrent = self
+        for f in self.raw.files:
+            files += [TorrentFile(self, f)]
 
         return List(files) # pyright: ignore[reportReturnType]
 
@@ -69,65 +81,89 @@ class Torrent(TorrentDictionary):
 
     #===================================================
 
-    def __setattr__(self, name:str, value):
-        self.__dict__[name] = value
+    size: str = ""
+    url : str = ""
 
-    def __getattr__(self, name:str):
-        match name:
+    @property
+    def hash(self) -> str:
+        if self.raw:
+            return self.raw.hash
+        else:
+            return self._hash
 
-            case 'seeders':
-                return getattr(self, 'num_complete', -1)
-            
-            case 'leechers':
-                return getattr(self, 'num_incomplete', -1)
-            
-            case 'size' | 'name':
-                return ""
-            
-            case "errored" | "downloading":
-                try:
-                    return getattr(self.state_enum, 'is_'+name)
-                except AttributeError:
-                    pass
-            
-            case _:
-                return super().__getattribute__(name)
+    _hash: str = None
 
-    seeders: int
-    leechers: int
-    size: str
-    name: str
-    url: str
-    errored: None | bool
-    downloading: None | bool
+    @property
+    def name(self) -> str:
+        self.refresh()
+        if self.raw:
+            return self.raw.name
+        else:
+            return self._name
+
+    _name: str = None
+
+    @property
+    def seeders(self) -> int:
+        self.refresh()
+        if self.raw:
+            return self.raw.num_complete
+        else:
+            return self._seeders
+    
+    _seeders: int = None
+    
+    @property
+    def leechers(self) -> int:
+        self.refresh()
+        if self.raw:
+            return self.raw.num_incomplete
+        else:
+            return self._leechers
+    
+    _leechers: int = None
+    
+    #===================================================
+
+    @property
+    def errored(self) -> bool:
+        self.refresh()
+        return self.raw.state_enum.is_errored
+    
+    @property
+    def downloading(self) -> bool:
+        self.refresh()
+        return self.raw.state_enum.is_downloading
+
+    @property
+    def exists(self) -> bool:
+        self.refresh()
+        return len(qbit.torrents_info(torrent_hashes=self.hash)) > 0
 
     #===================================================
 
     @property
-    def exists(self) -> bool:
-        return \
-            hasattr(self, 'hash') and \
-            len(qbit.torrents_info(torrent_hashes=self.hash)) > 0
-
-    #===================================================
+    def _tlist(self):
+        self.refresh()
+        return qbit.torrents_info(torrent_hashes=self.hash)
 
     def stop(self, rm_files:bool=True) -> None:
-        return self.delete(delete_files=rm_files)
+        self.refresh()
+        return self.raw.delete(delete_files=rm_files)
 
     @Log.on_call
-    def start(self) -> Torrent:
+    def start(self):
 
-        qbit.torrents_add(self.url)
-        
-        to = qbit._timeout()
+        if not self.exists:
 
-        torrents = []
+            qbit.torrents_add(self.url)
+            
+            to = qbit._timeout()
 
-        while len(torrents) == 0:
-            torrents = qbit.torrents_info(torrent_hashes=self.hash)
-            to.check()
+            while self.raw is None:
+                self.refresh()
+                to.check()
 
-        torrents[0].__class__ = Torrent
-        return torrents[0] # pyright: ignore[reportReturnType]
+        return self
 
     #===================================================

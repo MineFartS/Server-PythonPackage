@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING, Generator
-from ...functools import singleton
 from ...terminal import Log
 from ...web import URL
 
@@ -9,7 +8,7 @@ if TYPE_CHECKING:
     from .torrent import Torrent
 
 url = URL("https://thepiratebay11.com/search/")
-driver: 'Driver' = None
+driver: Driver = None
 
 @Log.on_call
 def search(*queries:str) -> List[Torrent]:
@@ -41,10 +40,7 @@ def _search(query:str) -> Generator[Torrent]:
     if driver is None:
         driver = Driver()
 
-    # Open the search in a url
-    driver.open(
-        url = url.child(query)
-    )
+    driver.open(url.child(query))
 
     # Set driver var 'lines' to a list of lines
     try:
@@ -59,18 +55,23 @@ def _search(query:str) -> Generator[Torrent]:
 
         try:
 
-            t = Torrent()
-            t.name = _run(".children[1].textContent")
-            t.seeders = int(_run(".children[5].textContent"))
-            t.leechers = int(_run(".children[6].textContent"))
-            t.size = Size.to_bytes(_run(".children[4].textContent"))
-            t.url = _run(".children[3].children[0].children[0].href")
+            _url = _run(".children[3].children[0].children[0].href")
 
-            XT: str = parse_qs(urlparse(t.url).query)['xt'][0]
+            XT: str = parse_qs(urlparse(_url).query)['xt'][0]
             if XT.startswith('urn:btih:'): # v1
-                t.hash = XT[len('urn:btih:'):].lower()
+                hash = XT[len('urn:btih:'):].lower()
             elif XT.startswith('urn:btmh:'): # v2
-                t.hash = XT[len('urn:btmh:'):].lower()
+                hash = XT[len('urn:btmh:'):].lower()
+            else:
+                hash = ""
+
+            t = Torrent(
+                raw=None, url=_url, _hash=hash,
+                size = Size.to_bytes(_run(".children[4].textContent")),
+                _name = _run(".children[1].textContent"),
+                _seeders = int(_run(".children[5].textContent")),
+                _leechers = int(_run(".children[6].textContent"))
+            )
 
             yield t
 
