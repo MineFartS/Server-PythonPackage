@@ -53,7 +53,7 @@ class Torrent:
 
     #===================================================
 
-    @property
+    @cached_property
     def files(self) -> List[TorrentFile]:
         self.refresh()
 
