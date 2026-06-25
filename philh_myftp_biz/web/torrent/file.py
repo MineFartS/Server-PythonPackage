@@ -46,16 +46,19 @@ class TorrentFile:
         return self.raw.size
 
     @property
+    @Log.on_call
     def downloading(self) -> bool:
         self.refresh()
         return (self.raw.priority != 0) and (self.progress < 1)
 
     @property
+    @Log.on_call
     def finished(self) -> bool:
         self.refresh()
         return self.raw.progress == 1
     
     @property
+    @Log.on_call
     def enabled(self) -> bool:
         self.refresh()
         return self.raw.priority > 0

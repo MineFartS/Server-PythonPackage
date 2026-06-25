@@ -26,6 +26,7 @@ class qBitTorrent(
     SearchAPIMixIn
 ):
 
+    @Log.on_call
     def connect(self,
         host: str,
         username: str,
@@ -82,6 +83,7 @@ class qBitTorrent(
         (t.top_priority() for t in torrents)
 
     @property
+    @Log.on_call
     def queue(self) -> List[Torrent]:
         from .torrent import Torrent
 

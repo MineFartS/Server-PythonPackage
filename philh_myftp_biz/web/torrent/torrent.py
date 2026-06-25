@@ -4,7 +4,6 @@ from .qbit import qBitTorrent as qbit
 from dataclasses import dataclass
 from .file import TorrentFile
 from ...terminal import Log
-from typing import ClassVar
 from ...json import List
 
 @dataclass
@@ -41,19 +40,16 @@ class Torrent:
         return Path(self.raw.save_path)
 
     @property
+    @Log.on_call
     def finished(self) -> None | bool:
         self.refresh()
         state = self.raw.state_enum
         return (state.is_uploading or state.is_complete)
 
-    @property
-    def stalled(self) -> None | bool:
-        self.refresh()
-        return (self.raw.state_enum.value == 'stalledDL')
-
     #===================================================
 
     @cached_property
+    @Log.on_call
     def files(self) -> List[TorrentFile]:
         self.refresh()
 
@@ -130,27 +126,26 @@ class Torrent:
     #===================================================
 
     @property
+    @Log.on_call
     def errored(self) -> bool:
         self.refresh()
         return self.raw.state_enum.is_errored
     
     @property
+    @Log.on_call
     def downloading(self) -> bool:
         self.refresh()
         return self.raw.state_enum.is_downloading
 
     @property
+    @Log.on_call
     def exists(self) -> bool:
         self.refresh()
         return len(qbit.torrents_info(torrent_hashes=self.hash)) > 0
 
     #===================================================
 
-    @property
-    def _tlist(self):
-        self.refresh()
-        return qbit.torrents_info(torrent_hashes=self.hash)
-
+    @Log.on_call
     def stop(self, rm_files:bool=True) -> None:
         self.refresh()
         return self.raw.delete(delete_files=rm_files)
