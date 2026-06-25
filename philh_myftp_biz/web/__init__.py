@@ -240,7 +240,7 @@ class URL:
     @property
     def online(self) -> bool:
         """ping3.ping wrapper"""
-        from ping3 import ping
+        from .ping3 import ping
 
         try:
 

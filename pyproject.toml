@@ -9,3 +9,12 @@ dynamic = [ "dependencies",]
 
 [tool.hatch.metadata.hooks.requirements_txt]
 files = [ "requirements.txt",]
+
+[tool.hatch.build.targets.wheel]
+packages = ["philh_myftp_biz"]
+
+[tool.hatch.build]
+artifacts = [
+    "**/*.pyd",
+    "**/*.pyi",
+]

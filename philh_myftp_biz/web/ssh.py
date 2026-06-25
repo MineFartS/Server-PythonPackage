@@ -7,7 +7,7 @@ from builtins import ConnectionResetError as _ConnectionResetError
 from builtins import ConnectionAbortedError as _ConnectionAbortedError
 
 if TYPE_CHECKING:
-    from paramiko.channel import ChannelFile, ChannelStderrFile
+    from .paramiko.channel import ChannelFile, ChannelStderrFile
 
 @dataclass
 class SSHResponse:
@@ -34,7 +34,7 @@ class SSH:
 
     @cached_property
     def _client(self):
-        from paramiko import SSHClient, AutoAddPolicy
+        from .paramiko import SSHClient, AutoAddPolicy
         import builtins
 
         builtins.TimeoutError = _ConnectionAbortedError

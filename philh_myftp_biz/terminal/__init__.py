@@ -107,7 +107,7 @@ def input[D] (
 
     Will return default upon timeout
     """
-    from inputimeout import inputimeout, TimeoutOccurred
+    from .inputimeout import inputimeout, TimeoutOccurred
     from builtins import input
 
     if timeout:

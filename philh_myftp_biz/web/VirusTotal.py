@@ -3,7 +3,7 @@ from ..classtools import singleton
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from vt.object import Object as VTobj
+    from .vt.object import Object as VTobj
     from ..pc import Path
 
 class VirusReport:
@@ -61,7 +61,7 @@ class VirusTotal:
 
     @property
     def client(self):
-        from vt import Client
+        from .vt import Client
 
         return Client(self.key)
 
@@ -81,7 +81,7 @@ class VirusTotal:
     def _check(self,
         file: 'Path'
     ) -> VTobj | None:
-        from vt.error import APIError
+        from .vt.error import APIError
     
         try: # Check for existing report first
 
