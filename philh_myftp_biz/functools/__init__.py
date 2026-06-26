@@ -45,6 +45,9 @@ def copy_attrs(
 
 class cached_property(_cached_property):
 
+    def __new__(cls, *_, **__) -> _cached_property:
+        return super().__new__(cls)
+
     def __set__(self, inst, value) -> None:
         inst.__dict__[self.attrname] = value
 
