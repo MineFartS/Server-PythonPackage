@@ -45,20 +45,17 @@ class qBitTorrent(
         )
 
         self._timeout = lambda: Timeout(timeout)
-        
-        to = self._timeout()
 
-        while True:
-            try:
-                to.check()
-                self.torrents_info()
-                break
-            except LoginFailed, Forbidden403Error, APIConnectionError:
-                Log.VERB(exc_info=True)
+        try:
 
-        self.app_setPreferences({
-            'listen_port': randint(a=10000, b=60000)
-        })
+            self.torrents_info()
+
+            self.app_setPreferences({
+                'listen_port': randint(a=10000, b=60000)
+            })
+
+        except (LoginFailed, Forbidden403Error, APIConnectionError) as e:
+            raise ConnectionError from e
 
     @Log.on_call
     def clear(self,
