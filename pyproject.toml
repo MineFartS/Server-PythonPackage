@@ -4,17 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "philh_myftp_biz"
-version = "v2026.06.25"
+version = "v2026.06.26"
 dynamic = [ "dependencies",]
+
+[tool.hatch.build]
+artifacts = [ "**/*.pyd", "**/*.pyi",]
 
 [tool.hatch.metadata.hooks.requirements_txt]
 files = [ "requirements.txt",]
 
 [tool.hatch.build.targets.wheel]
-packages = ["philh_myftp_biz"]
-
-[tool.hatch.build]
-artifacts = [
-    "**/*.pyd",
-    "**/*.pyi",
-]
+packages = [ "philh_myftp_biz",]
