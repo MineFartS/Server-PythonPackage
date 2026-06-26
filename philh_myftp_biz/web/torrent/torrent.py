@@ -28,7 +28,7 @@ class Torrent:
     
     #===================================================
 
-    @cached_property
+    @property
     def raw(self) -> TorrentDictionary | None:
         for torr in qbit.torrents_info():
             if torr.hash == self.hash:
@@ -39,13 +39,11 @@ class Torrent:
     @cached_property
     def path(self):
         from ...pc import Path
-        del self.raw
         return Path(self.raw.save_path)
 
     @property
     @Log.on_call
     def finished(self) -> None | bool:
-        del self.raw
         state = self.raw.state_enum
         return (state.is_uploading or state.is_complete)
 
@@ -54,7 +52,6 @@ class Torrent:
     @cached_property
     @Log.on_call
     def files(self) -> List[TorrentFile]:
-        del self.raw
 
         to = qbit._timeout()
 
@@ -86,17 +83,14 @@ class Torrent:
 
     @cached_property
     def name(self) -> str:
-        del self.raw
         return self.raw.name
 
     @cached_property
     def seeders(self) -> int:
-        del self.raw
         return self.raw.num_complete
     
     @cached_property
     def leechers(self) -> int:
-        del self.raw
         return self.raw.num_incomplete
     
     #===================================================
@@ -104,26 +98,22 @@ class Torrent:
     @property
     @Log.on_call
     def errored(self) -> bool:
-        del self.raw
         return self.raw.state_enum.is_errored
     
     @property
     @Log.on_call
     def downloading(self) -> bool:
-        del self.raw
         return self.raw.state_enum.is_downloading
 
     @property
     @Log.on_call
     def exists(self) -> bool:
-        del self.raw
         return len(qbit.torrents_info(torrent_hashes=self.hash)) > 0
 
     #===================================================
 
     @Log.on_call
     def stop(self, rm_files:bool=True) -> None:
-        del self.raw
         return self.raw.delete(delete_files=rm_files)
 
     @Log.on_call
@@ -136,7 +126,6 @@ class Torrent:
             to = qbit._timeout()
 
             while self.raw is None:
-                del self.raw
                 to.check()
 
         return self

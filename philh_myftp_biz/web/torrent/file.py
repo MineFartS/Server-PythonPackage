@@ -24,7 +24,7 @@ class TorrentFile:
 
     @property
     def raw(self) -> None | __TorrentFile:
-        for file in qbit.torrents_files(self.torrent.hash):
+        for file in self.torrent.raw.files:
             if file.id == self.id:
                 return file
 
