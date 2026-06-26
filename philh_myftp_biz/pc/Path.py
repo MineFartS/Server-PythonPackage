@@ -136,9 +136,7 @@ class Path:
         if self.is_file:
             raise TypeError('Cannot get children of a file')
         
-        for root, dirs, files in self._pure.walk():
-            for item in (*dirs, *files):
-                yield Path(root, item)
+        yield from (Path(i) for i in self._pure.rglob('*'))
 
     @property
     def is_empty(self) -> bool:
