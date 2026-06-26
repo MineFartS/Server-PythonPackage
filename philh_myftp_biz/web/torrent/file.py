@@ -36,7 +36,8 @@ class TorrentFile:
     
     @cached_property
     def name(self) -> str:
-        return self.raw.name
+        from os.path import basename
+        return basename(self.raw.name)
     
     @cached_property
     def size(self) -> float:
