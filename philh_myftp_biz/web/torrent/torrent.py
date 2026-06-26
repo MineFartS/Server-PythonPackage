@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from .file import TorrentFile
 from ...terminal import Log
 from typing import ClassVar
+from ...pc.Path import Path
 from ...json import List
 
 @dataclass
@@ -14,6 +15,8 @@ class Torrent:
 
     size: ClassVar[str] = ""
     url : ClassVar[str] = ""
+
+    #===================================================
 
     def __repr__(self) -> str:
         from ...classtools import loc
@@ -33,19 +36,6 @@ class Torrent:
         for torr in qbit.torrents_info():
             if torr.hash == self.hash:
                 return torr
-
-    #===================================================
-
-    @cached_property
-    def path(self):
-        from ...pc import Path
-        return Path(self.raw.save_path)
-
-    @property
-    @Log.on_call
-    def finished(self) -> None | bool:
-        state = self.raw.state_enum
-        return (state.is_uploading or state.is_complete)
 
     #===================================================
 
@@ -92,23 +82,28 @@ class Torrent:
     @cached_property
     def leechers(self) -> int:
         return self.raw.num_incomplete
-    
-    #===================================================
 
     @property
-    @Log.on_call
     def errored(self) -> bool:
         return self.raw.state_enum.is_errored
     
     @property
-    @Log.on_call
     def downloading(self) -> bool:
         return self.raw.state_enum.is_downloading
 
     @property
-    @Log.on_call
     def exists(self) -> bool:
-        return len(qbit.torrents_info(torrent_hashes=self.hash)) > 0
+        return self.raw != None
+    
+    @cached_property
+    def path(self) -> Path:
+        from ...pc import Path
+        return Path(self.raw.save_path)
+
+    @property
+    def finished(self) -> None | bool:
+        state = self.raw.state_enum
+        return (state.is_uploading or state.is_complete)
 
     #===================================================
 
@@ -119,15 +114,12 @@ class Torrent:
     @Log.on_call
     def start(self):
 
-        if not self.exists:
-
+        if self.raw is None:
             qbit.torrents_add(self.url)
-            
-            to = qbit._timeout()
+        
+        to = qbit._timeout()
 
-            while self.raw is None:
-                to.check()
-
-        return self
+        while self.raw is None:
+            to.check()
 
     #===================================================
