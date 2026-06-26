@@ -1,4 +1,5 @@
-from typing import Callable
+from dataclasses import dataclass
+from typing import Callable, Any
 
 class Thread[T]:
 
@@ -142,25 +143,22 @@ def Alive() -> bool:
 
     return main_thread().is_alive()
 
-class ThreadedFunc:
-    
-    def __init__(self, func) -> None:
-        from functools import wraps
+@dataclass
+class ThreadedFunc[R]:
 
-        self.func: Callable = func
-        self.thread: Thread = None
+    func: Callable[..., R]
+    instance: Any = None
 
-        wraps(func)(self)
-
-    def __call__(self, *args, **kwargs):
+    def __get__(self, instance, _) -> ThreadedFunc[R]:
         
-        if self._thread is None:
-        
-            self._thread = Thread(
-                func=self.func, 
-                args=args, 
-                kwargs=kwargs
-            )
-            
-        return self._thread
+        if instance is None:
+            return self
+        else:    
+            return ThreadedFunc(self.func, instance)
 
+    def __call__(self, *args, **kwargs) -> Thread[R]:
+        
+        if self.instance != None:
+            args = [self.instance, *args]
+
+        return Thread(self.func, *args, **kwargs)
