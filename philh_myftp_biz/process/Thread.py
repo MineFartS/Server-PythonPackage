@@ -141,3 +141,26 @@ def Alive() -> bool:
     from threading import main_thread
 
     return main_thread().is_alive()
+
+class ThreadedFunc:
+    
+    def __init__(self, func) -> None:
+        from functools import wraps
+
+        self.func: Callable = func
+        self.thread: Thread = None
+
+        wraps(func)(self)
+
+    def __call__(self, *args, **kwargs):
+        
+        if self._thread is None:
+        
+            self._thread = Thread(
+                func=self.func, 
+                args=args, 
+                kwargs=kwargs
+            )
+            
+        return self._thread
+

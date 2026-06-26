@@ -16,7 +16,7 @@ class UnconsumingIO:
     def read(self, size=None):
         from ..terminal import _cls_cmd
     
-        self._buffer += self._stream.read()
+        self._read()
 
         if self._clean:
             self._buffer = self._buffer.split(_cls_cmd)[-1]
@@ -27,3 +27,10 @@ class UnconsumingIO:
         else:
             return self._buffer[:size]
 
+    def _read(self, size=None):
+
+        chunk = self._stream.read()
+
+        self._buffer += chunk
+
+        return chunk

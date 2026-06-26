@@ -1,4 +1,5 @@
 from typing import Literal, TYPE_CHECKING, Any
+from .Thread import ThreadedFunc
 
 if TYPE_CHECKING:
     from ..pc import Path
@@ -22,6 +23,7 @@ class SubProcess:
         from sys import executable
         from ..terminal import Log
         from ..pc import Path, cwd
+        from .Thread import Thread
 
         # =====================================
 
@@ -97,6 +99,9 @@ class SubProcess:
 
         # =====================================
 
+        if not self._hide:
+            self.__print()
+
         # Wait for process to complete if required
         if self._wait:
             self.wait()
@@ -145,6 +150,14 @@ class SubProcess:
         state['send'] = None
 
         return state
+
+    @ThreadedFunc
+    def __print(self) -> None:
+        from ..terminal import write
+
+        while self.running:
+            write(self.stdout._read(), 'out')
+            write(self.stderr._read(), 'err')
 
 class Run(SubProcess):
     _hide = False
