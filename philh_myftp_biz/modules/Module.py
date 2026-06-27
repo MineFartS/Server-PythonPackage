@@ -134,20 +134,17 @@ class Module(Path):
         show: bool = True
     ) -> None:
         """Automatically install all dependencies"""
-        from ..process import Run, RunHidden
         from shlex import split
-        from .Repo import Repo
 
-        # Initialize a git repo if path exists
-        if self.exists:
-            Repo(self).init()
-
-        runfunc = Run if show else RunHidden
+        if show:
+            from ..process import Run
+        else:
+            from ..process import RunHidden as Run
 
         # Upgrade all python packages
         for pkg in self.packages:
             
-            runfunc(
+            Run(
                 args = [
                     'pip', 'install',
                     *split(pkg),
