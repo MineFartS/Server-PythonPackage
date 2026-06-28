@@ -81,6 +81,7 @@ def spath(x:int) -> str:
     Ex: `spath(0) -> 'test.py:14'`
     """
     from traceback import extract_stack
+    from os import path
 
     stack = filter(
         lambda x: "<frozen " not in x.filename, 
@@ -89,7 +90,7 @@ def spath(x:int) -> str:
 
     frame = list(stack)[x]
 
-    return f'{frame.filename.split('\\')[-1]}:{frame.lineno}'
+    return f'{path.basename(frame.filename)}:{frame.lineno}'
 
 def loc(obj:Any) -> str:
     """Get the hexadecimal location of an instance in memory"""
