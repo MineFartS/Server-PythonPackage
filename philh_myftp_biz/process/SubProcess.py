@@ -1,9 +1,25 @@
 from typing import Literal, TYPE_CHECKING, Any
 from .Thread import ThreadedFunc
+from sys import executable
 
 if TYPE_CHECKING:
     from ..pc import Path
     from ..text import UnconsumingIO
+
+TerminalMap = {
+
+    'cmd': ['cmd', '/c'],
+
+    'ps': ['Powershell', '-Command'],
+
+    'psfile': ['Powershell', '-File'],
+
+    'py': [executable],
+
+    'pym': [executable, '-m'],
+        
+    'vbs': ['wscript']
+}
 
 class SubProcess:
     """Subprocess Wrapper"""
@@ -20,10 +36,8 @@ class SubProcess:
         from ..text import UnconsumingIO
         from ..array import stringify
         from .SysTask import SysTask
-        from sys import executable
         from ..terminal import Log
         from ..pc import Path, cwd
-        from .Thread import Thread
 
         # =====================================
 
@@ -32,13 +46,7 @@ class SubProcess:
                     
         # =====================================
 
-        if isinstance(args, (tuple, list)):
-            args = stringify(args)
-        else:
-            args = [str(args)]
-
         if terminal is None:
-
             match Path(args[0]).ext:
 
                 case 'ps1': terminal='psfile'
@@ -52,26 +60,11 @@ class SubProcess:
                 case 'vbs': terminal='vbs'
 
                 case _: terminal='cmd'
+                
+        if not isinstance(args, (tuple, list)):
+            args = [args]
 
-        match terminal:
-
-            case 'cmd':
-                args = ['cmd', '/c', *args]
-
-            case 'ps':
-                args = ['Powershell', '-Command', *args]
-
-            case 'psfile':
-                args = ['Powershell', '-File', *args]
-
-            case 'py':
-                args = [executable, *args]
-
-            case 'pym':
-                args = [executable, '-m', *args]
-        
-            case 'vbs':
-                args = ['wscript', *args]
+        args = TerminalMap.get(terminal) + stringify(args)
 
         # =====================================
 

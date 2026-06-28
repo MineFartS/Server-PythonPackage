@@ -31,10 +31,8 @@ class Module(Path):
     def __init__(self,
         module: 'str | Path'
     ) -> None:
+        from ..process import SubVenv
         from ..file import YAML
-
-        #====================================================
-        # INIT
 
         super().__init__(module)
 
@@ -54,45 +52,57 @@ class Module(Path):
 
         #====================================================
 
-    def __run(self,
-        func:'SubProcess',
-        args: tuple[str]
-    ) -> 'SubProcess':
+        _py = self.child('/.venv/')
 
-        largs: list[str] = list(args)
-        
+        if _py.exists:
+            self.venv = SubVenv(_py)
+        else:
+            self.venv = None
+
+    def _run(self,
+        func: SubProcess,
+        args: tuple[str]
+    ) -> SubProcess:
+
         file: Path = self.file(args[0])
 
+        largs: list[str] = list(args)
         largs[0] = str(file)
 
-        return func(
-            args = largs, 
-            terminal = None
-        )
+        self.venv and self.venv.enable()
 
-    def run(self, *args:str) -> 'SubProcess':
+        try:
+            return func(
+                args = largs, 
+                terminal = None,
+                dir = self
+            )
+        finally:
+            self.venv and self.venv.disable()
+
+    def run(self, *args:str) -> SubProcess:
         """Execute a new Process and wait for it to finish"""
         from ..process import Run
 
-        return self.__run(Run, args)
+        return self._run(Run, args)
     
-    def runH(self, *args:str) -> 'SubProcess':
+    def runH(self, *args:str) -> SubProcess:
         """Execute a new hidden Process and wait for it to finish"""
         from ..process import RunHidden
 
-        return self.__run(RunHidden, args)
+        return self._run(RunHidden, args)
 
-    def start(self, *args:str) -> 'SubProcess':
+    def start(self, *args:str) -> SubProcess:
         """Execute a new Process simultaneously with the current execution"""
         from ..process import Start
 
-        return self.__run(Start, args)
+        return self._run(Start, args)
     
-    def startH(self, *args:str) -> 'SubProcess':
+    def startH(self, *args:str) -> SubProcess:
         """Execute a new hidden Process simultaneously with the current execution"""
         from ..process import StartHidden
 
-        return self.__run(StartHidden, args)
+        return self._run(StartHidden, args)
     
     def cap(self, *args:str):
         """Execute a new hidden Process and capture the output as JSON"""
@@ -141,6 +151,8 @@ class Module(Path):
         else:
             from ..process import RunHidden as Run
 
+        self.venv and self.venv.enable()
+
         # Upgrade all python packages
         for pkg in self.packages:
             
@@ -154,3 +166,5 @@ class Module(Path):
                 ],
                 terminal = 'pym'
             )
+
+        self.venv and self.venv.disable()
