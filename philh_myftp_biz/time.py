@@ -18,7 +18,7 @@ def sleep(
 
     If show is True, then '#/# seconds' will print to the console each second
     """
-    from ..terminal import ProgressBar
+    from .terminal import ProgressBar
     from time import sleep
 
     # If show is True
@@ -156,8 +156,8 @@ class from_stamp:
     ) -> None:
         from datetime import datetime
         from functools import partial
-        from ..classtools import cpath
-        from ..num import is_num
+        from .classtools import cpath
+        from .num import is_num
 
         if not is_num(stamp):
             raise ValueError(f'{cpath(stamp)} is not a number')
@@ -216,8 +216,8 @@ class from_stamp:
         return float(self.unix)
     
     def __repr__(self) -> str:
-        from ..text import abbr
-        from ..classtools import loc
+        from .text import abbr
+        from .classtools import loc
 
         return f"<from_stamp '{abbr(30, self.ISO)}' @{loc(self)}>"
 
@@ -233,7 +233,7 @@ class from_stamp:
     def __lt__(self,
         other: Any|SupportsFloat
     ) -> bool:
-        from ..classtools import cpath
+        from .classtools import cpath
 
         if isinstance(other, (from_stamp, int, float)):
             return (self.unix < float(other))
@@ -244,7 +244,7 @@ class from_stamp:
     def __gt__(self, 
         other: Any|SupportsFloat
     ) -> bool:
-        from ..classtools import cpath
+        from .classtools import cpath
 
         if isinstance(other, (from_stamp, int, float)):
             return (self.unix > float(other))
@@ -266,9 +266,9 @@ def from_string(
     """
     Get details of time string
     """
-    from .dateutil.parser._parser import ParserError
-    from ..classtools import cpath
-    from .dateutil import parser
+    from dateutil.parser._parser import ParserError
+    from .classtools import cpath
+    from dateutil import parser
 
     try:
     

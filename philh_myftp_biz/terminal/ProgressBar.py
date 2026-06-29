@@ -45,7 +45,7 @@ class ProgressBar:
         verbose: bool = False
     ) -> None:
         from .. import VERBOSE
-        from .tqdm import tqdm
+        from tqdm import tqdm
         
         kwargs: dict = {
             "dynamic_ncols": True,

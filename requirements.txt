@@ -1,11 +1,24 @@
+pyyaml
+vt-py
 tk
 dill
 selenium
-qbittorrent-api # Don't Compile
+paramiko
+qbittorrent-api
+inputimeout
+configobj
+browser_cookie3
 elevate
+tqdm
+tomli_w
+toml
 psutil
-keyring  # Don't Compile
+keyring
+ping3
 QuickSocketPY
-pytz # Don't Compile
+python-dateutil
+pytz
+xmltodict
 GitPython
+parse-torrent-title
 bs4

@@ -10,7 +10,7 @@ qualities: list[str] = {
 class NameParser:
         
     def __init__(self, name:str|None) -> None:
-        from .PTN import parse
+        from PTN import parse
 
         if name:
             self._get = parse(name).get

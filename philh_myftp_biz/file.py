@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 if TYPE_CHECKING:
     from zipfile import ZipFile as __ZipFile
-    from ..pc import Path
+    from .pc import Path
 
 #========================================================
 
@@ -14,8 +14,8 @@ def temp(
     id: Any = None
 ) -> 'Path':
     """Get a random path in the temporary directory"""
-    from ..text import random
-    from ..pc import loc
+    from .text import random
+    from .pc import loc
 
     if id is None:
         _id = random(50)
@@ -68,12 +68,12 @@ class _Template:
         
     @cached_property
     def Dict(self):
-        from ..json import Dict
+        from .json import Dict
         return Dict(self)
     
     @cached_property
     def List(self):
-        from ..json import List
+        from .json import List
         return List(self)
 
 #========================================================
@@ -83,7 +83,7 @@ class XML(_Template):
 
     @property
     def parsed(self) -> dict:
-        from .xmltodict import parse
+        from xmltodict import parse
 
         with self.path.open() as f:
 
@@ -92,7 +92,7 @@ class XML(_Template):
     def save(self,
         data: dict
     ) -> None:
-        from .xmltodict import unparse
+        from xmltodict import unparse
 
         with self.path.open('w') as f:
 
@@ -136,7 +136,7 @@ class VHDX:
         self.readonly: bool = readonly
 
     def mount(self) -> None:
-        from ..process import RunHidden
+        from .process import RunHidden
 
         RunHidden(
             args = [
@@ -153,7 +153,7 @@ class VHDX:
         )
 
     def dismount(self) -> None:
-        from ..process import RunHidden
+        from .process import RunHidden
         
         RunHidden(
             args = [
@@ -190,12 +190,12 @@ class INI(_Template):
     
     @property
     def parsed(self):
-        from .configobj import ConfigObj
+        from configobj import ConfigObj
         
         return ConfigObj(str(self.path)).dict()
          
     def save(self, data:dict) -> None:
-        from .configobj import ConfigObj
+        from configobj import ConfigObj
 
         obj = ConfigObj(str(self.path))
 
@@ -209,12 +209,12 @@ class YAML(_Template):
     
     @property
     def parsed(self):
-        from .yaml import safe_load
+        from yaml import safe_load
 
         return safe_load(self.raw)
     
     def save(self, data:dict) -> None:
-        from .yaml import dump
+        from yaml import dump
 
         dump(
             data = data, 
@@ -311,13 +311,13 @@ class TOML(_Template):
 
     @property
     def parsed(self):
-        from .toml import load
+        from toml import load
 
         with self.path.open() as f:
             return load(f)
         
     def save(self, data:dict) -> None:
-        from .tomli_w import dump
+        from tomli_w import dump
 
         with self.path.open('wb') as f:
             dump(data, f, indent=2)
