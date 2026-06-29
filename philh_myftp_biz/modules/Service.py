@@ -74,15 +74,15 @@ class Service(Path):
 
         Log.VERB(f"Starting Service: {self.path}")
 
-        # Raise error if this service is disabled
-        if self.enabled or force:
-
-            self._run('Stop')
-            self._run('Start')
-
-        else:
-
+        if force:
+            pass
+        elif self.running:
+            return
+        elif not self.enabled:
             raise ServiceDisabledError(self)
+
+        self._run('Stop')
+        self._run('Start')
 
     @property
     def running(self) -> bool:
