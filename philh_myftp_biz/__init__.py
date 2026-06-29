@@ -72,7 +72,7 @@ class _Formatter(__Formatter):
         return file
 
     def _traceback(self,
-        record: __LogRecord
+        record: '__LogRecord'
     ) -> str:
         from traceback import extract_tb
 
@@ -112,7 +112,7 @@ class _Formatter(__Formatter):
             .decode() \
             .strip('\n')
 
-    def _stack(self, frames:list[FrameInfo]):
+    def _stack(self, frames:'list[FrameInfo]'):
 
         for frame in frames:
 

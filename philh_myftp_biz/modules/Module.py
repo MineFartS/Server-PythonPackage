@@ -60,9 +60,9 @@ class Module(Path):
             self.venv = None
 
     def _run(self,
-        func: SubProcess,
+        func: 'SubProcess',
         args: tuple[str]
-    ) -> SubProcess:
+    ) -> 'SubProcess':
 
         file: Path = self.file(args[0])
 
@@ -80,25 +80,25 @@ class Module(Path):
         finally:
             self.venv and self.venv.disable()
 
-    def run(self, *args:str) -> SubProcess:
+    def run(self, *args:str) -> 'SubProcess':
         """Execute a new Process and wait for it to finish"""
         from ..process import Run
 
         return self._run(Run, args)
     
-    def runH(self, *args:str) -> SubProcess:
+    def runH(self, *args:str) -> 'SubProcess':
         """Execute a new hidden Process and wait for it to finish"""
         from ..process import RunHidden
 
         return self._run(RunHidden, args)
 
-    def start(self, *args:str) -> SubProcess:
+    def start(self, *args:str) -> 'SubProcess':
         """Execute a new Process simultaneously with the current execution"""
         from ..process import Start
 
         return self._run(Start, args)
     
-    def startH(self, *args:str) -> SubProcess:
+    def startH(self, *args:str) -> 'SubProcess':
         """Execute a new hidden Process simultaneously with the current execution"""
         from ..process import StartHidden
 

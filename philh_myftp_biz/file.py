@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING, Callable, Any
+from zipfile import ZipFile as _ZipFile
 from functools import cached_property
 from dataclasses import dataclass
 
 if TYPE_CHECKING:
-    from zipfile import ZipFile as __ZipFile
     from .pc import Path
 
 #========================================================
@@ -244,16 +244,15 @@ class ZIP:
     @dataclass
     class Member:
 
-        _zip: __ZipFile
+        _zip: _ZipFile
         path: str
 
         def open(self):
             return self._zip.open(self.path)
 
     @cached_property
-    def _zip(self) -> __ZipFile:
-        from zipfile import ZipFile
-        return ZipFile(str(self.path))
+    def _zip(self) -> _ZipFile:
+        return _ZipFile(str(self.path))
         
     @property
     def members(self) -> list[Member]:

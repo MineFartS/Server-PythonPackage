@@ -71,7 +71,7 @@ class attr:
             else:
                 return list(keys)
         
-        except ValueError, TypeError:
+        except (ValueError, TypeError):
 
             return []
 

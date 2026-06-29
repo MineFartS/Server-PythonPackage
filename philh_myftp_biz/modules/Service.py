@@ -90,10 +90,9 @@ class Service(Path):
         from json.decoder import JSONDecodeError
 
         try:
-
             return self._run(name='Running').output(format='json') # pyright: ignore[reportReturnType]
         
-        except JSONDecodeError, AttributeError, FileNotFoundError, PermissionError:
+        except (JSONDecodeError, AttributeError, FileNotFoundError, PermissionError):
             return False
     
     def stop(self) -> None:

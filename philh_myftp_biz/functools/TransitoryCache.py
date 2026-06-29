@@ -1,12 +1,12 @@
-from typing import TYPE_CHECKING, TypedDict
 from .supports import SupportsStr, SupportsJSON
+from typing import TYPE_CHECKING, TypedDict
 from ..json.Dict import Dict
 
 if TYPE_CHECKING:
     from ..time import Timeout
 
 class CachedItem[T](TypedDict):
-    time: Timeout
+    time: 'Timeout'
     value: T
 
 class TransitoryCache[T](Dict[CachedItem[T]]):
@@ -27,7 +27,7 @@ class TransitoryCache[T](Dict[CachedItem[T]]):
         
         try:
             self.read()
-        except EOFError, UnpicklingError:
+        except (EOFError, UnpicklingError):
             self.save({})
 
     def __getitem__(self, key:SupportsJSON) -> T | None:

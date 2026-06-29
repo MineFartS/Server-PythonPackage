@@ -1,8 +1,9 @@
-from ..classtools import singleton
-from typing import Literal, Generator
 from functools import cached_property
-
+from typing import Literal, Generator
+from ..classtools import singleton
 from .Path import Path, PathPair
+from sys import modules
+
 #========================================================
 
 cwd = lambda: Path('.')
@@ -11,7 +12,7 @@ cwd = lambda: Path('.')
 def relscan(
     src: Path,
     dst: Path
-) -> Generator[PathPair]:
+) -> Generator[PathPair, None, None]:
     """
     Relatively Scan two directories
 
@@ -58,6 +59,8 @@ NAME: str
 
 OS: Literal['windows', 'unix']
 
+_self = modules[__name__]
+
 def __getattr__(attr:str):
     from socket import gethostname
     import os
@@ -82,7 +85,7 @@ class loc:
 
         SERVER = Path('E:/__temp__/')
 
-        if SERVER.exists and (NAME == 'PC-1'):
+        if SERVER.exists and (_self.NAME == 'PC-1'):
             return SERVER
         else:
             return Path(gettempdir())

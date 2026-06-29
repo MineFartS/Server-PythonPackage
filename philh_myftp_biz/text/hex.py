@@ -7,7 +7,7 @@ def valid(string:str) -> bool:
     try:
         decode(string)
         return True
-    except EOFError, ValueError, UnpicklingError:
+    except (EOFError, ValueError, UnpicklingError):
         return False
 
 def decode(value:str):

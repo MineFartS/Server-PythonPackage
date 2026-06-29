@@ -20,7 +20,7 @@ class List[V](Collection[V, list[V]]):
     
     def __getitem__(self,
         key: int|slice
-    ) -> V | List[V]:
+    ) -> 'V | List[V]':
 
         data: V = self.read()[key]
 
@@ -76,7 +76,7 @@ class List[V](Collection[V, list[V]]):
 
     def sorted(self,
         func: Callable[[V], Any] = lambda x: x
-    ) -> List[V]:
+    ) -> 'List[V]':
         
         data: list[V] = self.read()
 
@@ -106,7 +106,7 @@ class List[V](Collection[V, list[V]]):
 
     def filtered(self,
         func: Callable[[V], Any] = lambda x: x
-    ) -> List[V]:
+    ) -> 'List[V]':
 
         filtered: filter[V] = filter(func, self.read())
 
@@ -119,7 +119,7 @@ class List[V](Collection[V, list[V]]):
 
     #=======================================
 
-    def reversed(self) -> List[V]:
+    def reversed(self) -> 'List[V]':
 
         data: list[V] = self.read()
 
@@ -142,7 +142,7 @@ class List[V](Collection[V, list[V]]):
 
     #=======================================
 
-    def shuffled(self) -> List[V]:
+    def shuffled(self) -> 'List[V]':
         from random import shuffle
 
         data: list[V] = self.read()
@@ -158,7 +158,7 @@ class List[V](Collection[V, list[V]]):
 
     def uniquified(self,
         func: Callable[[V], Any] = lambda x: x
-    ) -> List[V]:
+    ) -> 'List[V]':
 
         data = {}
 
@@ -174,7 +174,7 @@ class List[V](Collection[V, list[V]]):
 
     #=======================================
 
-    def flattened(self) -> List[V]:
+    def flattened(self) -> 'List[V]':
         from itertools import chain
 
         data: chain[V] = chain.from_iterable(self.read())

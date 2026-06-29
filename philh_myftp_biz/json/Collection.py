@@ -37,7 +37,7 @@ class Collection[T, STRUCT]:
 
         return self._cache # pyright: ignore[reportReturnType]
     
-    def save(self, data:STRUCT|Collection) -> None:
+    def save(self, data:'STRUCT|Collection') -> None:
 
         if isinstance(data, Collection):
             data = data.read()

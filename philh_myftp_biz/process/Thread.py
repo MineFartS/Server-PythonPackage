@@ -149,7 +149,7 @@ class ThreadedFunc[R]:
     func: Callable[..., R]
     instance: Any = None
 
-    def __get__(self, instance, _) -> ThreadedFunc[R]:
+    def __get__(self, instance, _) -> 'ThreadedFunc[R]':
         
         if instance is None:
             return self

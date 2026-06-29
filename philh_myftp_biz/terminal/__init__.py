@@ -196,7 +196,7 @@ def main_module():
 
         return modules[name]
 
-def set_package(path:str|Path):
+def set_package(path:'str|Path'):
     from ..pc.Path import Path
     import sys
 

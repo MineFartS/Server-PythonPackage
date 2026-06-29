@@ -275,7 +275,7 @@ def from_string(
         dt = parser.parse(string)
         return from_stamp(dt.timestamp())
     
-    except OSError, ParserError:
+    except (OSError, ParserError):
     
         raise TypeError(cpath(string))
 

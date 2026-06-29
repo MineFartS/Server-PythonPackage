@@ -77,18 +77,18 @@ class Path:
         else:
             return _cd(self)
     
-    def is_child(self, parent:Path) -> bool:
+    def is_child(self, parent:'Path') -> bool:
         """Check if this path is a child or descendant of a parent directory"""
         try:
             return self._pure.is_relative_to(str(parent))
         except ValueError:
             return False
         
-    def is_parent(self, child:Path) -> bool:
+    def is_parent(self, child:'Path') -> bool:
         """Check if this path is a parent or ancestor of a path"""
         return child.is_child(self)
 
-    def related_to(self, path:Path) -> bool:
+    def related_to(self, path:'Path') -> bool:
         """Check if this path is related to another"""
         return any([
             self.is_parent(path),
@@ -98,7 +98,7 @@ class Path:
     
     def child(self,
         name: str
-    ) -> Path:
+    ) -> 'Path':
         if self.is_file:
             raise TypeError("Parent path cannot be a file")
 
@@ -125,14 +125,14 @@ class Path:
         return Size.from_bytes(self.size, ndigits=2)
 
     @property
-    def children(self) -> Generator[Path]:
+    def children(self) -> Generator['Path', None, None]:
         if self.is_file:
             raise TypeError('Cannot get children of a file')
         
         return (Path(p) for p in self._pure.iterdir())
 
     @property
-    def descendants(self) -> Generator[Path]:
+    def descendants(self) -> Generator['Path', None, None]:
         if self.is_file:
             raise TypeError('Cannot get children of a file')
         
@@ -144,10 +144,10 @@ class Path:
         return (next(self.children, None) is None)
 
     @cached_property
-    def parent(self) -> Path:
+    def parent(self) -> 'Path':
         return Path(self._pure.parent)
 
-    def sibling(self, item:str) -> Path:
+    def sibling(self, item:str) -> 'Path':
         return self.parent.child(item)
     
     @cached_property
@@ -171,7 +171,7 @@ class Path:
 
             delete(self.path)
 
-    def rename(self, dst:Any) -> Path:
+    def rename(self, dst:Any) -> 'Path':
         from ..terminal import Log
         from os import rename
         
@@ -202,7 +202,7 @@ class Path:
         
         return self.path.trim('/').split(sep='/')[i]
 
-    def copy(self, dst:Path) -> None:
+    def copy(self, dst:'Path') -> None:
         from ..terminal import Log, ProgressBar
         from . import relscan
 
@@ -331,7 +331,7 @@ class Path:
             exist_ok = True
         )
 
-    def link(self, link:Path) -> None:
+    def link(self, link:'Path') -> None:
         from os import link as _link
 
         if link.exists:
@@ -429,7 +429,7 @@ class _mtime:
     path: Path
 
     def set(self,
-        mtime: int | 'from_stamp' = None
+        mtime: 'int|from_stamp' = None
     ) -> None:
         from ..time import from_stamp
         from ..time import now
@@ -468,7 +468,7 @@ class _set_access:
 
     path: Path
 
-    def __paths(self) -> Generator['Path']:
+    def __paths(self) -> Generator['Path', None, None]:
 
         yield self.path
 
