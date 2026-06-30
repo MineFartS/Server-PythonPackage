@@ -1,72 +1,50 @@
-from typing import Callable, Any, TYPE_CHECKING, Literal, Type
+from typing import Callable, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tkinter import Label, Button
-    from .window import Window
+    from tkinter import Widget as _Widget
     from .page import Page
 
 class Widget(dict[str, Any]):
 
-    def __init__(self,
-        type: Literal['Label', 'Button', 'Text']
-    ) -> None:
-        import tkinter
+    raw: '_Widget'
 
-        self.type: 'Type[Label|Button]' = getattr(tkinter, type)
-
-    def instance(self, gui:'Window'):
-        return self.type(
-            master = gui._tk,
-            **self 
-        )
-
-    @staticmethod
-    def Text(
+class Text(Widget):
+    
+    from tkinter import Label as raw
+    
+    def __init__(self, 
         text: str = '<Text>'
-    ) -> 'Widget':
+    ) -> None:
+        self['text'] = text
+        self['pady'] = 10
 
-        widget = Widget('Label')
+class Header(Widget):
 
-        widget['text'] = text
-        widget['pady'] = 10
-
-        return widget
-
-    @staticmethod
-    def Header(
-        text: str = '<Header>'
-    ) -> 'Widget':
+    from tkinter import Label as raw
         
-        widget = Widget('Label')
+    def __init__(self, 
+        text: str = '<Header>'
+    ) -> None:
+        self['text'] = text
+        self['font'] = ('TkDefaultFont', 20)
+        self['pady'] = 15
 
-        widget['text'] = text
-        widget['font'] = ('TkDefaultFont', 20)
-        widget['pady'] = 15
+class Button(Widget):
 
-        return widget
-
-    @staticmethod
-    def Button(
+    from tkinter import Button as raw
+        
+    def __init__(self,
         text: str = '<Button>', 
         onclick: 'None|Page|Callable[[], Any]' = None,
-    ) -> 'Widget':
+    ) -> None:
         from .page import Page
 
-        widget = Widget('Button')
-
-        widget['text'] = text
-        widget['pady'] = 5
+        self['text'] = text
+        self['pady'] = 5
 
         if callable(onclick):
-            widget['command'] = onclick
+            self['command'] = onclick
 
         elif isinstance(onclick, Page):
-            widget['command'] = lambda: setattr(onclick.gui, 'page', onclick)
+            self['command'] = lambda: setattr(onclick.gui, 'page', onclick)
 
-        return widget
-
-    @staticmethod
-    def Console():
-        ...
-        #widget = Widget('Text')
-        # TODO

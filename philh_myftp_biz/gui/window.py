@@ -39,7 +39,6 @@ class Window:
 
     @property
     def page(self) -> None | Page:
-
         if hasattr(self, '_page'):
             return self._page
 
@@ -54,10 +53,8 @@ class Window:
             widget.destroy()
         
         if value:
-
             for widget in value:
-
-                widget.instance(gui=self).pack()
+                widget.raw(self._tk, **widget)
 
     #====================================================
 
