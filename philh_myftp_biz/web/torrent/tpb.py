@@ -41,7 +41,7 @@ def _search(query:str) -> list[Torrent]:
 
     global driver, url, cache
 
-    if query in cache:
+    if cache[query]:
         return cache[query] # pyright: ignore[reportReturnType]
 
     if driver is None:
