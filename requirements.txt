@@ -1,6 +1,7 @@
 pyyaml
 vt-py
 tk
+customtkinter
 dill
 selenium
 paramiko

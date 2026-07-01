@@ -2,7 +2,6 @@ from typing import Callable, Any, TYPE_CHECKING, Type
 
 if TYPE_CHECKING:
     from tkinter import Widget as _Widget
-    from tkinter import Event as _Event
     from .page import Page
 
 class Widget(dict[str, Any]):
@@ -34,13 +33,13 @@ class Text(Widget):
         self['pady'] = 10
 
 class Input(Widget):
-    from tkinter import Entry as raw
+
+    from customtkinter import CTkEntry as raw
      
     def __init__(self,
         text: str = '<Text>'
     ) -> None:
-
-        self['text'] = text
+        self['placeholder_text'] = text
 
     def bind(self) -> None:
 
