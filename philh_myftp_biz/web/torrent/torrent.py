@@ -123,3 +123,16 @@ class Torrent:
             to.check()
 
     #===================================================
+
+    def __getstate__(self):
+        return {
+            'hash': self.hash,
+            'size': self.size,
+            'url': self.url,
+            'name': self.name,
+            'seeders': self.seeders,
+            'leechers': self.leechers
+        }
+
+    #===================================================
+
