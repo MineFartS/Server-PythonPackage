@@ -3,6 +3,7 @@ from typing import Callable, Any, TYPE_CHECKING, Type
 if TYPE_CHECKING:
     from tkinter import Widget as _Widget
     from .page import Page
+    from ..db import Key
 
 class Widget(dict[str, Any]):
 
@@ -37,10 +38,14 @@ class Input(Widget):
     from customtkinter import CTkEntry as raw
      
     def __init__(self,
-        text: str = '<Text>',
-        secure: bool = False
+        text: str = '<Text>', *,
+        secure: bool = False,
+        key: Key = None
     ) -> None:
+        
         self['placeholder_text'] = text
+
+        self.key = key 
 
         if secure:
             self['show'] = '*'
@@ -49,10 +54,14 @@ class Input(Widget):
 
         self.input = ""
 
-        self.inst.bind(
-            "<KeyRelease>",
-            lambda e: setattr(self, 'input', self.inst.get())
-        )
+        self.inst.bind("<KeyRelease>", self._set)
+
+    def _set(self, _) -> None:
+        
+        self.input = self.inst.get()
+
+        if self.key:
+            self.key.save(self.input)
 
 class Header(Widget):
 
