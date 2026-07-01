@@ -1,6 +1,6 @@
 from functools import cached_property
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Generator
 import builtins
 
 #========================================================
@@ -108,6 +108,13 @@ class attr:
             )
         except TypeError:
             return str(self.value)
+
+def attrs(obj:Any) -> Generator[attr, Any, None]:
+    """Get all attributes of an instance or object"""
+
+    for name in dir(obj):
+
+        yield attr(obj, name)
 
 #========================================================
 

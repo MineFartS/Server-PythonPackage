@@ -4,9 +4,10 @@ from functools import cached_property as _cached_property
 from .TransitoryCache import TransitoryCache # pyright: ignore[reportUnusedImport]
 from .Absorber import Absorber, NullSafe # pyright: ignore[reportUnusedImport]
 from .SharedBuffer import SharedBuffer # pyright: ignore[reportUnusedImport]
-from .attr import attr, dunders, LinkedProperty # pyright: ignore[reportUnusedImport]
+from .attr import attr, dunders, LinkedProperty, attrs # pyright: ignore[reportUnusedImport]
 from .Partial import Partial # pyright: ignore[reportUnusedImport]
 from .supports import *
+from .paths import cpath, spath # pyright: ignore[reportUnusedImport]
 
 #========================================================
 
@@ -53,44 +54,6 @@ class cached_property(_cached_property):
 
     def __delete__(self, inst) -> None:
         inst.__dict__.pop(self.attrname, None)
-
-def attrs(obj:Any) -> Generator[attr, Any, None]:
-    """Get all attributes of an instance or object"""
-
-    for name in dir(obj):
-
-        yield attr(obj, name)
-
-def cpath(obj) -> str:
-    """
-    Class Path
-
-    Ex: `cpath(print) -> '__builtins__.print'`
-    """
-    from types import FunctionType
-
-    if not isinstance(obj, (type, FunctionType)):
-        obj = obj.__class__
-
-    return obj.__module__ + '.' + obj.__qualname__
-
-def spath(x:int) -> str:
-    """
-    Stack Path
-
-    Ex: `spath(0) -> 'test.py:14'`
-    """
-    from traceback import extract_stack
-    from os import path
-
-    stack = filter(
-        lambda x: "<frozen " not in x.filename, 
-        extract_stack()
-    )
-
-    frame = list(stack)[x]
-
-    return f'{path.basename(frame.filename)}:{frame.lineno}'
 
 def loc(obj:Any) -> str:
     """Get the hexadecimal location of an instance in memory"""
