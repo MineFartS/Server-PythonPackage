@@ -33,12 +33,38 @@ class Text(Widget):
         self['text'] = text
         self['pady'] = 10
 
+class Link(Widget):
+
+    from tkinter import Label as raw
+
+    driver = None
+
+    def __init__(self,
+        text: str = '<Link>',
+        url: str = "https://example.com",
+    ) -> None:
+        self['text'] = text
+        self['pady'] = 10
+        self['fg'] = "blue"
+        self['font'] = ("Arial", 12, "underline")
+        self['cursor'] = "hand2"
+
+        self.url = url
+
+    def bind(self) -> None:
+        from webbrowser import open
+
+        self.inst.bind(
+            "<Button-1>", 
+            lambda e: open(self.url)
+        )
+
 class Input(Widget):
 
     from customtkinter import CTkEntry as raw
      
     def __init__(self,
-        text: str = '<Text>', *,
+        text: str = '<Input>', *,
         secure: bool = False,
         key: Key = None
     ) -> None:
