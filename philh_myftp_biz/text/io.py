@@ -6,14 +6,20 @@ ansi_escape = compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x0c')
 class UnconsumingIO:
     
     def __init__(self, 
-        stream: StringIO,
+        stream: StringIO = None,
         clean: bool = False
     ) -> None:
         self._clean = clean
-        self._stream = stream
         self._buffer = ""
 
-    def read(self, size=None):
+        if stream:
+            self._stream = stream
+        else:
+            self._stream = StringIO()
+
+        self.write = self._stream.write
+
+    def read(self, size=None) -> str:
         from ..terminal import _cls_cmd
     
         self._read()
@@ -27,7 +33,7 @@ class UnconsumingIO:
         else:
             return self._buffer[:size]
 
-    def _read(self, size=None):
+    def _read(self) -> str:
 
         chunk = self._stream.read()
 
