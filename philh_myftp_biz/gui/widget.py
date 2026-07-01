@@ -37,9 +37,13 @@ class Input(Widget):
     from customtkinter import CTkEntry as raw
      
     def __init__(self,
-        text: str = '<Text>'
+        text: str = '<Text>',
+        secure: bool = False
     ) -> None:
         self['placeholder_text'] = text
+
+        if secure:
+            self['show'] = '*'
 
     def bind(self) -> None:
 
