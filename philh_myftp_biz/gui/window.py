@@ -52,9 +52,9 @@ class Window:
         for widget in self._tk.winfo_children():
             widget.destroy()
         
-        if value:
-            for widget in value:
-                widget.raw(self._tk, **widget)
+        for widget in (value or []):
+            widget.inst = widget.raw(self._tk, **widget)
+            widget.inst.pack()
 
     #====================================================
 
@@ -73,7 +73,7 @@ class Window:
         self.size = (500, 300)
 
     def Page(self) -> Page:
-
+        from .page import Page
         return Page(self)
     
     def reload(self) -> None:

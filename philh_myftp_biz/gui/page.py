@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from .window import Window
 
 @dataclass
-class Page(list[Widget]):
+class Page(list['Widget']):
 
     gui: 'Window'
 
