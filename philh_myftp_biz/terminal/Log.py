@@ -40,7 +40,7 @@ def on_call(func=None, *, logger=VERB):
         
         @wraps(f)
         def wrapper(*args, **kwargs):
-            logger(f"Calling '{cpath(f)} @ {spath(0)} '\n{args=}\n{kwargs=}")
+            logger(f"Calling {cpath(f)}\n{spath(0,-2)}\n{args=}\n{kwargs=}")
             return f(*args, **kwargs)
         return wrapper
 

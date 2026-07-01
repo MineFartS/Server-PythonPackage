@@ -1,30 +1,33 @@
+from traceback import FrameSummary, extract_stack
+from types import FunctionType
+from os.path import basename
+
 def cpath(obj) -> str:
     """
     Class Path
 
     Ex: `cpath(print) -> '__builtins__.print'`
     """
-    from types import FunctionType
-
     if not isinstance(obj, (type, FunctionType)):
         obj = obj.__class__
 
     return obj.__module__ + '.' + obj.__qualname__
 
-def spath(x:int) -> str:
+def strframe(frame: FrameSummary) -> str:
+    return f'{basename(frame.filename)}:{frame.lineno}'
+
+def spath(
+    x: int = 0,
+    y: int = -1
+) -> list[str]:
     """
     Stack Path
-
-    Ex: `spath(0) -> 'test.py:14'`
+    Ex: `spaths() -> ['test.py:14', ...]`
     """
-    from traceback import extract_stack
-    from os import path
 
-    stack = filter(
+    stack = list(filter(
         lambda x: "<frozen " not in x.filename, 
         extract_stack()
-    )
+    )) [x:y]
 
-    frame = list(stack)[x]
-
-    return f'{path.basename(frame.filename)}:{frame.lineno}'
+    return [strframe(f) for f in stack]
