@@ -13,9 +13,6 @@ def cpath(obj) -> str:
 
     return obj.__module__ + '.' + obj.__qualname__
 
-def strframe(frame: FrameSummary) -> str:
-    return f'{basename(frame.filename)}:{frame.lineno}'
-
 def spath(
     x: int = 0,
     y: int = -1
@@ -25,9 +22,11 @@ def spath(
     Ex: `spaths() -> ['test.py:14', ...]`
     """
 
-    stack = list(filter(
-        lambda x: "<frozen " not in x.filename, 
-        extract_stack()
-    )) [x:y]
-
-    return [strframe(f) for f in stack]
+    return [
+        f'{basename(frame.filename)}:{frame.lineno}' for frame in extract_stack()
+        if "<frozen " not in frame.filename # Frozen imports
+        and "\\Lib\\runpy.py" not in frame.filename # VS Code Debugging
+        and "\\Lib\\importlib\\util.py" not in frame.filename # VS Code Debugging
+        and "\\.vscode\\extensions\\" not in frame.filename # VS Code Debugging
+        and not (("\\functools.py" in frame.filename) and (frame.lineno == 1126)) # Cached Property
+    ] [x:y]
