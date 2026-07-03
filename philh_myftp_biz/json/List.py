@@ -6,28 +6,13 @@ class List[V](Collection[V, list[V]]):
 
     _default = []
 
-    def read(self) -> list[V]:
-        
-        data = super().read()
-        
-        if data:
-            return data
-        else:
-            return []
-
     def __iter__(self) -> Iterator[V]:
         return iter(self.read())
     
     def __getitem__(self,
-        key: int|slice
+        key: int
     ) -> 'V | List[V]':
-
-        data: V = self.read()[key]
-
-        if isinstance(key, slice):
-            return List(data)
-        else:
-            return data
+        return self.read()[key]
 
     def extend(self, items:Iterable[V]) -> None:
         
