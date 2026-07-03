@@ -1,4 +1,5 @@
 from typing import Literal, TYPE_CHECKING
+from functools import cached_property
 from ..classtools import singleton
 from ..json import SupportsJSON
 
@@ -9,15 +10,21 @@ if TYPE_CHECKING:
 @singleton
 class IP:
 
-    @property
+    @cached_property
     def LAN(self) -> str:
         from socket import gethostname, gethostbyname
 
         return gethostbyname(gethostname())
     
-    @property
+    @cached_property
     def WAN(self) -> str:
         return URL('https://api.ipify.org').text
+    
+    @cached_property
+    def ROUTER(self) -> str:
+        from netifaces import gateways, AF_INET
+
+        return gateways().get('default', {}).get(AF_INET)[0]
 
 class Port:
     """Details of a port on a network device"""

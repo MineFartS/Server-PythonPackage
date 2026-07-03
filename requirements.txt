@@ -26,3 +26,4 @@ bs4
 winrt-Windows.Devices.Geolocation
 winrt-Windows.Foundation
 geopy
+netifaces
