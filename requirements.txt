@@ -23,3 +23,6 @@ xmltodict
 GitPython
 parse-torrent-title
 bs4
+winrt-Windows.Devices.Geolocation
+winrt-Windows.Foundation
+geopy
