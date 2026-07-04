@@ -112,10 +112,12 @@ class Torrent:
         return self.raw.delete(delete_files=rm_files)
 
     @Log.on_call
-    def start(self):
+    def start(self) -> None:
 
         if self.raw is None:
             qbit.torrents_add(self.url)
+        else:
+            self.raw.recheck()
         
         to = qbit._timeout()
 
