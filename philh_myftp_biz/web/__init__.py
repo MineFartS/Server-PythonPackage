@@ -96,6 +96,8 @@ class URL:
 
         self.url = url.split('?')[0]
 
+        self.headers = {}
+
         if '?' in url:
             self.params = dict(parse_qsl(url.split('?', 1)[1]))
         else:
@@ -110,7 +112,10 @@ class URL:
             self.addr = url    
 
     def copy(self):
-        return URL(self.furl)
+        url = URL(self.url)
+        url.params = self.params.copy()
+        url.headers = self.headers.copy()
+        return url
 
     def __str__(self):
         from urllib.parse import urlencode
@@ -128,17 +133,11 @@ class URL:
     furl: str = property(__str__)
 
     def child(self, name:str):
-        
-        url = self.url
-
-        if url[-1] != '/':
-            url += '/'
-
-        # TODO add logic for parameters
-
-        url += name
-
-        return URL(url)
+        _url = self.url.rstrip('/') + '/' + name.lstrip('/')
+        url = URL(_url)
+        url.params = self.params.copy()
+        url.headers = self.headers.copy()
+        return url
 
     @property
     def id(self) -> str:
@@ -199,9 +198,9 @@ class URL:
         return int(r.headers.get('Content-Length', 0))
 
     def get(self,
-        params: dict[str, str] = {}, # TODO deprecated - remove later
+        params: dict[str, str] = None, # TODO deprecated - remove later
         *,
-        headers: dict[str, str] = {},
+        headers: dict[str, str] = None, # TODO deprecated - remove later
         stream: bool = None,
         max_tries: int = None,
         timeout: None|int = None,
@@ -210,21 +209,23 @@ class URL:
         """requests.get Wrapper"""
         from ..terminal import Log
 
-        if len(params) > 0: # TODO deprecated - remove later
+        if params: # TODO deprecated - remove later
             self.params = params
+        if headers:
+            self.headers = headers
 
         Log.VERB(
             f'Requesting Page\n'+ \
             f'{self.furl=}\n'+ \
             f'{self.url=}\n'+ \
             f'{self.params=}\n'+ \
-            f'{headers=}'
+            f'{self.headers=}'
         )
 
         return Session(max_tries).get(
             url = self.url,
             params = self.params,
-            headers = headers,
+            headers = self.headers,
             stream = stream,
             timeout = timeout,
             allow_redirects = allow_redirects
