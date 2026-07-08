@@ -90,17 +90,9 @@ def Session(max_tries:int|None):
 class URL:
 
     def __init__(self, 
-        url: str, 
-        cache: bool = True
+        url: str
     ) -> None:
         from urllib.parse import urlparse, parse_qsl
-        from ..functools import TransitoryCache
-        from ..classtools import Absorber
-
-        if cache:
-            self._cache: TransitoryCache[Response] = TransitoryCache('url')
-        else:
-            self._cache = Absorber(None)
 
         self.url = url.split('?')[0]
 
@@ -221,17 +213,15 @@ class URL:
         if len(params) > 0: # TODO deprecated - remove later
             self.params = params
 
-        if self._cache[self.id]:
-            return self._cache[self.id] # pyright: ignore[reportReturnType]
-
         Log.VERB(
             f'Requesting Page\n'+ \
-            f'url={self.url}\n'+ \
+            f'{self.furl=}\n'+ \
+            f'{self.url=}\n'+ \
             f'{self.params=}\n'+ \
             f'{headers=}'
         )
 
-        r = Session(max_tries).get(
+        return Session(max_tries).get(
             url = self.url,
             params = self.params,
             headers = headers,
@@ -239,10 +229,6 @@ class URL:
             timeout = timeout,
             allow_redirects = allow_redirects
         )
-
-        self._cache[self.id] = r
-
-        return r
 
     @property
     def online(self) -> bool:

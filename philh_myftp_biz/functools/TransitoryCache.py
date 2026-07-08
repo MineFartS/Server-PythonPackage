@@ -19,7 +19,9 @@ class TransitoryCache[T](Dict[CachedItem[T]]):
 
         self.expire = expire
 
-        file = loc.cache.child(f'TransitoryCache-{id}.pkl')
+        file = loc.temp.child(f'TransitoryCache-{id}.pkl')
+        self.clear = file.delete
+
         super().__init__(file.PKL)
 
     def _repair(self) -> None:
