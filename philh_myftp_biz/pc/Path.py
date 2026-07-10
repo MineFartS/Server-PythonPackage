@@ -200,7 +200,7 @@ class Path:
         (Ignores last slash)
         """
         
-        return self.path.trim('/').split(sep='/')[i]
+        return self.path.strip('/').split(sep='/')[i]
 
     def copy(self, dst:'Path') -> None:
         from ..terminal import Log, ProgressBar
