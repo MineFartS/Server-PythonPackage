@@ -155,6 +155,10 @@ class Path:
         from ..db import MimeType
         return MimeType.Path(self)
 
+    def clear(self) -> None:
+        """Clear File Contents"""
+        self.open('w').close()
+
     def delete(self) -> None:
         from ..terminal import Log
 
@@ -361,6 +365,9 @@ class Path:
         except OSError:
             pass
     
+    def with_ext(self, ext:str):
+        return self.sibling(self.name+'.'+ext)
+
     #========================================================
     # File Parsers
 
