@@ -23,8 +23,6 @@ class EpisodeData:
     Number: int
     Released: 'from_stamp|None' = None
 
-class MediaNotFoundError(Exception): ...
-
 @singleton
 class Tmdb:
     """https://api.themoviedb.org/"""
@@ -59,7 +57,7 @@ class Omdb:
             return data
         
         elif 'not found!' in data['Error']:
-            raise MediaNotFoundError()
+            raise NameError()
         
         else:
             raise ConnectionAbortedError(data['Error'])
@@ -103,7 +101,7 @@ class Omdb:
                 external_source = 'imdb_id'
             ) ['tv_results'] [0] ['id']
         except IndexError as e:
-            raise MediaNotFoundError() from e
+            raise NameError() from e
         
         # Iter through all seasons by #
         for s in range(1, int(r1['totalSeasons'])+1):
