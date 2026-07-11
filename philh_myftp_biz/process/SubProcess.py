@@ -87,8 +87,8 @@ class SubProcess:
 
         # =====================================
 
-        self.stdout  = UnconsumingIO(self._process.stdout, True)
-        self.stderr  = UnconsumingIO(self._process.stderr, True)
+        self.stdout = UnconsumingIO(self._process.stdout, False)
+        self.stderr = UnconsumingIO(self._process.stderr, False)
 
         # =====================================
 
@@ -149,8 +149,8 @@ class SubProcess:
         from ..terminal import write
 
         while self.running:
-            write(self.stdout._read(), 'out')
-            write(self.stderr._read(), 'err')
+            write(self.stdout._read(), 'out', True)
+            write(self.stderr._read(), 'err', True)
 
 class Run(SubProcess):
     _hide = False
