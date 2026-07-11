@@ -201,12 +201,13 @@ class URL:
         params: dict[str, str] = None, # TODO deprecated - remove later
         *,
         headers: dict[str, str] = None, # TODO deprecated - remove later
-        stream: bool = None,
-        max_tries: int = None,
-        timeout: None|int = None,
+        stream: bool = False,
+        max_tries: int | None = 1,
+        timeout: None|int = 30,
         allow_redirects: bool = True
     ) -> 'Response':
         """requests.get Wrapper"""
+        from requests.exceptions import RetryError
         from ..terminal import Log
 
         if params: # TODO deprecated - remove later
@@ -222,14 +223,17 @@ class URL:
             f'{self.headers=}'
         )
 
-        return Session(max_tries).get(
-            url = self.url,
-            params = self.params,
-            headers = self.headers,
-            stream = stream,
-            timeout = timeout,
-            allow_redirects = allow_redirects
-        )
+        try:
+            return Session(max_tries).get(
+                url = self.url,
+                params = self.params,
+                headers = self.headers,
+                stream = stream,
+                timeout = timeout,
+                allow_redirects = allow_redirects
+            )
+        except RetryError as e:
+            raise TimeoutError() from e
 
     @property
     def online(self) -> bool:

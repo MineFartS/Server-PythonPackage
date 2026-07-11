@@ -38,12 +38,10 @@ class Tmdb:
     }
     
     def get(self, path:str, **params) -> dict:
-        from .. import VERBOSE
         try:
-            VERBOSE.pause()
             return self.url.child(path).get(params).json()
-        finally:
-            VERBOSE.resume()
+        except TimeoutError:
+            return {}
 
 @singleton
 class Omdb:
@@ -53,14 +51,9 @@ class Omdb:
 
     key: Literal['dc888719','2e0c4a98'] = 'dc888719'
 
-    _cache: TransitoryCache[MovieData|ShowData] = TransitoryCache('omdb', expire=36000)
-
     def get(self, **params) -> NoReturn | dict:
-        from .. import VERBOSE
 
-        VERBOSE.pause()
         data: dict = self.url.get({**params, 'apikey':self.key}).json()
-        VERBOSE.resume()
 
         if 'Error' not in data:
             return data
@@ -78,71 +71,60 @@ class Omdb:
         """Get details of a movie"""
         from ..time import from_string
 
-        key = ['m', title, year]
-
-        if key in self._cache:
-            return self._cache[key] # pyright: ignore[reportReturnType]
-
         r = self.get(t=title, y=year)
 
-        movie = None
         if bool(r['Response']) and (r['Type'] == 'movie'):    
-            movie = MovieData(
+            return MovieData(
                 Title = r['Title'],
                 Year = int(r['Year']),
                 Released = from_string(r['Released'])
             )
-
-        self._cache[key] = movie
-        return movie
 
     def show(self,
         title: str,
         year: int
     ) -> None | ShowData:
         """Get details of a show"""
-        from collections import defaultdict
         from ..time import from_string
-
-        key = ['s', title, year]
         
-        if key in self._cache:
-            return self._cache[key] # pyright: ignore[reportReturnType]
-
         # Request raw list of seasons
         r1 = self.get(t=title, y=year)
 
         # Create new 'Show' obj
         show = ShowData(
-            Seasons = defaultdict(dict),
+            Seasons = {},
             Title = title,
             Year = year
         )
 
-        id = Tmdb.get(
-            path = f'/find/{r1['imdbID']}', 
-            external_source = 'imdb_id'
-        ) ['tv_results'] [0] ['id']
-
+        try:
+            tmdb_id: list[dict] = Tmdb.get(
+                path = f'/find/{r1['imdbID']}', 
+                external_source = 'imdb_id'
+            ) ['tv_results'] [0] ['id']
+        except IndexError as e:
+            raise MediaNotFoundError() from e
+        
         # Iter through all seasons by #
         for s in range(1, int(r1['totalSeasons'])+1):
 
-            r2 = Tmdb.get(f'/tv/{id}/season/{s}')
+            r2: dict = Tmdb.get(f'/tv/{tmdb_id}/season/{s}')
+
+            show.Seasons [f'{s:02d}'] = {}
 
             # Iterate through the episodes in the season
-            for e in r2['episodes']:
+            for e in r2.get('episodes', []):
 
                 episode = EpisodeData(
                     Title = e['name'],
                     Number = e['episode_number']
                 )
                 
-                try: # Parse the release date
+                try:
                     episode.Released = from_string(e['air_date'])
                 except TypeError:
                     episode.Released = None
 
                 show.Seasons [f'{s:02d}'] [f'{episode.Number:02}'] = episode
 
-        self._cache[key] = show
         return show
