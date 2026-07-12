@@ -1,4 +1,5 @@
-from psutil import process_iter, Process, NoSuchProcess, AccessDenied
+from psutil import process_iter, NoSuchProcess, AccessDenied
+from psutil import Process as _Process
 from typing import Iterator
 
 def rscan(writeable:bool=False):
@@ -6,9 +7,20 @@ def rscan(writeable:bool=False):
         try:
             cpu = proc.cpu_affinity()
             if writeable: proc.cpu_affinity(cpu)
-            yield proc
+            yield Process(proc.pid)
         except (AccessDenied, NoSuchProcess):
             pass
+
+class Process(_Process):
+
+    @property
+    def is_writeable(self) -> bool:
+        try:
+            cpu = self.cpu_affinity()
+            self.cpu_affinity(cpu)
+            return True
+        except (AccessDenied, NoSuchProcess):
+            return False
 
 class SysTask:
     """
@@ -42,14 +54,13 @@ class SysTask:
             self.name = id.lower()
 
     @property
-    def _main(self) -> Process|None:
+    def _main(self) -> _Process|None:
         from ..text import like
 
         if self.pid:
 
             try:
                 return Process(self.pid)
-            
             except NoSuchProcess:
                 pass
 
@@ -60,14 +71,12 @@ class SysTask:
                 pname = proc.name().lower()
 
                 if self.name and (self.name == pname):
-
-                    return proc
+                    return Process(proc.pid)
                 
                 elif self.pat and like(pname, self.pat):
+                    return Process(proc.pid)
 
-                    return proc
-
-    def __iter__(self) -> Iterator[Process]:
+    def __iter__(self) -> Iterator[_Process]:
         
         main = self._main
 
