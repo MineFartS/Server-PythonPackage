@@ -23,8 +23,7 @@ xmltodict
 GitPython
 parse-torrent-title
 bs4
-# TODO: Precompile the following packages
-#winrt-Windows.Devices.Geolocation
-#winrt-Windows.Foundation
-#geopy
-#netifaces
+winrt-Windows.Devices.Geolocation
+winrt-Windows.Foundation
+geopy
+netifaces-plus
