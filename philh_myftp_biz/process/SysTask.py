@@ -1,5 +1,6 @@
 from psutil import process_iter, NoSuchProcess, AccessDenied
 from psutil import Process as _Process
+from cpulimiter import CpuLimiter
 from typing import Iterator
 
 def rscan(writeable:bool=False):
@@ -11,7 +12,11 @@ def rscan(writeable:bool=False):
         except (AccessDenied, NoSuchProcess):
             pass
 
+cpu_limiter = CpuLimiter()
+
 class Process(_Process):
+
+    _cpu_limit = 100
 
     @property
     def is_writeable(self) -> bool:
@@ -21,6 +26,23 @@ class Process(_Process):
             return True
         except (AccessDenied, NoSuchProcess):
             return False
+
+    def cpu_limit(self, percent:int=None):
+        
+        if percent is None:
+            return # TODO return current percent
+        
+        if not (1 <= percent <= 100):
+            raise ValueError("Percentage must be between 1 and 100")
+
+        if self._cpu_limit != percent:
+            
+            self._cpu_limit = percent
+
+            cpu_limiter.add(
+                pid = self.pid,
+                limit_percentage = percent
+            )
 
 class SysTask:
     """
