@@ -1,5 +1,14 @@
-from psutil import process_iter, Process, NoSuchProcess
+from psutil import process_iter, Process, NoSuchProcess, AccessDenied
 from typing import Iterator
+
+def rscan(writeable:bool=False):
+    for proc in process_iter():
+        try:
+            cpu = proc.cpu_affinity()
+            if writeable: proc.cpu_affinity(cpu)
+            yield proc
+        except (AccessDenied, NoSuchProcess):
+            pass
 
 class SysTask:
     """
