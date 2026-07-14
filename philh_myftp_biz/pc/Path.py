@@ -43,7 +43,7 @@ class Path:
         self.visibility = _visibility(self)
 
         self.name = self._pure.stem
-        self.ext = self._pure.suffix.strip('.')
+        self.ext = self._pure.suffix.strip('.').lower()
 
     @property
     def exists(self) -> bool:
@@ -367,6 +367,39 @@ class Path:
     
     def with_ext(self, ext:str):
         return self.sibling(self.name+'.'+ext)
+    
+    def clear_exif(self):
+        # TODO Add Video/Audio parsing
+        from ..terminal import Log
+                    
+        Log.VERB(f'Clearing Exif Data: {self.path}')
+
+        match self.type:
+
+            case 'image':
+                from PIL import Image
+                try:
+                    with Image.open(self.path) as img:
+                        if not img.getexif():
+                            clean_img = Image.new(img.mode, img.size)
+                            clean_img.putdata(img.getdata())
+                            clean_img.save(self.path)
+                except OSError:
+                    Log.VERB(exc_info=True)
+
+            case 'audio':
+                from mutagen import File
+                audio = File(self.path)
+                if audio is not None and audio.tags:
+                    audio.delete()
+                    audio.save()
+
+            case 'video':
+                Log.FAIL(exc_info=NotImplementedError())
+                pass
+
+            case _:
+                raise TypeError(f"'{self.type}' is not a valid type")
 
     #========================================================
     # File Parsers
