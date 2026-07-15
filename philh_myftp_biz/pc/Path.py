@@ -12,6 +12,14 @@ class Path:
 
     path: str
     
+    def __enter__(self) -> None:
+        self._with_cd = self.cd
+        self._with_cd.open()
+
+    def __exit__(self, *_) -> None:
+        if hasattr(self, '_with_cd'):
+            self._with_cd.back()
+    
     @staticmethod
     def _parse(path:Any) -> str:
         from os import path as _path
@@ -23,6 +31,7 @@ class Path:
         else:
             fpath = str(path)
 
+        fpath = _path.abspath(fpath)
         fpath: str = fpath.replace('\\', '/').replace('//', '/')
 
         if _path.isdir(fpath) and (fpath[-1] != '/'):
