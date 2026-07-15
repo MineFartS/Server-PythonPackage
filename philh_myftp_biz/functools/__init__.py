@@ -1,4 +1,4 @@
-from typing import Any, Generator, Callable, Type
+from typing import Any, Callable, Type
 from functools import cached_property as _cached_property
 
 from .TransitoryCache import TransitoryCache # pyright: ignore[reportUnusedImport]
@@ -26,6 +26,39 @@ def single_use(f): # pyright: ignore[reportMissingParameterType]
     
     wrapper.has_run = False
 
+    return wrapper
+
+def force_types(func):
+    """
+    Forces parameter types
+    
+    EXAMPLE:
+    ```
+    @force_types
+    def myfunc(x: int, y: float):
+        ...
+    
+    myfunc('1', '2') -> myfunc(int('1'), float('2'))
+    myfunc(3, '4') -> myfunc(3, float('4'))
+    """
+    from inspect import signature
+    from functools import wraps
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+
+        bargs = signature(func).bind(*args, **kwargs)
+        bargs.apply_defaults()
+
+        for name, value in bargs.arguments.items():
+
+            etype = func.__annotations__.get(name)
+
+            if etype and not isinstance(value, etype):
+                bargs.arguments[name] = etype(value)
+
+        return func(*bargs.args, **bargs.kwargs)
+    
     return wrapper
 
 def waitfor(
