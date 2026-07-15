@@ -216,7 +216,7 @@ class URL:
             self.headers = headers
 
         Log.VERB(
-            f'Requesting Page\n'+ \
+            'Requesting Page\n'+ \
             f'{self.furl=}\n'+ \
             f'{self.url=}\n'+ \
             f'{self.params=}\n'+ \

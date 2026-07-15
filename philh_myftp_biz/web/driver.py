@@ -46,7 +46,7 @@ class Driver:
         from time import sleep
 
         Log.VERB(
-            f'Starting Session\n'+ \
+            'Starting Session\n'+ \
             f'{headless=}\n'+ \
             f'{eager=}\n'+ \
             f'{timeout=}\n'+ \
@@ -110,7 +110,7 @@ class Driver:
             response = self._drvr.execute_script(code)
 
             Log.VERB(
-                f'JavaScript Executed\n'+ \
+                'JavaScript Executed\n'+ \
                 f'{self.URL=}\n'+ \
                 f'{code=}\n'+ \
                 f'{response=}'
@@ -179,7 +179,7 @@ class Driver:
             try:
                 self._drvr.get(url=url)
                 return
-            except WebDriverException, ReadTimeoutError:
+            except (WebDriverException, ReadTimeoutError):
                 Log.WARN('Failed to open url', exc_info=True)
 
     @single_use

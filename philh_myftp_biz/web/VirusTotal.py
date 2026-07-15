@@ -30,7 +30,7 @@ class VirusReport:
 
         for data in self.results.values():
 
-            if data['result'] != None:
+            if data['result'] is not None:
             
                 _warnings += {data} # pyright: ignore[reportUnhashable]
 

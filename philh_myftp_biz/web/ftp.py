@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Generator, Literal
+from typing import TYPE_CHECKING, Generator
 from functools import cached_property
 from dataclasses import dataclass
 
@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 @dataclass
 class FTPPath:
 
-    ftp: FTP
+    ftp: 'FTP'
     path: str
 
     def __str__(self) -> str:
@@ -25,7 +25,7 @@ class FTPPath:
             raise NotImplementedError()
 
         Log.VERB(
-            f'Downloading File\n'+ \
+            'Downloading File\n'+ \
             f'remote={self}\n'+ \
             f'local={local}'
         )
@@ -42,7 +42,7 @@ class FTPPath:
             )
 
     @cached_property
-    def cd(self) -> _cd:
+    def cd(self) -> '_cd':
         return _cd(self.ftp, self)
 
     @property
@@ -82,7 +82,7 @@ class FTPPath:
         return FTPPath(self.path.rstrip('/') + '/' + name)
 
     @cached_property
-    def children(self) -> Generator[FTPPath]:
+    def children(self) -> Generator['FTPPath']:
 
         with self.cd:
         
@@ -97,7 +97,7 @@ class FTPPath:
                     yield _path
 
     @cached_property
-    def descendants(self) -> Generator[FTPPath]:
+    def descendants(self) -> Generator['FTPPath']:
 
         def _scan(path:FTPPath):
     

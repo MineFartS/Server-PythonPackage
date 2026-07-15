@@ -6,6 +6,7 @@ build-backend = "hatchling.build"
 name = "philh_myftp_biz"
 version = "v2026.07.15"
 dynamic = [ "dependencies",]
+requires-python = ">=3.12"
 
 [tool.hatch.build]
 artifacts = [ "**/*.pyd", "**/*.pyi",]
@@ -15,3 +16,9 @@ packages = [ "philh_myftp_biz",]
 
 [tool.hatch.metadata.hooks.requirements_txt]
 files = [ "requirements.txt",]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+ignore = ["F401", "E731", "E402", "E701", "E722", "F403"]

@@ -93,7 +93,7 @@ class Torrent:
 
     @property
     def exists(self) -> bool:
-        return self.raw != None
+        return self.raw is not None
     
     @cached_property
     def path(self) -> Path:

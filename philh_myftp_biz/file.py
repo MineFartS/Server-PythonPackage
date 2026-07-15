@@ -52,7 +52,7 @@ class _Template:
 
             value = self.parsed
 
-            if value != None:
+            if value is not None:
                 return value
         
         return self.default
@@ -140,7 +140,7 @@ class VHDX:
 
         RunHidden(
             args = [
-                f'Mount-VHD',
+                'Mount-VHD',
                 '-Path', self.VHD,
                 '-NoDriveLetter',
                 '-Passthru',
@@ -157,7 +157,7 @@ class VHDX:
         
         RunHidden(
             args = [
-                f'Dismount-DiskImage',
+                'Dismount-DiskImage',
                 '-ImagePath', self.VHD
             ],
             terminal = 'ps',

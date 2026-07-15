@@ -243,7 +243,7 @@ class Path:
             for file in files:
 
                 Log.VERB(
-                    f'Copying File\n'+ \
+                    'Copying File\n'+ \
                     f'{file.src=}\n'+ \
                     f'{file.dst=}'
                 )

@@ -65,7 +65,7 @@ class Stopwatch:
         """Get the # of seconds between now or the stop time, and the start time"""
         from time import perf_counter
 
-        if self.start_time != None:
+        if self.start_time is not None:
 
             if self.running:
                 elapsed = perf_counter() - self.start_time

@@ -158,7 +158,7 @@ class ThreadedFunc[R]:
 
     def __call__(self, *args, **kwargs) -> Thread[R]:
         
-        if self.instance != None:
+        if self.instance is not None:
             args = [self.instance, *args]
 
         return Thread(self.func, *args, **kwargs)
