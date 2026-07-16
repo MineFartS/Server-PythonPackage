@@ -389,7 +389,7 @@ class Path:
                 from PIL import Image
                 try:
                     with Image.open(self.path) as img:
-                        if not img.getexif():
+                        if img.getexif():
                             clean_img = Image.new(img.mode, img.size)
                             clean_img.putdata(img.getdata())
                             clean_img.save(self.path)
