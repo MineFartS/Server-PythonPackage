@@ -164,7 +164,8 @@ class Ring:
     def __init__(self, name:str) -> None:
         from .text import hex
 
-        self.name: str = 'philh.myftp.biz/' + hex.encode(value=name)
+        self.rname = name
+        self.name: str = 'philh.myftp.biz/' + hex.encode(name)
 
     def Key(self, name:str) -> 'Key':
         """Get Key in Ring by name"""
@@ -206,4 +207,21 @@ class Key[T]:
         except TypeError:
             return None
         
+    def prompt(self, secure:bool) -> None:
+        """Open GUI window asking for value"""
+        from .gui import Window, Widget
+
+        gui = Window()
+        gui.title = 'Keyring Prompt'
+
+        page = gui.Page()
+        page += Widget.Text(f'Ring: {self.ring.rname}')
+        page += Widget.Text(f'Key: {self.name}')
+        page += Widget.Input(self.name, key=self, secure=secure)
+        page += Widget.Button('Save', gui.close)
+
+        gui.page = page
+
+        gui.run()
+
 #========================================================
