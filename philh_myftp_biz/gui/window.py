@@ -1,8 +1,12 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 
 if TYPE_CHECKING:
     from .page import Page
-    
+
+class ClosedWindowException(BaseException):
+    def throw() -> NoReturn:
+        raise ClosedWindowException('Window was improperly terminated')
+
 class Window:
 
     #====================================================
@@ -58,19 +62,41 @@ class Window:
 
     #====================================================
 
+    def __report_callback_exception(self, exc_type, exc_value, exc_traceback) -> None:
+        from sys import __excepthook__
+
+        if issubclass(exc_type, ClosedWindowException):
+            self._tk.quit()
+            self._saved_exc = exc_type(exc_value).with_traceback(exc_traceback)
+        else:
+            __excepthook__(exc_type, exc_value, exc_traceback)
+
     def __init__(self) -> None:
         from tkinter import Tk
 
         self._tk = Tk()
+        self.close = self._tk.destroy
 
         # Prevent User from resizing/maximizing window
         self._tk.resizable(width=False, height=False)
-        self.run = self._tk.mainloop
-        self.close = self._tk.destroy
+        
+        self._tk.report_callback_exception = self.__report_callback_exception
+
+        self._tk.protocol(
+            "WM_DELETE_WINDOW",
+            ClosedWindowException.throw
+        )
 
         self.title = 'New Window'
 
         self.size = (500, 300)
+
+    def run(self) -> None:
+
+        self._tk.mainloop()
+
+        if hasattr(self, '_saved_exc'):
+            raise self._saved_exc
 
     def Page(self) -> Page:
         from .page import Page
