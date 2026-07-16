@@ -207,7 +207,7 @@ class URL:
         allow_redirects: bool = True
     ) -> 'Response':
         """requests.get Wrapper"""
-        from requests.exceptions import RetryError
+        from requests import exceptions
         from ..terminal import Log
 
         if params: # TODO deprecated - remove later
@@ -232,8 +232,11 @@ class URL:
                 timeout = timeout,
                 allow_redirects = allow_redirects
             )
-        except RetryError as e:
+        except exceptions.RetryError as e:
             raise TimeoutError() from e
+        
+        except exceptions.ConnectionError as e:
+            raise ConnectionError() from e
 
     @property
     def online(self) -> bool:

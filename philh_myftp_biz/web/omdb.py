@@ -38,7 +38,7 @@ class Tmdb:
     def get(self, path:str, **params) -> dict:
         try:
             return self.url.child(path).get(params).json()
-        except TimeoutError:
+        except TimeoutError, ConnectionError:
             return {}
 
 @singleton
