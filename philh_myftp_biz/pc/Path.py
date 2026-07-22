@@ -480,19 +480,16 @@ class _mtime:
     def set(self,
         mtime: 'int|from_stamp' = None
     ) -> None:
-        from ..time import from_stamp
         from ..time import now
         from os import utime
 
-
-        if mtime:
-            utime(
-                str(self.path), 
-                (int(mtime), int(mtime))
-            )
-        else:
-            nowt = now().unix
-            utime(str(self.path), (nowt, nowt))
+        if mtime is None:
+            mtime = now().unix
+        
+        utime(
+            str(self.path), 
+            (int(mtime), int(mtime))
+        )
 
     @property
     def current(self):
@@ -502,7 +499,14 @@ class _mtime:
         return from_stamp(
             path.getmtime( str(self.path) )
         )
+    
+    def __int__(self):
+        return int(self.current)
+    
+    def __float__(self):
+        return float(self.current)
 
+    @property
     def stopwatch(self):
         from ..time import Stopwatch
 
