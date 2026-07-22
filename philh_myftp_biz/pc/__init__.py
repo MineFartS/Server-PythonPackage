@@ -94,7 +94,12 @@ class loc:
     def script(self) -> Path:
         from ..terminal import main_module
 
-        return Path(main_module().__file__).parent
+        mod = main_module()
+
+        if hasattr(mod, '__file__'):
+            return Path(mod.__file__).parent
+        else:
+            return cwd()
 
     @cached_property
     def cache(self) -> Path:

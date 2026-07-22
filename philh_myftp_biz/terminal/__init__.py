@@ -176,25 +176,30 @@ def warn(exc: Exception) -> None:
 
 #========================================================
 
-@cache
-def main_module():
+def get_module(name: str):
     from sys import modules
 
-    try:
-        
-        modules['__main__'].__file__
+    mod = modules.get(name)
 
-        return modules['__main__']
+    if hasattr(mod, '__file__'):
+        return mod
 
-    except AttributeError:
+@cache
+def main_module():
+    from _frozen_importlib import _module_locks
+    from types import ModuleType
 
-        from _frozen_importlib import _module_locks
+    mod = get_module('__main__')
 
-        fullname: str = next(iter(_module_locks))
+    if mod is None:
+        fullname: str = next(iter(_module_locks), '')
+        name: str = fullname.split('.')[0]
+        mod = get_module(name)
 
-        name = fullname.split('.')[0]
+    if mod is None:
+        mod = ModuleType('')
 
-        return modules[name]
+    return mod
 
 def set_package(path:'str|Path'):
     from ..pc.Path import Path
@@ -206,8 +211,14 @@ def set_package(path:'str|Path'):
 
 @cache
 def script_file():
+    from sys import executable
     from ..pc import Path
 
-    return Path(main_module().__file__)
+    mod = main_module()
+
+    if hasattr(mod, '__file__'):
+        return Path(mod.__file__)
+    else:
+        return Path(executable)
 
 #========================================================
