@@ -1,3 +1,4 @@
+from functools import cached_property
 from typing import TYPE_CHECKING
 from ..pc import Path
 
@@ -131,3 +132,14 @@ class Service(Path):
         if stop:
             try: self.stop()
             except: pass
+
+    @cached_property
+    def logfile(self):
+        
+        files = list(self.child('__pylogs__').children)
+        
+        if len(files) > 0:
+            return max(files, 
+                key = lambda f: int(f.mtime)
+            )
+
