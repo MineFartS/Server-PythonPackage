@@ -545,7 +545,7 @@ class _set_access:
         from os import chmod
 
         if self.path.is_dir:
-            RunHidden(['icacls', self.path, '/grant', 'Everyone:F', '/t', '/c', '/q'])
+            RunHidden('icacls', self.path, '/grant', 'Everyone:F', '/t', '/c', '/q')
 
         elif self.path.in_use:
             Log.VERB(f'Failed to Update Access: {self.path}')

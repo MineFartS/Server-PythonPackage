@@ -139,15 +139,13 @@ class VHDX:
         from .process import RunHidden
 
         RunHidden(
-            args = [
-                'Mount-VHD',
-                '-Path', self.VHD,
-                '-NoDriveLetter',
-                '-Passthru',
-                ('-ReadOnly' if self.readonly else ''),
-                '| Get-Disk | Get-Partition | Add-PartitionAccessPath',
-                '-AccessPath', self.MNT
-            ],
+            'Mount-VHD',
+            '-Path', self.VHD,
+            '-NoDriveLetter',
+            '-Passthru',
+            ('-ReadOnly' if self.readonly else ''),
+            '| Get-Disk | Get-Partition | Add-PartitionAccessPath',
+            '-AccessPath', self.MNT,
             terminal = 'ps',
             timeout = self.timeout
         )
@@ -156,10 +154,8 @@ class VHDX:
         from .process import RunHidden
         
         RunHidden(
-            args = [
-                'Dismount-DiskImage',
-                '-ImagePath', self.VHD
-            ],
+            'Dismount-DiskImage',
+            '-ImagePath', self.VHD,
             terminal = 'ps',
             timeout = self.timeout
         )

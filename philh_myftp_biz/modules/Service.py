@@ -59,10 +59,8 @@ class Service(Path):
         from ..process import RunHidden
             
         return RunHidden(
-            args = [
-                self.file(name), 
-                *self.args
-            ],
+            self.file(name), 
+            *self.args,
             terminal = None,
             dir = self
         )

@@ -72,7 +72,7 @@ def install_requirements(
         txtfile = loc.script.child('requirements.txt')
 
     RunHidden(
-        args = ['pip', 'install', '-r', txtfile],
+        'pip', 'install', '-r', txtfile,
         terminal = 'pym'
     )
 

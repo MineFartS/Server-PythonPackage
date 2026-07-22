@@ -291,7 +291,7 @@ class FirewallException:
         """Check if this exception exists in Windows Defender"""
         from ..process import RunHidden
 
-        p = RunHidden(args=['netsh', 'advfirewall', 'firewall', 'show', 'rule', f'name={self.name}'])
+        p = RunHidden('netsh', 'advfirewall', 'firewall', 'show', 'rule', f'name={self.name}')
 
         return ("No rules match the specified criteria." not in p.output())
     
@@ -299,11 +299,11 @@ class FirewallException:
         """Remove this exception from Windows Defender"""
         from ..process import RunHidden
 
-        RunHidden([
+        RunHidden(
             'netsh', 'advfirewall', 'firewall',
             'delete',
             'rule', f'name={self.name}'
-        ])
+        )
 
     def set(self,
         i: 'int | Path',
@@ -341,5 +341,5 @@ class FirewallException:
         elif isinstance(i, Path):
             args += [f'program={i.wpath}']
 
-        RunHidden(args)
+        RunHidden(*args)
   

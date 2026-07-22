@@ -73,7 +73,7 @@ class Module(Path):
 
         try:
             return func(
-                args = largs, 
+                *largs, 
                 terminal = None,
                 dir = self
             )
@@ -157,13 +157,11 @@ class Module(Path):
         for pkg in self.packages:
             
             Run(
-                args = [
-                    'pip', 'install',
-                    *split(pkg),
-                    '--user',
-                    '--no-warn-script-location', 
-                    '--upgrade'
-                ],
+                'pip', 'install',
+                *split(pkg),
+                '--user',
+                '--no-warn-script-location', 
+                '--upgrade',
                 terminal = 'pym'
             )
 
