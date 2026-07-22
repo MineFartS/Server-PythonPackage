@@ -28,7 +28,7 @@ class SubProcess:
     _wait: bool
 
     def __init__(self,
-        args: 'list|tuple|str|Path',
+        *args: 'str|Path',
         terminal: None|Literal['cmd', 'ps', 'psfile', 'py', 'pym', 'vbs'] = 'cmd',
         dir: 'Path|None' = None
     ) -> None:
@@ -38,6 +38,11 @@ class SubProcess:
         from .SysTask import SysTask
         from ..terminal import Log
         from ..pc import Path, cwd
+
+        # =====================================
+
+        if len(args) == 1 and isinstance(args[0], (list, tuple)):
+            args = args[0] # TODO: Temporary Backwards Compatibility
 
         # =====================================
 
