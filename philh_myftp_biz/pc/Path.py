@@ -32,7 +32,10 @@ class Path:
             fpath = str(path)
 
         fpath = _path.abspath(fpath)
-        fpath: str = fpath.replace('\\', '/').replace('//', '/')
+        fpath: str = fpath.replace('\\', '/')
+        
+        while '//' in fpath:
+            fpath = fpath.replace('//', '/')
 
         if _path.isdir(fpath) and (fpath[-1] != '/'):
             fpath += '/'
@@ -105,13 +108,12 @@ class Path:
             (self == path)
         ])
     
-    def child(self,
-        name: str
-    ) -> 'Path':
+    def child(self, name:str) -> 'Path':
+        
         if self.is_file:
             raise TypeError("Parent path cannot be a file")
 
-        return Path(self.path + name)
+        return Path(self.path + '/' + name)
     
     def __format__(self, spec:str) -> str:
         return f'{self.path:{spec}}'
