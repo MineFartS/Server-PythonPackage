@@ -1,6 +1,7 @@
 from typing import Literal, TYPE_CHECKING
 from functools import cached_property
 from ..classtools import singleton
+from dataclasses import dataclass
 from ..json import SupportsJSON
 
 if TYPE_CHECKING:
@@ -275,13 +276,10 @@ class URL:
 
             self.download(path)
 
+@dataclass
 class FirewallException:
 
-    def __init__(self,
-        name: str
-    ) -> None:
-        """Windows Defender Inbound Exception"""
-        self.name: str = name
+    name: str
 
     def __repr__(self) -> str:
         return f'FirewallException({self.name})'
@@ -291,7 +289,10 @@ class FirewallException:
         """Check if this exception exists in Windows Defender"""
         from ..process import RunHidden
 
-        p = RunHidden('netsh', 'advfirewall', 'firewall', 'show', 'rule', f'name={self.name}')
+        p = RunHidden(
+            'netsh', 'advfirewall', 'firewall', 
+            'show', 'rule', f'name={self.name}'
+        )
 
         return ("No rules match the specified criteria." not in p.output())
     
@@ -307,8 +308,7 @@ class FirewallException:
 
     def set(self,
         i: 'int | Path',
-        dir: Literal['in', 'out'] = 'in',
-        override: bool = False
+        dir: Literal['in', 'out'] = 'in'
     ) -> None:
         """
         Add this exception to Windows Defender
@@ -319,17 +319,11 @@ class FirewallException:
         from ..process import RunHidden
 
         if self.exists:
-            
-            if override:
-                self.delete()
-            #else:
-            #    raise FileExistsError(self)
+            self.delete()
         
         args = [
-            'netsh', 
-            'advfirewall', 'firewall',
-            'add',
-            'rule', f'name={self.name}',
+            'netsh', 'advfirewall', 'firewall',
+            'add', 'rule', f'name={self.name}',
             f'dir={dir}',
             'action=allow',
             'protocol=TCP'
@@ -337,7 +331,6 @@ class FirewallException:
 
         if isinstance(i, int):
             args += [f'localport={i}']
-
         elif isinstance(i, Path):
             args += [f'program={i.wpath}']
 
