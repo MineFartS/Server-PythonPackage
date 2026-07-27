@@ -41,7 +41,7 @@ class Driver:
     ) -> None:
         from selenium.webdriver import FirefoxOptions, Firefox
         from selenium.webdriver.firefox.options import Options
-        from ..classtools import attr
+        from ..functools import attr
         from ..process import SysTask
         from ..terminal import Log
         from time import sleep

@@ -1,5 +1,4 @@
 from typing import Callable, Union, TypeAlias, TypeVar
-from .json.List import List # TODO: Temporary Backwards Compatibility
 
 _T = TypeVar('_T')
 

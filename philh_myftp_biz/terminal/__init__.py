@@ -12,9 +12,6 @@ from .Args import Args # pyright: ignore[reportUnusedImport]
 from .KIC import KIC # pyright: ignore[reportUnusedImport]
 from . import Log # pyright: ignore[reportUnusedImport]
 
-# TODO: Temporary Backwards Compatibility
-ParsedArgs = Args
-
 _cls_cmd = '8005951a000000000000008c162a2a2a20436c656172205465726d696e616c202a2a2a942e'
 
 #========================================================

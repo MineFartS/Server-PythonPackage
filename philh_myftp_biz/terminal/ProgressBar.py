@@ -1,5 +1,5 @@
 from typing import Literal, Iterable
-from ..classtools import singleton
+from ..functools import singleton
 from ..functools import NullSafe
 from ..num import nlen
 import sys

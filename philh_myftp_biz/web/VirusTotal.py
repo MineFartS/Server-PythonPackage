@@ -1,5 +1,5 @@
 from functools import cached_property
-from ..classtools import singleton
+from ..functools import singleton
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

@@ -19,7 +19,7 @@ class Torrent:
     #===================================================
 
     def __repr__(self) -> str:
-        from ...classtools import loc
+        from ...functools import loc
         from ...text import abbr
 
         return f"<Torrent '{abbr(30, self.name)}' @{loc(self)}>"

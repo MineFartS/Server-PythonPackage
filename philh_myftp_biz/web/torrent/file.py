@@ -16,7 +16,7 @@ class TorrentFile:
     id: str
 
     def __repr__(self) -> str:
-        from ...classtools import loc
+        from ...functools import loc
         from ...text import abbr
         return f"<File '{abbr(30, self.name)}' @{loc(obj=self)}>"
 

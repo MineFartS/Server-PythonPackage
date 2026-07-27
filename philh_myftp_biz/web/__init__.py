@@ -1,6 +1,6 @@
 from typing import Literal, TYPE_CHECKING
 from functools import cached_property
-from ..classtools import singleton
+from ..functools import singleton
 from dataclasses import dataclass
 from ..json import SupportsJSON
 
@@ -199,9 +199,9 @@ class URL:
         return int(r.headers.get('Content-Length', 0))
 
     def get(self,
-        params: dict[str, str] = None, # TODO deprecated - remove later
+        params: dict[str, str] = None,
         *,
-        headers: dict[str, str] = None, # TODO deprecated - remove later
+        headers: dict[str, str] = None,
         stream: bool = False,
         max_tries: int | None = 1,
         timeout: None|int = 30,
@@ -211,9 +211,10 @@ class URL:
         from requests import exceptions
         from ..terminal import Log
 
-        if params: # TODO deprecated - remove later
+        if params is not None:
             self.params = params
-        if headers:
+        
+        if headers is not None:
             self.headers = headers
 
         Log.VERB(

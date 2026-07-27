@@ -16,7 +16,7 @@ def _arg(*name:str):
 
 #================================================================
 
-from .classtools import singleton
+from .functools import singleton
 from .num import MutInt
 
 @singleton
@@ -95,7 +95,7 @@ class _Formatter(__Formatter):
     def _message(self,
         record: '__LogRecord'    
     ) -> str:
-        from .classtools import stringify
+        from .functools import stringify
         from .json import dumps
         
         if isinstance(record.msg, (str, int, float, bool)):

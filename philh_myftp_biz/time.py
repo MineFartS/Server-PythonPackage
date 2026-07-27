@@ -156,7 +156,7 @@ class from_stamp:
     ) -> None:
         from datetime import datetime
         from functools import partial
-        from .classtools import cpath
+        from .functools import cpath
         from .num import is_num
 
         if not is_num(stamp):
@@ -217,7 +217,7 @@ class from_stamp:
     
     def __repr__(self) -> str:
         from .text import abbr
-        from .classtools import loc
+        from .functools import loc
 
         return f"<from_stamp '{abbr(30, self.ISO)}' @{loc(self)}>"
 
@@ -233,7 +233,7 @@ class from_stamp:
     def __lt__(self,
         other: Any|SupportsFloat
     ) -> bool:
-        from .classtools import cpath
+        from .functools import cpath
 
         if isinstance(other, (from_stamp, int, float)):
             return (self.unix < float(other))
@@ -244,7 +244,7 @@ class from_stamp:
     def __gt__(self, 
         other: Any|SupportsFloat
     ) -> bool:
-        from .classtools import cpath
+        from .functools import cpath
 
         if isinstance(other, (from_stamp, int, float)):
             return (self.unix > float(other))
@@ -267,7 +267,7 @@ def from_string(
     Get details of time string
     """
     from dateutil.parser._parser import ParserError
-    from .classtools import cpath
+    from .functools import cpath
     from dateutil import parser
 
     try:

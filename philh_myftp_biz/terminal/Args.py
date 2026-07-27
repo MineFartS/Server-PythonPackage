@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from ..classtools import singleton
+from ..functools import singleton
 from typing import Callable, Any
 from ..json import SupportsJSON
 from . import Log
@@ -22,10 +22,6 @@ class Args(tuple[SupportsJSON]):
         args = (auto_convert(a) for a in argv[1:])
 
         return super().__new__(cls, args)
-
-    # TODO: Temporary backwards compatibility
-    def __call__(self, *_, **__):
-        return self
 
     def Arg(self,
         name: str,

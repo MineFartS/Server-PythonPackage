@@ -66,11 +66,6 @@ class SubProcess:
 
         # =====================================
 
-        if len(args) == 1 and is_iterable(args[0]):
-            args = args[0] # TODO: Temporary Backwards Compatibility
-                    
-        # =====================================
-
         if isinstance(terminal, str):
             _terminal = TerminalMap[terminal]
 

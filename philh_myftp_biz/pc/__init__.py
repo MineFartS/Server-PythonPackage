@@ -1,6 +1,6 @@
 from functools import cached_property
 from typing import Literal, Generator
-from ..classtools import singleton
+from ..functools import singleton
 from .Path import Path, PathPair
 from sys import modules
 
@@ -27,7 +27,7 @@ def relscan(
         'dst': Path('D:/Child1')
     }]
     """
-    from ..classtools import SharedBuffer
+    from ..functools import SharedBuffer
     from shutil import copytree
     from ..process import Thread
 

@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING
-from ..classtools import singleton
+from ..functools import singleton
 
 if TYPE_CHECKING:
     from signal import _HANDLER

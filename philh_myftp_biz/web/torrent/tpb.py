@@ -4,7 +4,7 @@ from ...terminal import Log
 from ...web import URL
 
 if TYPE_CHECKING:
-    from ...array import List
+    from ...json import List
     from ..driver import Driver
     from .torrent import Torrent
 
@@ -17,7 +17,7 @@ cache = TransitoryCache('tpb')
 @Log.on_call
 def search(*queries:str) -> List[Torrent]:
     """Search thePirateBay for magnets"""
-    from ...array import List
+    from ...json import List
     from ... import VERBOSE
 
     magnets = []

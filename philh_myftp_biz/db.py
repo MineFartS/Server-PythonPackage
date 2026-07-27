@@ -1,6 +1,6 @@
 from functools import cache, cached_property
 from typing import Literal, TYPE_CHECKING
-from .classtools import singleton
+from .functools import singleton
 from dataclasses import dataclass
 from .web import URL
 

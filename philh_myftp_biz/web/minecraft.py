@@ -1,5 +1,5 @@
 from functools import cached_property, cache
-from ..classtools import singleton
+from ..functools import singleton
 from dataclasses import dataclass
 from typing import Literal, Any
 from . import URL

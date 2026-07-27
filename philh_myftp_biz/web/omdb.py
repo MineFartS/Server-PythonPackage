@@ -1,6 +1,6 @@
 from ..functools import TransitoryCache
 from typing import NoReturn, Literal
-from ..classtools import singleton
+from ..functools import singleton
 from dataclasses import dataclass
 from ..time import from_stamp
 from ..web import URL
