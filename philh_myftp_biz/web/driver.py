@@ -1,5 +1,6 @@
 from selenium.webdriver.remote.webelement import WebElement
 from typing import Literal, TYPE_CHECKING, Self
+from ..functools import is_iterable
 from dataclasses import dataclass
 from ..functools import single_use
 
@@ -124,7 +125,7 @@ class Driver:
 
     def element(self,
         by: Literal['class', 'id', 'xpath', 'name', 'attr'],
-        name: str
+        name: str | list[str]
     ) -> list[Element]:
         """Get List of Elements by query"""
         from selenium.webdriver.common.by import By
@@ -136,7 +137,7 @@ class Driver:
 
             case 'class':
 
-                if isinstance(name, list):
+                if is_iterable(name, list):
                     name = '.'.join(name)
 
                 BY = By.CLASS_NAME

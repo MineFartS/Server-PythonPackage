@@ -1,4 +1,5 @@
 from typing import Literal, TYPE_CHECKING, Any, TypedDict
+from ..functools import is_iterable
 from .Thread import ThreadedFunc
 from sys import executable
 
@@ -65,7 +66,7 @@ class SubProcess:
 
         # =====================================
 
-        if len(args) == 1 and isinstance(args[0], (list, tuple)):
+        if len(args) == 1 and is_iterable(args[0]):
             args = args[0] # TODO: Temporary Backwards Compatibility
                     
         # =====================================

@@ -11,6 +11,18 @@ from .paths import cpath, spath # pyright: ignore[reportUnusedImport]
 
 #========================================================
 
+def is_iterable(obj) -> bool:
+    """*Ignores strings"""
+    
+    if isinstance(obj, (str, bytes, bytearray)):
+        return False
+    
+    try:
+        iter(obj)
+        return True
+    except TypeError:
+        return False
+
 def single_use(f): # pyright: ignore[reportMissingParameterType]
     """Ignore all but first executions"""
     from functools import wraps
