@@ -29,6 +29,8 @@ class Collection[T, STRUCT]:
         
         else:
             self._cache = t
+        
+        self.__backup = self._cache.copy()
 
     def read(self) -> STRUCT:
 
@@ -88,3 +90,19 @@ class Collection[T, STRUCT]:
         )
     
     __repr__ = __str__
+
+    def reset(self):
+        """
+        Reset data to original input
+        
+        EXAMPLE: 
+        ```
+        l = List([1, 2, 3])
+        l += 4
+        l.read() -> [1, 2, 3, 4]
+        l.reset()
+        l.read() -> [1, 2, 3]
+        ```
+        """
+        self.save(self.__backup)
+
