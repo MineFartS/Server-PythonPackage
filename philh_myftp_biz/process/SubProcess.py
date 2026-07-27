@@ -1,28 +1,52 @@
-from typing import Literal, TYPE_CHECKING, Any
+from typing import Literal, TYPE_CHECKING, Any, TypedDict
 from .Thread import ThreadedFunc
 from sys import executable
 
 if TYPE_CHECKING:
-    from ..pc import Path
     from ..text import UnconsumingIO
+    from ..pc import Path
 
-TerminalMap = {
+class Terminal(TypedDict):
+    args: list[str]
+    exts: list[str]
 
-    'cmd': ['cmd', '/c'],
+TerminalMap: dict[str, Terminal] = {
 
-    'ps': ['Powershell', '-Command'],
+    'cmd': {
+        'args': ['cmd', '/c'],
+        'exts': ['exe', 'bat']
+    },
 
-    'psfile': ['Powershell', '-File'],
+    'ps': {
+        'args': ['Powershell', '-Command'],
+        'exts': []
+    },
 
-    'py': [executable],
+    'psfile': {
+        'args': ['Powershell', '-File'],
+        'exts': ['ps1']
+    },
 
-    'pym': [executable, '-m'],
-        
-    'vbs': ['wscript']
+    'py': {
+        'args': [executable],
+        'exts': ['py']
+    },
+
+    'pym': {
+        'args': [executable, '-m'],
+        'exts': []
+    },
+
+    'vbs': {
+        'args': ['wscript'],
+        'exts': ['vbs']
+    }
+
 }
 
+_TerminalMap = TerminalMap.copy()
+
 class SubProcess:
-    """Subprocess Wrapper"""
 
     _hide: bool
     _wait: bool
@@ -43,41 +67,28 @@ class SubProcess:
 
         if len(args) == 1 and isinstance(args[0], (list, tuple)):
             args = args[0] # TODO: Temporary Backwards Compatibility
-
-        # =====================================
-
-        if dir is None:
-            dir = cwd()
                     
         # =====================================
 
-        if terminal is None:
-            match Path(args[0]).ext:
+        if isinstance(terminal, str):
+            _terminal = TerminalMap[terminal]
 
-                case 'ps1': terminal='psfile'
+        elif terminal is None:
+            ext = Path(args[0]).ext
+            _terminal = next(
+                (t for t in TerminalMap.values() if (ext in t['exts'])),
+                TerminalMap['cmd']
+            )
 
-                case 'py': terminal='py'
-
-                case 'exe': terminal='cmd'
-
-                case 'bat': terminal='cmd'
-
-                case 'vbs': terminal='vbs'
-
-                case _: terminal='cmd'
-                
-        if not isinstance(args, (tuple, list)):
-            args = [args]
-
-        args = TerminalMap.get(terminal) + stringify(args)
-
+        args = _terminal['args'] + stringify(args)
+        
         # =====================================
 
         Log.VERB(f'Running Subprocess:\n{args=}\n{dir=}\nhide={self._hide}\nwait={self._wait}')
 
         self._process = Popen(
             args = args,
-            cwd = str(dir),
+            cwd = str(dir or cwd()),
             stdout = PIPE,
             stderr = PIPE,
             text = True,
@@ -106,9 +117,6 @@ class SubProcess:
 
     @property
     def finished(self) -> bool:
-        """
-        Check if the subprocess is finished
-        """
         return (not self.running)
 
     def output(self,

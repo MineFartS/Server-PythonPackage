@@ -1,6 +1,5 @@
-from .SubProcess import TerminalMap
+from .SubProcess import TerminalMap, _TerminalMap
 from ..pc.Path import Path
-from sys import executable
 
 pypaths = [
     "/Scripts/python.exe",
@@ -17,9 +16,9 @@ class SubVenv(Path):
             [self.child(p) for p in pypaths]
         ))
 
-        TerminalMap['py'] = [pyexe.path]
-        TerminalMap['pym'] = [pyexe.path, '-m']
+        TerminalMap['py']['args'] = [pyexe.path]
+        TerminalMap['pym']['args'] = [pyexe.path, '-m']
 
     def disable(self): 
-        TerminalMap['py'] = [executable]
-        TerminalMap['pym'] = [executable, '-m']
+        TerminalMap['py']  = _TerminalMap['py']
+        TerminalMap['pym'] = _TerminalMap['pym']
