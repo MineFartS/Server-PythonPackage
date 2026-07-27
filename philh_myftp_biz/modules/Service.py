@@ -132,12 +132,11 @@ class Service(Path):
             except: pass
 
     @cached_property
-    def logfile(self):
-        
-        files = list(self.child('__pylogs__').children)
-        
-        if len(files) > 0:
-            return max(files, 
+    def logfile(self) -> None | Path:
+        try:
+            return max(
+                self.child('__pylogs__').children,
                 key = lambda f: int(f.mtime)
             )
-
+        except (ValueError, FileNotFoundError):
+            pass
