@@ -16,10 +16,12 @@ class Collection[T, STRUCT]:
 
         if isinstance(t, Collection):
             self.var = t.var
+            self._cache = t.var.read()
 
         elif isinstance(t, File):
             t.default = self._default
             self.var = t
+            self._cache = t.read()
 
         elif isinstance(t, (tuple, filter, GeneratorType)):
             self._cache = list(t)
@@ -33,10 +35,6 @@ class Collection[T, STRUCT]:
         self.__backup = self._cache.copy()
 
     def read(self) -> STRUCT:
-
-        if not hasattr(self, '_cache'):
-            self._cache = self.var.read()
-
         return self._cache # pyright: ignore[reportReturnType]
     
     def save(self, data:'STRUCT|Collection') -> None:
