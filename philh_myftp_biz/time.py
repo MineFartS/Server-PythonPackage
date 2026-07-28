@@ -41,9 +41,7 @@ def sleep(
     return True
 
 def toHMS(stamp:int) -> str:
-    """
-    Convert a unix time stamp to 'hh:mm:ss'
-    """
+    """Convert a unix time stamp to 'hh:mm:ss'"""
 
     m, s = divmod(stamp, 60)
     h, m = divmod(m, 60)
@@ -148,7 +146,7 @@ class Timeout(Stopwatch):
 
 #==============================================================================
 
-class from_stamp:
+class TimeStamp:
     """Handler for a unix time stamp"""
 
     def __init__(self,
@@ -219,13 +217,13 @@ class from_stamp:
         from .text import abbr
         from .functools import loc
 
-        return f"<from_stamp '{abbr(30, self.ISO)}' @{loc(self)}>"
+        return f"<TimeStamp '{abbr(30, self.ISO)}' @{loc(self)}>"
 
     def __eq__(self,
         other: Any|SupportsFloat
     ) -> bool:
 
-        if isinstance(other, (from_stamp, int, float)):
+        if isinstance(other, (TimeStamp, int, float)):
             return (self.unix == float(other))
         else:
             return False
@@ -235,7 +233,7 @@ class from_stamp:
     ) -> bool:
         from .functools import cpath
 
-        if isinstance(other, (from_stamp, int, float)):
+        if isinstance(other, (TimeStamp, int, float)):
             return (self.unix < float(other))
         
         else:
@@ -246,26 +244,24 @@ class from_stamp:
     ) -> bool:
         from .functools import cpath
 
-        if isinstance(other, (from_stamp, int, float)):
+        if isinstance(other, (TimeStamp, int, float)):
             return (self.unix > float(other))
         
         else:
             raise TypeError(cpath(other))
 
-def now() -> from_stamp:
-    """
-    Get details of the current time
-    """
+from_stamp = TimeStamp # TODO deprecated
+
+def now() -> TimeStamp:
+    """Get details of the current time"""
     from time import time
 
-    return from_stamp(stamp=time())
+    return TimeStamp(stamp=time())
 
 def from_string(
     string: str
-) -> from_stamp:
-    """
-    Get details of time string
-    """
+) -> TimeStamp:
+    """Get details of time string"""
     from dateutil.parser._parser import ParserError
     from .functools import cpath
     from dateutil import parser
@@ -273,7 +269,7 @@ def from_string(
     try:
     
         dt = parser.parse(string)
-        return from_stamp(dt.timestamp())
+        return TimeStamp(dt.timestamp())
     
     except (OSError, ParserError):
     
@@ -281,15 +277,13 @@ def from_string(
 
 def from_ymdhms(
     year:   int = 0,
-    month:  int = 0,
-    day:    int = 0,
+    month:  int = 1,
+    day:    int = 1,
     hour:   int = 0,
     minute: int = 0,
     second: int = 0,
-) -> from_stamp:
-    """
-    Get details of time from year, month, day, hour, minute, & second
-    """
+) -> TimeStamp:
+    """Get details of time from year, month, day, hour, minute, & second"""
     from datetime import datetime
 
     t = datetime(
@@ -303,7 +297,7 @@ def from_ymdhms(
 
     try:
 
-        return from_stamp(stamp=t.timestamp())
+        return TimeStamp(stamp=t.timestamp())
     
     except OSError as e:
         raise TypeError(*e.args)
