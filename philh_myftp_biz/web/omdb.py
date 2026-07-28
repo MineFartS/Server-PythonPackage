@@ -1,27 +1,7 @@
-from ..functools import TransitoryCache
+from .torrent.models import MovieData, ShowData, EpisodeData
 from typing import NoReturn, Literal
 from ..functools import singleton
-from dataclasses import dataclass
-from ..time import from_stamp
 from ..web import URL
-
-@dataclass
-class MovieData:
-    Title: str
-    Year: int
-    Released: 'from_stamp'
-
-@dataclass
-class ShowData:
-    Title: str
-    Year: int
-    Seasons: dict[str, dict[str, 'EpisodeData']]
-
-@dataclass
-class EpisodeData:
-    Title: str
-    Number: int
-    Released: 'from_stamp|None' = None
 
 @singleton
 class Tmdb:
@@ -74,7 +54,6 @@ class Omdb:
         if bool(r['Response']) and (r['Type'] == 'movie'):    
             return MovieData(
                 Title = r['Title'],
-                Year = int(r['Year']),
                 Released = from_string(r['Released'])
             )
 
@@ -83,7 +62,7 @@ class Omdb:
         year: int
     ) -> None | ShowData:
         """Get details of a show"""
-        from ..time import from_string
+        from ..time import from_string, from_ymdhms
         
         # Request raw list of seasons
         r1 = self.get(t=title, y=year)
@@ -92,7 +71,7 @@ class Omdb:
         show = ShowData(
             Seasons = {},
             Title = title,
-            Year = year
+            Released = from_ymdhms(year=year)
         )
 
         try:
