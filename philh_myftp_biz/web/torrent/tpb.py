@@ -4,9 +4,10 @@ from ...terminal import Log
 from ...web import URL
 
 if TYPE_CHECKING:
-    from ...json import List
-    from ..driver import Driver
     from .torrent import Torrent
+    from ..driver import Driver
+    from .name import Weights
+    from ...json import List
 
 url = URL("https://thepiratebay11.com/search/")
 
@@ -15,23 +16,32 @@ driver: Driver = None
 cache = TransitoryCache('tpb')
 
 @Log.on_call
-def search(*queries:str) -> List[Torrent]:
+def search(
+    *queries:str, 
+    weights: 'None|Weights' = None
+) -> List[Torrent]:
     """Search thePirateBay for magnets"""
     from ...json import List
     from ... import VERBOSE
 
-    magnets = []
+    torrents: list[Torrent] = []
 
     VERBOSE.pause()
 
     for q in queries:
-        magnets += _search(q)
-        magnets += _search(q.replace('.', '').replace("'", ''))
-        magnets += _search(q.replace('.', ' ').replace("'", ' '))
+        torrents += _search(q)
+        torrents += _search(q.replace('.', '').replace("'", ''))
+        torrents += _search(q.replace('.', ' ').replace("'", ' '))
 
     VERBOSE.resume()
 
-    return List(magnets)
+    if weights:
+        torrents = filter(
+            lambda t: weights.parse(t.name),
+            torrents
+        )
+
+    return List(torrents)
 
 def _search(query:str) -> list[Torrent]:
     """Search thePirateBay for magnets"""
@@ -66,7 +76,7 @@ def _search(query:str) -> list[Torrent]:
 
             t = Torrent(hash=None)
 
-            t.url: str = _run(".children[3].children[0].children[0].href")
+            t.url = _run(".children[3].children[0].children[0].href")
             t.size = Size.to_bytes(_run(".children[4].textContent"))
             t.name = _run(".children[1].textContent")
             t.seeders = int(_run(".children[5].textContent"))
