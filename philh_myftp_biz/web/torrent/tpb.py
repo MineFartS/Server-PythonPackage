@@ -46,6 +46,8 @@ def search(
 def _search(query:str) -> list[Torrent]:
     """Search thePirateBay for magnets"""
     from urllib.parse import urlparse, parse_qs
+    from ...time import from_string
+    from .name import NameParser
     from .torrent import Torrent
     from ...db import Size
 
@@ -70,18 +72,27 @@ def _search(query:str) -> list[Torrent]:
     # Iter from 0 to # of lines
     for x in range(0, driver.run('return lines.length')):
 
-        _run = lambda c: driver.run(f'return lines[{x}]{c}')
+        _run = lambda c: driver.run(f'return lines[{x}].children{c}')
 
         try:
 
             t = Torrent(hash=None)
 
-            t.url = _run(".children[3].children[0].children[0].href")
-            t.size = Size.to_bytes(_run(".children[4].textContent"))
-            t.name = _run(".children[1].textContent")
-            t.seeders = int(_run(".children[5].textContent"))
-            t.leechers = int(_run(".children[6].textContent"))
-
+            t.url = _run("[3].children[0].children[0].href")
+            t.size = Size.to_bytes(_run("[4].textContent"))
+            t.name = _run("[1].textContent")
+            t.seeders = int(_run("[5].textContent"))
+            t.leechers = int(_run("[6].textContent"))
+            t.uploaded = from_string(_run("[2].textContent"))
+            
+            _type = _run("[0].textContent").lower()
+            if 'movie' in _type:
+                t.type = "Movie"
+            elif NameParser(t.name).episode:
+                t.type = 'Episode'
+            elif 'show' in _type:
+                t.type = 'Show'
+            
             XT: str = parse_qs(urlparse(t.url).query)['xt'][0]
             if XT.startswith('urn:btih:'): # v1
                 t.hash = XT[len('urn:btih:'):].lower()

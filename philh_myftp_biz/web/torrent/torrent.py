@@ -1,20 +1,25 @@
 from qbittorrentapi import TorrentDictionary
+from typing import TYPE_CHECKING, Literal
 from ...functools import cached_property
 from .qbit import qBitTorrent as qbit
 from dataclasses import dataclass
 from .file import TorrentFile
 from ...terminal import Log
-from typing import ClassVar
 from ...pc.Path import Path
 from ...json import List
+
+if TYPE_CHECKING:
+    from ...time import from_stamp
 
 @dataclass
 class Torrent:
 
     hash: str
 
-    size: ClassVar[str] = ""
-    url : ClassVar[str] = ""
+    size: str = ""
+    url : str = ""
+    uploaded: 'None|from_stamp' = None
+    type: None|Literal['Show', 'Movie', 'Episode'] = None
 
     #===================================================
 
