@@ -258,9 +258,7 @@ def now() -> TimeStamp:
 
     return TimeStamp(stamp=time())
 
-def from_string(
-    string: str
-) -> TimeStamp:
+def from_string(string: str) -> TimeStamp:
     """Get details of time string"""
     from dateutil.parser._parser import ParserError
     from .functools import cpath
@@ -273,7 +271,7 @@ def from_string(
     
     except (OSError, ParserError):
     
-        raise TypeError(cpath(string))
+        raise TypeError((cpath(string), str(string)))
 
 def from_ymdhms(
     year:   int = 0,

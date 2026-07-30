@@ -83,7 +83,11 @@ def _search(query:str) -> list[Torrent]:
             t.name = _run("[1].textContent")
             t.seeders = int(_run("[5].textContent"))
             t.leechers = int(_run("[6].textContent"))
-            t.uploaded = from_string(_run("[2].textContent"))
+
+            try:
+                t.uploaded = from_string(_run("[2].textContent"))
+            except TypeError:
+                pass
             
             _type = _run("[0].textContent").lower()
             if 'movie' in _type:
