@@ -1,8 +1,7 @@
+from ..functools import single_use, force_types, is_iterable
 from selenium.webdriver.remote.webelement import WebElement
 from typing import Literal, TYPE_CHECKING, Self
-from ..functools import is_iterable
 from dataclasses import dataclass
-from ..functools import single_use
 
 if TYPE_CHECKING:
     from .url import URL
@@ -161,13 +160,12 @@ class Driver:
         elements = self._drvr.find_elements(by=BY, value=name)
         return [Element(e) for e in elements]
 
+    @force_types
     def open(self, url:str) -> None:
         """Open a url"""
         from selenium.common.exceptions import WebDriverException
         from urllib3.exceptions import ReadTimeoutError
         from ..terminal import Log
-
-        url = str(url)
 
         Log.VERB(f"Opening Page: {url=}")
 
@@ -175,13 +173,11 @@ class Driver:
         handle = self._drvr.window_handles[0]
         self._drvr.switch_to.window(handle)
 
-        # Open the url
-        while True:
-            try:
-                self._drvr.get(url=url)
-                return
-            except (WebDriverException, ReadTimeoutError):
-                Log.WARN('Failed to open url', exc_info=True)
+        try:
+            self._drvr.get(url=url)
+            return
+        except (WebDriverException, ReadTimeoutError):
+            Log.WARN('Failed to open url', exc_info=True)
 
     @single_use
     def close(self, *_) -> None:
