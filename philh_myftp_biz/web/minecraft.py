@@ -2,7 +2,7 @@ from functools import cached_property, cache
 from ..functools import singleton
 from dataclasses import dataclass
 from typing import Literal, Any
-from . import URL
+from .url import URL
 
 @singleton
 class Mojang:
@@ -10,7 +10,6 @@ class Mojang:
     @staticmethod
     @cache
     def _data() -> dict[str, Any]:
-        from ..web import URL
 
         url = URL('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json')
         

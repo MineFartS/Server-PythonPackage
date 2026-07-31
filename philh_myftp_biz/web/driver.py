@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from ..functools import single_use
 
 if TYPE_CHECKING:
-    from . import URL
+    from .url import URL
     from ..pc import Path
 
 @dataclass
@@ -220,7 +220,7 @@ class Driver:
     def URL(self) -> URL | None:
         """URL of the Current Page"""
         from selenium.common.exceptions import WebDriverException
-        from . import URL
+        from .url import URL
 
         try:
             return URL(self._drvr.current_url)

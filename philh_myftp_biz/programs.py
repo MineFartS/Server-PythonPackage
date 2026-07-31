@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 def __FFMPEG(name:str) -> 'Path':
     from .file import temp, ZIP
-    from .web import URL
+    from .web.url import URL
 
     exefile = temp(name, 'exe', 0)
 
