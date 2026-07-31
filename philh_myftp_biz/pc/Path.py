@@ -54,8 +54,14 @@ class Path:
         self.mtime = _mtime(self)
         self.visibility = _visibility(self)
 
-        self.name = self._pure.stem
-        self.ext = self._pure.suffix.strip('.').lower()
+        if self._pure.stem[0] == '.':
+            self.name = ""
+            self.ext = self._pure.stem
+        else:
+            self.name = self._pure.stem.lower()
+            self.ext = self._pure.suffix
+
+        self.ext = self.ext.strip('.').lower()
 
     @property
     def exists(self) -> bool:
@@ -144,10 +150,15 @@ class Path:
 
     @property
     def descendants(self) -> Generator['Path', None, None]:
+        from os.path import join
+        from os import walk
+
         if self.is_file:
             raise TypeError('Cannot get children of a file')
-        
-        yield from (Path(i) for i in self._pure.rglob('*'))
+
+        for root, dirs, files in walk(self.path):
+            for name in dirs+files:
+                yield Path(join(root, name))
 
     @property
     def is_empty(self) -> bool:
