@@ -114,6 +114,22 @@ def loc(obj:Any) -> str:
     """Get the hexadecimal location of an instance in memory"""
     return hex(id(obj))
 
+class LockingClass:
+
+    _locked = False
+
+    def lock(self):
+        self.__dict__['_locked'] = True
+
+    def unlock(self):
+        self.__dict__['_locked'] = False
+
+    def __setattr__(self, key, value):
+        if self._locked:
+            raise AttributeError("This object is read-only")
+        else:
+            super().__setattr__(key, value)
+
 #========================================================
 
 def stringify(obj:Any) -> str:
