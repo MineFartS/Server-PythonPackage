@@ -163,8 +163,8 @@ class Path:
     
     @cached_property
     def type(self) -> None | str:
-        from ..db import MimeType
-        return MimeType.Path(self)
+        from ..db import MIMETYPES
+        return MIMETYPES.get(self.ext)
 
     def clear(self) -> None:
         """Clear File Contents"""

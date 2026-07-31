@@ -1,43 +1,27 @@
-from functools import cache, cached_property
-from typing import Literal, TYPE_CHECKING
-from .functools import singleton
 from dataclasses import dataclass
-from .web.url import URL
-
-if TYPE_CHECKING:
-    from .pc import Path
+from functools import cache
+from typing import Literal
 
 #========================================================
 
-@singleton
-class MimeType:
+MIMETYPES: dict[str, str]
 
-    @cached_property
-    def _map(self) -> dict[str, str]:
-        return URL(
-            'https://raw.githubusercontent.com/MineFartS/FileTypes/refs/heads/master/compiled.json',
-            max_age = 259200 # 3 days
-        ).json # pyright: ignore[reportReturnType]
+def __getattr__(attr:str):
+    from .web.url import URL
+    from . import VERBOSE
 
-    def __call__(self, ext:None|str) -> None | str:
-        """Get the mimetype from a file extension"""
+    if attr == 'MIMETYPES':
+        try:
+            VERBOSE.pause()
+            return URL(
+                'https://raw.githubusercontent.com/MineFartS/FileTypes/refs/heads/master/compiled.json',
+                max_age = 259200 # 3 days
+            ).json
+        finally:
+            VERBOSE.resume()
 
-        if ext:
-            return self._map.get(ext.lower())
-        
-    Ext = __call__
-
-    def Path(self, path:'Path') -> None | str:
-        """Get the mimetype from a file path"""
-
-        return self.Ext(path.ext)
-    
-    def Name(self, name:str) -> None | str:
-        """Get the mimetype from a file name"""
-                
-        return self.Ext(
-            ext = name[:name.rfind('.')]
-        )
+    else:
+        raise ImportError()
 
 #========================================================
 
