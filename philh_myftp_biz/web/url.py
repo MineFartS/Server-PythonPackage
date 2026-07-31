@@ -6,83 +6,70 @@ if TYPE_CHECKING:
     from ..pc import Path
 
 class URL:
-
-    @staticmethod
-    def Session(max_tries:int|None):
-        from requests.adapters import HTTPAdapter, Retry
+    
+    def __init__(self, 
+        url: str,
+        *,
+        params: dict[str, str] = {},
+        headers: dict[str, str] = {},
+        max_tries: int | None = 1,
+        timeout: None|int = 30
+    ) -> None:
+        from urllib.parse import urlparse, parse_qsl
+        from requests.adapters import HTTPAdapter
+        from urllib3.util import Retry
         from requests import Session
         from ..num import maxint
 
+        self.url = url.split('?')[0]
+        self.params  = params.copy()
+        self.headers = headers.copy()
+        self.timeout = timeout
+        self.addr = urlparse(url).netloc or url
+
+        if '?' in url:
+            self.params |= parse_qsl(url.split('?', 1)[1])
+
         _retry_strat = Retry(
-            total = (max_tries if max_tries else maxint),
+            total = (max_tries or maxint),
             backoff_factor = 1,
-            status_forcelist = list(range(400, 600)),
+            status_forcelist = range(400, 600),
             allowed_methods = ["GET", "POST"]
         )
 
         _adapter = HTTPAdapter(max_retries=_retry_strat)
 
-        _session = Session()
-        _session.mount("http://", _adapter)
-        _session.mount("https://", _adapter)
+        self._session = Session()
+        self._session.mount("http://", _adapter)
+        self._session.mount("https://", _adapter)
 
-        return _session
-    
-    def __init__(self, 
-        url: str
-    ) -> None:
-        from urllib.parse import urlparse, parse_qsl
-
-        self.url = url.split('?')[0]
-
-        self.headers = {}
-
-        if '?' in url:
-            self.params = dict(parse_qsl(url.split('?', 1)[1]))
-        else:
-            self.params = {}
-
-        self._parsed = urlparse(url)
-        self.netloc = self._parsed.netloc
-
-        if self.netloc:
-            self.addr = self.netloc
-        else:
-            self.addr = url    
-
-    def copy(self):
-        url = URL(self.url)
-        url.params = self.params.copy()
-        url.headers = self.headers.copy()
-        return url
+        self.kwargs = {
+            'url': self.url,
+            'params': self.params.copy(),
+            'headers': self.headers.copy(),
+            'max_tries': max_tries,
+            'timeout': timeout
+        }.copy()
 
     def __str__(self):
         from urllib.parse import urlencode
 
-        qsl = '?' + urlencode(self.params)
-
-        url = self.url
-
-        if len(qsl) > 1:
-            url += qsl
-
-        return url
+        if len(self.params) == 0:
+            return self.url
+        else:
+            return self.url + '?' + urlencode(self.params)
 
     __repr__ = __str__
     furl: str = property(__str__)
 
-    def child(self, name:str):
-        _url = self.url.rstrip('/') + '/' + name.lstrip('/')
-        url = URL(_url)
-        url.params = self.params.copy()
-        url.headers = self.headers.copy()
-        return url
+    def copy(self, **kwargs):
+        return URL(**(self.kwargs | kwargs))
 
-    @property
-    def id(self) -> str:
-        from ..text import hex
-
-        return hex.encode([self.url, self.params])
+    def child(self, name:str, **kwargs):
+        return self.copy(
+            url = (self.url.rstrip('/') + '/' + name.lstrip('/')),
+            **kwargs
+        )
 
     @property
     def stream(self):
@@ -99,12 +86,24 @@ class URL:
     @property
     def json(self) -> SupportsJSON:
         return self.get().json()
+    
+    @property
+    def head(self) -> 'Response':
+        return self._session.head()
+
+    @property
+    def exists(self):
+        return self.head.status_code < 400
 
     def download(self,
-        path: 'Path'
+        path: 'Path',
+        force: bool = True
     ) -> None:
         """Download file to disk"""
         from ..terminal import Log, ProgressBar
+
+        if (not force) and (path.hash == self.hash):
+            return
 
         Log.VERB(f'Downloading File:\nurl={self.url}\n{path=}')
 
@@ -127,33 +126,12 @@ class URL:
 
     @property
     def size(self) -> int:
-        from requests import head
-        
-        r = head(
-            self.url, 
-            allow_redirects = True
-        )
+        return int(self.head.headers.get('Content-Length', 0))
 
-        return int(r.headers.get('Content-Length', 0))
-
-    def get(self,
-        params: dict[str, str] = None,
-        *,
-        headers: dict[str, str] = None,
-        stream: bool = False,
-        max_tries: int | None = 1,
-        timeout: None|int = 30,
-        allow_redirects: bool = True
-    ) -> 'Response':
+    def get(self, **kwargs) -> 'Response':
         """requests.get Wrapper"""
         from requests import exceptions
         from ..terminal import Log
-
-        if params is not None:
-            self.params = params
-        
-        if headers is not None:
-            self.headers = headers
 
         Log.VERB(
             'Requesting Page\n'+ \
@@ -164,13 +142,13 @@ class URL:
         )
 
         try:
-            return self.Session(max_tries).get(
+            return self._session.get(
                 url = self.url,
                 params = self.params,
                 headers = self.headers,
-                stream = stream,
-                timeout = timeout,
-                allow_redirects = allow_redirects
+                timeout = self.timeout,
+                allow_redirects = True,
+                **kwargs
             )
         except exceptions.RetryError as e:
             raise TimeoutError() from e
@@ -184,22 +162,17 @@ class URL:
         from ping3 import ping
 
         try:
-
-            # Ping the address
-            p = ping(
+            return bool(ping(
                 dest_addr = self.addr,
                 timeout = 3
-            )
-
-            # Return true/false if it went through
-            return bool(p)
+            ))
         
         except OSError:
             return False
 
     @property
     def hash(self) -> str:
-        """Calculate the SHA256 hash of this URL"""
+        """Calculate the SHA256 hash"""
         from hashlib import sha256
 
         hasher = sha256()
@@ -208,9 +181,3 @@ class URL:
             hasher.update(chunk)
 
         return hasher.hexdigest()
-
-    def cache(self, path:'Path') -> None:
-        
-        if path.hash != self.hash:
-
-            self.download(path)
