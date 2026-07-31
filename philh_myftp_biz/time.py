@@ -146,6 +146,11 @@ class Timeout(Stopwatch):
 
 #==============================================================================
 
+class TimeTypeError(TypeError):
+    def __init__(self, string:str):
+        from .functools import cpath
+        super().__init__((cpath(string), str(string)))
+
 class TimeStamp:
     """Handler for a unix time stamp"""
 
@@ -154,11 +159,10 @@ class TimeStamp:
     ) -> None:
         from datetime import datetime
         from functools import partial
-        from .functools import cpath
         from .num import is_num
 
         if not is_num(stamp):
-            raise ValueError(f'{cpath(stamp)} is not a number')
+            raise TimeTypeError(stamp)
 
         dt: datetime = datetime.fromtimestamp(
             timestamp = float(stamp),
@@ -231,24 +235,20 @@ class TimeStamp:
     def __lt__(self,
         other: Any|SupportsFloat
     ) -> bool:
-        from .functools import cpath
 
         if isinstance(other, (TimeStamp, int, float)):
             return (self.unix < float(other))
         
         else:
-            raise TypeError(cpath(other))
+            raise TimeTypeError(other)
         
     def __gt__(self, 
         other: Any|SupportsFloat
     ) -> bool:
-        from .functools import cpath
-
         if isinstance(other, (TimeStamp, int, float)):
             return (self.unix > float(other))
-        
         else:
-            raise TypeError(cpath(other))
+            raise TimeTypeError(other)
 
 from_stamp = TimeStamp # TODO deprecated
 
@@ -261,17 +261,13 @@ def now() -> TimeStamp:
 def from_string(string: str) -> TimeStamp:
     """Get details of time string"""
     from dateutil.parser._parser import ParserError
-    from .functools import cpath
     from dateutil import parser
 
     try:
-    
         dt = parser.parse(string)
         return TimeStamp(dt.timestamp())
-    
     except (OSError, ParserError):
-    
-        raise TypeError((cpath(string), str(string)))
+        raise TimeTypeError(string)
 
 def from_ymdhms(
     year:   int = 0,
@@ -294,8 +290,7 @@ def from_ymdhms(
     )
 
     try:
-
-        return TimeStamp(stamp=t.timestamp())
-    
+        return TimeStamp(stamp=t.timestamp())    
     except OSError as e:
         raise TypeError(*e.args)
+

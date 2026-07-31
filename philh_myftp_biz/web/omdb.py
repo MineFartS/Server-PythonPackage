@@ -37,8 +37,7 @@ class Omdb:
             return data
         
         elif 'not found!' in data['Error']:
-            raise NameError()
-        
+            raise IndexError(data['Error'])
         else:
             raise ConnectionAbortedError(data['Error'])
 
@@ -52,10 +51,17 @@ class Omdb:
         r = self.get(t=title, y=year)
 
         if bool(r['Response']) and (r['Type'] == 'movie'):    
-            return MovieData(
+            
+            m = MovieData(
                 Title = r['Title'],
-                Released = from_string(r['Released'])
             )
+
+            try:
+                m.Released = from_string(r['Released'])
+            except TypeError:
+                pass
+
+            return m
 
     def show(self,
         title: str,
@@ -71,16 +77,17 @@ class Omdb:
         show = ShowData(
             Seasons = {},
             Title = title,
-            Released = from_ymdhms(year=year)
         )
-
+        
         try:
-            tmdb_id: list[dict] = Tmdb.get(
-                path = f'/find/{r1['imdbID']}', 
-                external_source = 'imdb_id'
-            ) ['tv_results'] [0] ['id']
-        except IndexError as e:
-            raise NameError() from e
+            show.Released = from_ymdhms(year=year)
+        except TypeError:
+            pass
+
+        tmdb_id: list[dict] = Tmdb.get(
+            path = f'/find/{r1['imdbID']}', 
+            external_source = 'imdb_id'
+        ) ['tv_results'] [0] ['id']
         
         # Iter through all seasons by #
         for s in range(1, int(r1['totalSeasons'])+1):
@@ -100,7 +107,7 @@ class Omdb:
                 try:
                     episode.Released = from_string(e['air_date'])
                 except TypeError:
-                    episode.Released = None
+                    pass
 
                 show.Seasons [f'{s:02d}'] [f'{episode.Number:02}'] = episode
 
