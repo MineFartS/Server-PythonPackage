@@ -1,7 +1,10 @@
 from .torrent.models import MovieData, ShowData, EpisodeData
+from ..functools import TransitoryCache
 from typing import NoReturn, Literal
 from ..functools import singleton
 from .url import URL
+
+cache = TransitoryCache('omdb')
 
 @singleton
 class Tmdb:
@@ -9,15 +12,18 @@ class Tmdb:
 
     key = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJjYjg3MDhlNGRhZDkxOTI5N2Y2YWExZmNjN2NkYjMzYyIsIm5iZiI6MTc4MzUxOTM2Mi41MTgwMDAxLCJzdWIiOiI2YTRlNTg4MmNjNDg5MDY0MjJmOTBhOGIiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.mZvPMjqmMyNlBoY-wJsWQMruep92MwJqIJ35M65gMSI"
     
-    url = URL("https://api.themoviedb.org/3/")
-    url.headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {key}"
-    }
+    url = URL(
+        url = "https://api.themoviedb.org/3/",
+        max_age = 10800, # 3 hours
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {key}"
+        }
+    )
     
     def get(self, path:str, **params) -> dict:
         try:
-            return self.url.child(path).get(params).json()
+            return self.url.child(path, params=params).json
         except TimeoutError, ConnectionError:
             return {}
 
@@ -25,21 +31,27 @@ class Tmdb:
 class Omdb:
     """https://omdbapi.com/"""
 
-    url = URL('https://www.omdbapi.com/')
+    url = URL(
+        url = 'https://www.omdbapi.com/',
+        max_age = 10800 # 3 hours
+    )
 
     key: Literal['dc888719','2e0c4a98'] = 'dc888719'
 
     def get(self, **params) -> NoReturn | dict:
 
-        data: dict = self.url.get({**params, 'apikey':self.key}).json()
+        data = self.url.copy(
+            params = {**params, 'apikey':self.key}
+        ).json
 
-        if 'Error' not in data:
+        error = data.get('Error')
+
+        if error is None:
             return data
-        
-        elif 'not found!' in data['Error']:
-            raise IndexError(data['Error'])
+        elif 'not found!' in error:
+            raise IndexError(error)
         else:
-            raise ConnectionAbortedError(data['Error'])
+            raise ConnectionAbortedError(error)
 
     def movie(self,
         title: str,
@@ -50,7 +62,7 @@ class Omdb:
 
         r = self.get(t=title, y=year)
 
-        if bool(r['Response']) and (r['Type'] == 'movie'):    
+        if bool(r['Response']) and (r['Type'] == 'movie'):
             
             m = MovieData(
                 Title = r['Title'],

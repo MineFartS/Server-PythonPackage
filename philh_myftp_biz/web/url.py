@@ -1,9 +1,12 @@
 from typing import TYPE_CHECKING
 from ..json import SupportsJSON
+from ..pc import loc
 
 if TYPE_CHECKING:
     from requests import Response
     from ..pc import Path
+
+_dbfile = loc.cache.child('URL.sqlite')
 
 class URL:
     
@@ -13,12 +16,13 @@ class URL:
         params: dict[str, str] = {},
         headers: dict[str, str] = {},
         max_tries: int | None = 1,
+        max_age: int = 0,
         timeout: None|int = 30
     ) -> None:
         from urllib.parse import urlparse, parse_qsl
         from requests.adapters import HTTPAdapter
+        from requests_cache import CachedSession
         from urllib3.util import Retry
-        from requests import Session
         from ..num import maxint
 
         self.url = url.split('?')[0]
@@ -39,7 +43,11 @@ class URL:
 
         _adapter = HTTPAdapter(max_retries=_retry_strat)
 
-        self._session = Session()
+        self._session = CachedSession(
+            cache_name = _dbfile.path,
+            backend = 'sqlite',
+            expire_after = max_age
+        )
         self._session.mount("http://", _adapter)
         self._session.mount("https://", _adapter)
 

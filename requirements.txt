@@ -31,3 +31,4 @@ QuickSocketPY
 cpulimiter
 pywin32
 pybind11-stubgen
+requests-cache

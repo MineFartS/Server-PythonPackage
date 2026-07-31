@@ -12,10 +12,13 @@ def __FFMPEG(name:str) -> 'Path':
 
     exefile = temp(name, 'exe', 0)
 
-    zipurl = URL("https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip")
+    zipurl = URL(
+        url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip",
+        max_age = 259200 # 3 days
+    )
 
     zipfile = temp('ffmpeg', 'zip', 0)
-    zipurl.cache(zipfile)
+    zipurl.download(zipfile, force=False)
 
     # Open zipfile as an 'ZIP' object
     zip = ZIP(zipfile)

@@ -14,8 +14,10 @@ class MimeType:
 
     @cached_property
     def _map(self) -> dict[str, str]:
-        url = URL('https://raw.githubusercontent.com/MineFartS/FileTypes/refs/heads/master/compiled.json')
-        return url.json # pyright: ignore[reportReturnType]
+        return URL(
+            'https://raw.githubusercontent.com/MineFartS/FileTypes/refs/heads/master/compiled.json',
+            max_age = 259200 # 3 days
+        ).json # pyright: ignore[reportReturnType]
 
     def __call__(self, ext:None|str) -> None | str:
         """Get the mimetype from a file extension"""
