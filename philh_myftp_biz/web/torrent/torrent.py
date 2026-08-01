@@ -78,7 +78,7 @@ class Torrent:
 
     @cached_property
     def name(self) -> str:
-        return self.raw.name
+        return self.raw.name.strip('\n')
 
     @cached_property
     def seeders(self) -> int:
@@ -138,7 +138,9 @@ class Torrent:
             'url': self.url,
             'name': self.name,
             'seeders': self.seeders,
-            'leechers': self.leechers
+            'leechers': self.leechers,
+            'uploaded': self.uploaded,
+            'type': self.type
         }
 
     #===================================================
