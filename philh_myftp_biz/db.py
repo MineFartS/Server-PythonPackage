@@ -20,8 +20,7 @@ def __getattr__(attr:str):
         finally:
             VERBOSE.resume()
 
-    else:
-        raise ImportError()
+    raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")
 
 #========================================================
 

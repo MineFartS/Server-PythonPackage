@@ -73,8 +73,7 @@ def __getattr__(attr:str):
         case 'NAME':
             return gethostname()
         
-        case _:
-            raise ImportError()
+    raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")
 
 #=================================
 # DIRs
