@@ -1,4 +1,5 @@
 from ..file import _Template as File
+from typing import Self
 from json import dumps
 
 class Collection[T, STRUCT]:
@@ -47,10 +48,9 @@ class Collection[T, STRUCT]:
         if hasattr(self, 'var'):
             self.var.save(data)
     
-    def copy(self):
+    def copy(self) -> Self:
         from copy import deepcopy
-        
-        data = deepcopy(self._cache)
+        data = deepcopy(self.read())
         return self.__class__(data)
 
     def __len__(self) -> int:
