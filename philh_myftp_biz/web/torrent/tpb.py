@@ -1,12 +1,12 @@
 from ...functools import TransitoryCache 
 from typing import TYPE_CHECKING
+from ...array import FilterFunc
 from ...terminal import Log
 from ..url import URL
 
 if TYPE_CHECKING:
     from .torrent import Torrent
     from ..driver import Driver
-    from .name import Weights
     from ...json import List
 
 url = URL("https://thepiratebay11.com/search/")
@@ -17,8 +17,8 @@ cache = TransitoryCache('tpb')
 
 @Log.on_call
 def search(
-    *queries:str, 
-    weights: 'None|Weights' = None
+    *queries:str,
+    filter_func: FilterFunc['Torrent'] = lambda t: True
 ) -> List[Torrent]:
     """Search thePirateBay for magnets"""
     from ...json import List
@@ -35,11 +35,7 @@ def search(
 
     VERBOSE.resume()
 
-    if weights:
-        torrents = filter(
-            lambda t: weights.parse(t.name),
-            torrents
-        )
+    torrents = filter(filter_func, torrents)
 
     return List(torrents)
 
