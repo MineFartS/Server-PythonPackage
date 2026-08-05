@@ -9,6 +9,9 @@ class List[V](Collection[V, list[V]]):
     def __iter__(self) -> Iterator[V]:
         return iter(self.read())
     
+    def __next__(self) -> V:
+        return next(self.__iter__())
+    
     def __getitem__(self,
         key: int
     ) -> 'V | List[V]':
@@ -22,17 +25,15 @@ class List[V](Collection[V, list[V]]):
 
         self.save(data)
 
-    def pop(self, x:int=-1):
+    def pop(self, i:int=-1, n:int=1) -> tuple[V]:
         
         data: list[V] = self.read()
+        n = min(n, len(data))
 
-        if len(data) == 0:
-            val = None
-        else:
-            val = data.pop(x)
+        try:
+            return tuple(data.pop(i) for _ in range(n))
+        finally:
             self.save(data)
-
-        return val
 
     def __iadd__(self, value:V) -> Self:
         
