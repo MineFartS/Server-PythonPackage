@@ -1,15 +1,13 @@
 from typing import Any, Callable, Type
-from functools import cached_property as _cached_property
 
 from .TransitoryCache import TransitoryCache # pyright: ignore[reportUnusedImport]
 from .Absorber import Absorber, NullSafe # pyright: ignore[reportUnusedImport]
 from .SharedBuffer import SharedBuffer # pyright: ignore[reportUnusedImport]
 from .attr import attr, dunders, LinkedProperty, attrs # pyright: ignore[reportUnusedImport]
 from .Partial import Partial # pyright: ignore[reportUnusedImport]
-from .supports import *
 from .paths import cpath, spath # pyright: ignore[reportUnusedImport]
-
-#========================================================
+from .cache import cached_property, clear_cache # pyright: ignore[reportUnusedImport]
+from .supports import *
 
 def is_iterable(obj) -> bool:
     """*Ignores strings"""
@@ -89,27 +87,6 @@ def copy_attrs(
         if force or not hasattr(dst, name):
             setattr(dst, name, value)
 
-class cached_property[T](_cached_property[T]):
-
-    def __init__(self, func):
-
-        if not callable(func):
-            func = lambda s: func
-
-        super().__init__(func)
-
-    def __new__(cls, *_, **__) -> _cached_property:
-        return super().__new__(cls)
-
-    def __set__(self, inst, value) -> None:
-        inst.__dict__[self.attrname] = value
-
-    def __delete__(self, inst) -> None:
-        inst.__dict__.pop(self.attrname, None)
-    
-    def setter(self, fset):
-        return type(self)(self.func, fset=fset)
-
 def loc(obj:Any) -> str:
     """Get the hexadecimal location of an instance in memory"""
     return hex(id(obj))
@@ -144,16 +121,6 @@ def stringify(obj:Any) -> str:
             string += f'{c.name} = {c}\n'
 
     return string
-
-#========================================================
-
-def clear_cache(instance: Any) -> None:
-
-    for name, value in vars(instance).items():
-
-        if isinstance(value, _cached_property):
-
-            delattr(instance, name)
 
 #========================================================
 
