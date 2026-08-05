@@ -54,7 +54,7 @@ class Path:
         self.mtime = _mtime(self)
         self.visibility = _visibility(self)
 
-        if self._pure.stem[0] == '.':
+        if self._pure.stem.startswith('.'):
             self.name = ""
             self.ext = self._pure.stem
         else:
