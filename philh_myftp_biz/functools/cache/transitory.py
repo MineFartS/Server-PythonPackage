@@ -1,9 +1,9 @@
-from .supports import SupportsStr, SupportsJSON
+from ..supports import SupportsStr, SupportsJSON
 from typing import TYPE_CHECKING, TypedDict
-from ..json.Dict import Dict
+from ...json.Dict import Dict
 
 if TYPE_CHECKING:
-    from ..time import Timeout
+    from ...time import Timeout
 
 class CachedItem[T](TypedDict):
     time: 'Timeout'
@@ -15,7 +15,7 @@ class TransitoryCache[T](Dict[CachedItem[T]]):
         id: SupportsStr = 0, 
         expire: int = 18_000
     ) -> None:
-        from ..pc import loc
+        from ...pc import loc
 
         self.expire = expire
 
@@ -33,7 +33,7 @@ class TransitoryCache[T](Dict[CachedItem[T]]):
             self.save({})
 
     def __getitem__(self, key:SupportsJSON) -> T | None:
-        from ..json import dumps
+        from ...json import dumps
 
         _key = dumps(key)
 
@@ -51,8 +51,8 @@ class TransitoryCache[T](Dict[CachedItem[T]]):
             return item['value'] # pyright: ignore[reportReturnType]
             
     def __setitem__(self, key:SupportsJSON, value:T) -> None:
-        from ..time import Timeout
-        from ..json import dumps
+        from ...time import Timeout
+        from ...json import dumps
 
         self._repair()
 
@@ -65,7 +65,7 @@ class TransitoryCache[T](Dict[CachedItem[T]]):
         )
 
     def __contains__(self, key:SupportsJSON) -> bool:
-        from ..json import dumps
+        from ...json import dumps
 
         self._repair()
 

@@ -94,23 +94,12 @@ class loc:
 
     @cached_property
     def script(self) -> Path:
-        from ..terminal import main_module
-
-        mod = main_module()
-
-        if hasattr(mod, '__file__'):
-            return Path(mod.__file__).parent
-        else:
-            return cwd()
+        return self.cache.parent
 
     @cached_property
     def cache(self) -> Path:
-
-        path = self.script.child('/__pycache__/')
-
-        path.mkdir()
-
-        return path
+        from ..functools.cache import cache_dir
+        return Path(cache_dir)
     
     @cached_property
     def logs(self) -> Path:

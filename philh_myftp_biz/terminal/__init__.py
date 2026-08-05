@@ -173,30 +173,12 @@ def warn(exc: Exception) -> None:
 
 #========================================================
 
-def get_module(name: str):
-    from sys import modules
-
-    mod = modules.get(name)
-
-    if hasattr(mod, '__file__'):
-        return mod
-
 @cache
 def main_module():
-    from _frozen_importlib import _module_locks
+    from ..functools.cache import _module
     from types import ModuleType
 
-    mod = get_module('__main__')
-
-    if mod is None:
-        fullname: str = next(iter(_module_locks), '')
-        name: str = fullname.split('.')[0]
-        mod = get_module(name)
-
-    if mod is None:
-        mod = ModuleType('')
-
-    return mod
+    return _module or ModuleType('')
 
 def set_package(path:'str|Path'):
     from ..pc.Path import Path

@@ -1,5 +1,5 @@
 from .torrent.models import MovieData, ShowData, EpisodeData
-from ..functools import TransitoryCache
+from ..functools.cache.transitory import TransitoryCache
 from typing import NoReturn, Literal
 from ..functools import singleton
 from .url import URL

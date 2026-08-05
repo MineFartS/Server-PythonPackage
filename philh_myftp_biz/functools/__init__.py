@@ -1,12 +1,11 @@
 from typing import Any, Callable, Type
 
-from .TransitoryCache import TransitoryCache # pyright: ignore[reportUnusedImport]
 from .Absorber import Absorber, NullSafe # pyright: ignore[reportUnusedImport]
 from .SharedBuffer import SharedBuffer # pyright: ignore[reportUnusedImport]
 from .attr import attr, dunders, LinkedProperty, attrs # pyright: ignore[reportUnusedImport]
 from .Partial import Partial # pyright: ignore[reportUnusedImport]
 from .paths import cpath, spath # pyright: ignore[reportUnusedImport]
-from .cache import cached_property, clear_cache # pyright: ignore[reportUnusedImport]
+from .cache import TransitoryCache, cached_property, clear_cache, diskcache # pyright: ignore[reportUnusedImport]
 from .supports import *
 
 def is_iterable(obj) -> bool:
