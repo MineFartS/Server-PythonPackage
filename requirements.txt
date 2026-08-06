@@ -5,8 +5,8 @@ keyring
 pillow
 paramiko
 netifaces-plus
-winrt-Windows.Devices.Geolocation
-winrt-Windows.Foundation
+winrt-Windows.Devices.Geolocation; sys_platform == 'win32'
+winrt-Windows.Foundation; sys_platform == 'win32'
 vt-py
 customtkinter
 selenium
@@ -28,8 +28,8 @@ bs4
 geopy
 mutagen
 QuickSocketPY
-cpulimiter
-pywin32
+cpulimiter; sys_platform == 'win32'
+pywin32; sys_platform == 'win32'
 pybind11-stubgen
 requests-cache
 diskcache
