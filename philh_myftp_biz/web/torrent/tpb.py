@@ -1,27 +1,20 @@
-from ...functools import TransitoryCache 
+from ...functools.force_types import force_out_type
+from ...functools.cache import diskcache
 from typing import TYPE_CHECKING
-from ...array import FilterFunc
+from .torrent import Torrent
 from ...terminal import Log
 from ..url import URL
 
 if TYPE_CHECKING:
-    from .torrent import Torrent
     from ..driver import Driver
-    from ...json import List
 
 url = URL("https://thepiratebay11.com/search/")
 
 driver: Driver = None
 
-cache = TransitoryCache('tpb')
-
 @Log.on_call
-def search(
-    *queries:str,
-    filter_func: FilterFunc['Torrent'] = lambda t: True
-) -> List[Torrent]:
+def search(*queries:str) -> list[Torrent]:
     """Search thePirateBay for magnets"""
-    from ...json import List
     from ... import VERBOSE
 
     torrents: list[Torrent] = []
@@ -35,11 +28,11 @@ def search(
 
     VERBOSE.resume()
 
-    torrents = filter(filter_func, torrents)
+    return torrents
 
-    return List(torrents)
-
-def _search(query:str) -> list[Torrent]:
+@diskcache(expire=18000) # 5 hours
+@force_out_type
+def _search(query:str) -> list[Torrent]: # pyright: ignore[reportInvalidTypeForm]
     """Search thePirateBay for magnets"""
     from urllib.parse import urlparse, parse_qs
     from ...time import from_string
@@ -47,10 +40,7 @@ def _search(query:str) -> list[Torrent]:
     from .torrent import Torrent
     from ...db import Size
 
-    global driver, url, cache
-
-    if cache[query]:
-        return cache[query] # pyright: ignore[reportReturnType]
+    global driver, url
 
     if driver is None:
         driver = Driver()
@@ -62,8 +52,6 @@ def _search(query:str) -> list[Torrent]:
         driver.run("window.lines = document.getElementById('searchResult').children[1].children")
     except RuntimeError:
         return []
-    
-    torrents = []
 
     # Iter from 0 to # of lines
     for x in range(0, driver.run('return lines.length')):
@@ -99,12 +87,8 @@ def _search(query:str) -> list[Torrent]:
             elif XT.startswith('urn:btmh:'): # v2
                 t.hash = XT[len('urn:btmh:'):].lower()
 
-            torrents += [t]
+            yield t
 
         except (KeyError, RuntimeError):
             Log.VERB(exc_info=True)
-
-    cache[query] = torrents
-
-    return torrents
 
