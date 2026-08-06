@@ -58,7 +58,7 @@ class Path:
             self.name = ""
             self.ext = self._pure.stem
         else:
-            self.name = self._pure.stem.lower()
+            self.name = self._pure.stem
             self.ext = self._pure.suffix
 
         self.ext = self.ext.strip('.').lower()
