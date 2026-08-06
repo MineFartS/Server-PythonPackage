@@ -1,2 +1,3 @@
 tempCodeRunnerFile.bat
 .ruff_cache
+**/__pycache__
