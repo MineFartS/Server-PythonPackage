@@ -2,6 +2,7 @@ from functools import cached_property as _cached_property
 from _frozen_importlib import _module_locks
 from os.path import dirname, join
 from os import makedirs, getcwd
+from tempfile import gettempdir
 from diskcache import Cache
 from sys import modules
 from typing import Any
@@ -53,7 +54,11 @@ else:
     cache_dir = getcwd()
 
 cache_dir = join(cache_dir, '/__pycache__/')
-makedirs(cache_dir, exist_ok=True)
+
+try:
+    makedirs(cache_dir, exist_ok=True)
+except PermissionError:
+    cache_dir = gettempdir()
 
 # ======================================
 
