@@ -91,7 +91,7 @@ class URL:
     
     @property
     def head(self) -> 'Response':
-        return self._session.head()
+        return self._session.head(self.url)
 
     @property
     def exists(self):
