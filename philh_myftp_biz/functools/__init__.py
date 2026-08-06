@@ -74,7 +74,14 @@ class LockingClass:
         else:
             super().__setattr__(key, value)
 
-#========================================================
+def retryfunc(tries:int=3, exc:Exception=Exception):
+    from tenacity import retry, stop_after_attempt, wait_none, retry_if_exception_type
+
+    return retry(
+        stop = stop_after_attempt(tries),
+        wait = wait_none(),
+        retry = retry_if_exception_type(exc)
+    )
 
 def stringify(obj:Any) -> str:
     """Creates a string table of all attributes of an instance"""

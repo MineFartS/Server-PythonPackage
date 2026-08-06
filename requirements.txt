@@ -33,3 +33,4 @@ pywin32; sys_platform == 'win32'
 pybind11-stubgen
 requests-cache
 diskcache
+tenacity
