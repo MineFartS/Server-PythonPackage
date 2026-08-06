@@ -6,6 +6,7 @@ from .attr import attr, dunders, LinkedProperty, attrs # pyright: ignore[reportU
 from .Partial import Partial # pyright: ignore[reportUnusedImport]
 from .paths import cpath, spath # pyright: ignore[reportUnusedImport]
 from .cache import TransitoryCache, cached_property, clear_cache, diskcache # pyright: ignore[reportUnusedImport]
+from .force_types import force_in_types, force_out_type # pyright: ignore[reportUnusedImport]
 from .supports import *
 
 def is_iterable(obj) -> bool:
@@ -35,39 +36,6 @@ def single_use(f): # pyright: ignore[reportMissingParameterType]
     
     wrapper.has_run = False
 
-    return wrapper
-
-def force_types(func):
-    """
-    Forces parameter types
-    
-    EXAMPLE:
-    ```
-    @force_types
-    def myfunc(x: int, y: float):
-        ...
-    
-    myfunc('1', '2') -> myfunc(int('1'), float('2'))
-    myfunc(3, '4') -> myfunc(3, float('4'))
-    """
-    from inspect import signature
-    from functools import wraps
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-
-        bargs = signature(func).bind(*args, **kwargs)
-        bargs.apply_defaults()
-
-        for name, value in bargs.arguments.items():
-
-            etype = func.__annotations__.get(name)
-
-            if etype and not isinstance(value, etype):
-                bargs.arguments[name] = etype(value)
-
-        return func(*bargs.args, **bargs.kwargs)
-    
     return wrapper
 
 def waitfor(

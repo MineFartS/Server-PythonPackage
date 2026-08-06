@@ -1,4 +1,5 @@
-from ..functools import single_use, force_types, is_iterable
+from ..functools.force_types import force_in_types
+from ..functools import single_use, is_iterable
 from selenium.webdriver.remote.webelement import WebElement
 from typing import Literal, TYPE_CHECKING, Self
 from dataclasses import dataclass
@@ -160,7 +161,7 @@ class Driver:
         elements = self._drvr.find_elements(by=BY, value=name)
         return [Element(e) for e in elements]
 
-    @force_types
+    @force_in_types
     def open(self, url:str) -> None:
         """Open a url"""
         from selenium.common.exceptions import WebDriverException
