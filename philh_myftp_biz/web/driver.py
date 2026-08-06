@@ -101,7 +101,7 @@ class Driver:
 
         self._drvr.refresh()
 
-    def run(self, code:str):
+    def run(self, code:str, log:bool=True):
         """Run JavaScript Code on the Current Page"""
         from selenium.common.exceptions import JavascriptException
         from ..terminal import Log
@@ -110,7 +110,7 @@ class Driver:
 
             response = self._drvr.execute_script(code)
 
-            Log.VERB(
+            if log: Log.VERB(
                 'JavaScript Executed\n'+ \
                 f'{self.URL=}\n'+ \
                 f'{code=}\n'+ \

@@ -1,6 +1,4 @@
-from ...functools.force_types import force_out_type
-from ...functools.cache import diskcache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generator
 from .torrent import Torrent
 from ...terminal import Log
 from ..url import URL
@@ -13,26 +11,15 @@ url = URL("https://thepiratebay11.com/search/")
 driver: Driver = None
 
 @Log.on_call
-def search(*queries:str) -> list[Torrent]:
+def search(*queries:str) -> Generator[Torrent]:
     """Search thePirateBay for magnets"""
-    from ... import VERBOSE
-
-    torrents: list[Torrent] = []
-
-    VERBOSE.pause()
 
     for q in queries:
-        torrents += _search(q)
-        torrents += _search(q.replace('.', '').replace("'", ''))
-        torrents += _search(q.replace('.', ' ').replace("'", ' '))
+        yield from _search(q)
+        yield from _search(q.replace('.', '').replace("'", ''))
+        yield from _search(q.replace('.', ' ').replace("'", ' '))
 
-    VERBOSE.resume()
-
-    return torrents
-
-@diskcache(expire=18000) # 5 hours
-@force_out_type
-def _search(query:str) -> list[Torrent]: # pyright: ignore[reportInvalidTypeForm]
+def _search(query:str) -> Generator[Torrent]:
     """Search thePirateBay for magnets"""
     from urllib.parse import urlparse, parse_qs
     from ...time import from_string
@@ -49,14 +36,14 @@ def _search(query:str) -> list[Torrent]: # pyright: ignore[reportInvalidTypeForm
 
     # Set driver var 'lines' to a list of lines
     try:
-        driver.run("window.lines = document.getElementById('searchResult').children[1].children")
+        driver.run("window.lines = document.getElementById('searchResult').children[1].children", False)
     except RuntimeError:
         return []
 
     # Iter from 0 to # of lines
     for x in range(0, driver.run('return lines.length')):
 
-        _run = lambda c: driver.run(f'return lines[{x}].children{c}')
+        _run = lambda c: driver.run(f'return lines[{x}].children{c}', False)
 
         try:
 
