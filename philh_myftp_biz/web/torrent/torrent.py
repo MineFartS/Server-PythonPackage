@@ -11,6 +11,8 @@ from ...json import List
 if TYPE_CHECKING:
     from ...time import from_stamp
 
+class TorrentNotFoundError(Exception): ...
+
 @dataclass
 class Torrent:
 
@@ -37,10 +39,11 @@ class Torrent:
     #===================================================
 
     @property
-    def raw(self) -> TorrentDictionary | None:
+    def raw(self) -> TorrentDictionary:
         for torr in qbit.torrents_info():
             if torr.hash == self.hash:
                 return torr
+        raise TorrentNotFoundError(self)
 
     #===================================================
 
@@ -98,7 +101,11 @@ class Torrent:
 
     @property
     def exists(self) -> bool:
-        return self.raw is not None
+        try:
+            self.raw
+            return True
+        except TorrentNotFoundError:
+            return False
     
     @cached_property
     def path(self) -> Path:
@@ -119,15 +126,19 @@ class Torrent:
     @Log.on_call
     def start(self) -> None:
 
-        if self.raw is None:
-            qbit.torrents_add(self.url)
-        else:
+        try:
             self.raw.recheck()
+        except TorrentNotFoundError:
+            qbit.torrents_add(self.url)
         
         to = qbit._timeout()
 
-        while self.raw is None:
-            to.check()
+        while True:
+            try: 
+                self.raw
+                return
+            except TorrentNotFoundError: 
+                to.check()
 
     #===================================================
 

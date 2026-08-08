@@ -9,6 +9,8 @@ if TYPE_CHECKING:
     from ...pc import Path
     from . import Torrent
 
+class TorrentFileNotFoundError(Exception): ...
+
 @dataclass
 class TorrentFile:
     
@@ -23,10 +25,11 @@ class TorrentFile:
     #===================================================
 
     @property
-    def raw(self) -> None | __TorrentFile:
+    def raw(self) -> __TorrentFile:
         for file in self.torrent.raw.files:
             if file.id == self.id:
                 return file
+        raise TorrentFileNotFoundError(self)
 
     #===================================================
 
