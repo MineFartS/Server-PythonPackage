@@ -1,4 +1,5 @@
 from typing import Self, SupportsFloat, SupportsInt, Any
+from .process.Thread import ThreadedFunc
 
 #====================================================
 # Time Zone
@@ -129,7 +130,7 @@ class Timeout(Stopwatch):
     ) -> None:
         
         super().__init__()
-        self.start()
+        super().start()
 
         self.timeout: int = timeout
         self.msg = msg
@@ -137,6 +138,16 @@ class Timeout(Stopwatch):
     @property
     def timed_out(self) -> bool:
         return (self.elapsed >= self.timeout)
+
+    @ThreadedFunc
+    def start(self):
+        self._async = True
+        while self._async:
+            self.check()
+            sleep(.25)
+
+    def stop(self):
+        self._async = False
 
     def check(self) -> None:
 
