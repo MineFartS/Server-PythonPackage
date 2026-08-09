@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
 from ..json import SupportsJSON
-from ..pc import loc
 
 if TYPE_CHECKING:
     from requests import Response
@@ -17,11 +16,8 @@ class URL:
         max_age: int = 0,
         timeout: None|int = 30
     ) -> None:
+        from .session import Session, Adapter, RetryStrat
         from urllib.parse import urlparse, parse_qsl
-        from requests.adapters import HTTPAdapter
-        from urllib3.util import Retry
-        from . import CachedSession
-        from ..num import maxint
 
         self.url = url.split('?')[0]
         self.params  = params.copy()
@@ -32,18 +28,11 @@ class URL:
         if '?' in url:
             self.params |= parse_qsl(url.split('?', 1)[1])
 
-        _retry_strat = Retry(
-            total = (max_tries or maxint),
-            backoff_factor = 1,
-            status_forcelist = range(400, 600),
-            allowed_methods = ["GET", "POST"]
+        self._session = Session(
+            name = 'URL', 
+            max_age = max_age, 
+            adapter = Adapter(RetryStrat(max_tries))
         )
-
-        _adapter = HTTPAdapter(max_retries=_retry_strat)
-
-        self._session = CachedSession('URL', max_age)
-        self._session.mount("http://", _adapter)
-        self._session.mount("https://", _adapter)
 
         self.kwargs = {
             'url': self.url,

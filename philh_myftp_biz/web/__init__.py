@@ -4,6 +4,7 @@ from ..functools import singleton
 from dataclasses import dataclass
 
 from .url import URL # pyright: ignore[reportUnusedImport]
+from .session import Session, Adapter, RetryStrat # pyright: ignore[reportUnusedImport]
 
 if TYPE_CHECKING:
     from ..pc import Path
@@ -127,17 +128,4 @@ class FirewallException:
             args += [f'program={i.wpath}']
 
         RunHidden(*args)
-
-def CachedSession(
-    name: str,
-    max_age: int = -1
-):
-    from requests_cache import CachedSession
-    from ..pc import loc
-
-    return CachedSession(
-        cache_name = loc.cache.child(f'{name}.sqlite').path,
-        backend = 'sqlite',
-        expire_after = max_age
-    )
 
