@@ -36,13 +36,15 @@ class qBitTorrent(
         timeout: int = 3600 # 1 hour
     ) -> None:
         from qbittorrentapi.exceptions import LoginFailed, Forbidden403Error, APIConnectionError
+        from ..session import RetryStrat
         from ...time import Timeout
         from random import randint
 
         super().__init__(
             host, port, username, password,
             VERIFY_WEBUI_CERTIFICATE = False,
-            REQUESTS_ARGS = {'timeout': (timeout, timeout)}
+            REQUESTS_ARGS = {'timeout': (timeout, timeout)},
+            HTTPADAPTER_ARGS = {'max_retries': RetryStrat(3)},
         )
 
         self._timeout = lambda: Timeout(timeout)
@@ -91,4 +93,4 @@ class qBitTorrent(
             items += [Torrent(hash=t.hash)]
 
         return List(items) # pyright: ignore[reportReturnType]
-    
+
