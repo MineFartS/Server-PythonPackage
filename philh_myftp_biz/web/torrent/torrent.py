@@ -1,6 +1,6 @@
+from ...functools.cache.prop import cached_property
 from qbittorrentapi import TorrentDictionary
 from typing import TYPE_CHECKING, Literal
-from ...functools import cached_property
 from .qbit import qBitTorrent as qbit
 from dataclasses import dataclass
 from .file import TorrentFile
@@ -49,7 +49,7 @@ class Torrent:
 
     @cached_property
     @Log.on_call
-    def files(self) -> List[TorrentFile]:
+    def files(self) -> tuple[TorrentFile]:
 
         to = qbit._timeout()
 
@@ -60,17 +60,13 @@ class Torrent:
             while len(self.raw.files) == 0:
                 to.check()
 
-            files = []
-
-            for f in self.raw.files:
-                files += [TorrentFile(self, f.id)]
-
-            return List(files)
+            return tuple(TorrentFile(self, f.id) for f in self.raw.files)
         
         except TimeoutError:
-            return List()
+            self.__class__.files.skip_cache(self)
+            return ()
 
-        finally:
+        finally: 
             self.raw.setForceStart(False)
 
     @property
