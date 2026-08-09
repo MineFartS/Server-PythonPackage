@@ -63,7 +63,6 @@ class Torrent:
             return tuple(TorrentFile(self, f.id) for f in self.raw.files)
         
         except TimeoutError:
-            self.__class__.files.skip_cache(self)
             return ()
 
         finally: 
