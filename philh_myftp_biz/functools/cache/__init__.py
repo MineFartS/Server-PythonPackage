@@ -3,7 +3,6 @@ from _frozen_importlib import _module_locks
 from os.path import dirname, join
 from os import makedirs, getcwd
 from tempfile import gettempdir
-from diskcache import Cache
 from sys import modules
 from typing import Any
 
@@ -39,28 +38,21 @@ def clear_cache(instance: Any) -> None:
             delattr(instance, name)
 
 # ======================================
-# cache_dir
 
-_module = modules.get('__main__')
+class _diskcache:
 
-if _module is None:
-    __fullname: str = next(iter(_module_locks), '')
-    __name: str = __fullname.split('.')[0]
-    _module = modules.get(__name)
+    def __call__(self, 
+        expire: int|None = None
+    ):
+        from diskcache import Cache
+        from ...pc import loc
 
-if hasattr(_module, '__file__'):
-    cache_dir = dirname(_module.__file__)
-else:
-    cache_dir = getcwd()
+        if not hasattr(self, 'cache'):
+            self.cache = Cache(loc.cache.path)
 
-cache_dir = join(cache_dir, '/__pycache__/')
+        return self.cache.memoize(expire=expire)
 
-try:
-    makedirs(cache_dir, exist_ok=True)
-except PermissionError:
-    cache_dir = gettempdir()
+diskcache = _diskcache()
 
 # ======================================
-
-diskcache = Cache(cache_dir).memoize
 
