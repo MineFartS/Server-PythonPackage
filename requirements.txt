@@ -34,3 +34,4 @@ pybind11-stubgen
 requests-cache
 diskcache
 tenacity
+weakreflist
