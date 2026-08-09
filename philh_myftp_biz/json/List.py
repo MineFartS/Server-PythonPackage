@@ -1,173 +1,112 @@
-from typing import Callable, Any, Iterator, Self, Iterable
+from typing import Callable, Any, Self, Iterable, overload, cast
 from .Collection import Collection
 
 class List[V](Collection[V, list[V]]):
-    """list Wrapper"""
 
-    _default = []
+    _default: list[Any] = []
 
-    def __iter__(self) -> Iterator[V]:
-        return iter(self.read())
-    
-    def __next__(self) -> V:
-        return next(self.__iter__())
-    
-    def __getitem__(self,
-        key: int
-    ) -> 'V | List[V]':
+    @overload
+    def __getitem__(self, key: int) -> V: ...
+
+    @overload
+    def __getitem__(self, key: slice) -> list[V]: ...
+
+    def __getitem__(self, key: int | slice) -> V | list[V]:
         return self.read()[key]
 
-    def extend(self, items:Iterable[V]) -> None:
-        
-        data: list[V] = self.read()
-        
-        data.extend(items)
+    def extend(self, items: Iterable[V]) -> None:
+        with self.handle() as data:
+            data.extend(items)
 
-        self.save(data)
-
-    def pop(self, i:int=-1, n:int=1) -> tuple[V]:
-        
-        data: list[V] = self.read()
-        n = min(n, len(data))
-
-        try:
+    def pop(self, i: int = -1, n: int = 1) -> tuple[V, ...]:
+        with self.handle() as data:
+            n = min(n, len(data))
             return tuple(data.pop(i) for _ in range(n))
-        finally:
-            self.save(data)
 
-    def __iadd__(self, value:V) -> Self:
-        
-        data: list[V] = self.read()
-        
-        data.append(value)
-        
-        self.save(data)
-
+    def __iadd__(self, value: V) -> Self:
+        with self.handle() as data:
+            data.append(value)
         return self
     
-    def __isub__(self, value:V) -> Self:
-
-        data: list[V] = self.read()
-        
-        data.remove(value)
-        
-        self.save(data)
-
+    def __isub__(self, value: V) -> Self:
+        with self.handle() as data:
+            data.remove(value)
         return self
-    
-    def __list__(self):
-        return self.read()
-    
+        
     #=======================================
 
-    def sorted(self,
-        func: Callable[[V], Any] = lambda x: x
-    ) -> 'List[V]':
-        
-        data: list[V] = self.read()
-
-        sdata = sorted(data, key=func)
-
+    def sorted(self, func: Callable[[V], Any] = lambda x: x) -> 'List[V]':
+        sdata = sorted(self.read(), key=func)
         return List(sdata)
     
-    def sort(self,
-        func: Callable[[V], Any] = lambda x: x
-    ) -> None:
+    def sort(self, func: Callable[[V], Any] = lambda x: x) -> None:
         self.save(self.sorted(func))
 
     #=======================================
 
-    def max(self,
-        func: Callable[[V], Any] = lambda x: x
-    ) -> None | V:
-        
-        if len(self) > 0:
-
-            return max(
-                self.read(),
-                key = func
-            )
+    def max(self, func: Callable[[V], Any] = lambda x: x) -> None | V:
+        if len(self.read()) > 0:
+            return max(self.read(), key=func)
+        return None
     
     #=======================================
 
-    def filtered(self,
-        func: Callable[[V], Any] = lambda x: x
-    ) -> 'List[V]':
-
-        filtered: filter[V] = filter(func, self.read())
-
-        return List(filtered)
+    def filtered(self, func: Callable[[V], Any] = lambda x: x) -> 'List[V]':
+        return List(filter(func, self.read()))
     
-    def filter(self,
-        func: Callable[[V], Any] = lambda x: x
-    ) -> None:
+    def filter(self, func: Callable[[V], Any] = lambda x: x) -> None:
         self.save(self.filtered(func))
 
     #=======================================
 
     def reversed(self) -> 'List[V]':
-
-        data: list[V] = self.read()
-
-        data.reverse()
-
-        return List(data)
+        cp = cast(List[V], self.copy())
+        cp.reverse()
+        return cp
     
     def reverse(self) -> None:
-        self.save(self.reversed())
+        with self.handle() as data:
+            data.reverse()
 
     #=======================================
 
     def random(self) -> None | V:
         from random import choice
-
-        data: list[V] = self.read()
-
+        data = self.read()
         if len(data) > 0:
             return choice(data)
+        return None
 
     #=======================================
 
     def shuffled(self) -> 'List[V]':
-        from random import shuffle
-
-        data: list[V] = self.read()
-
-        shuffle(data)
-
-        return List(data)
+        cp = cast(List[V], self.copy())
+        cp.shuffle()
+        return cp
     
     def shuffle(self) -> None:
-        self.save(self.shuffled())
+        from random import shuffle
+        with self.handle() as data:
+            shuffle(data)
 
     #=======================================
 
-    def uniquified(self,
-        func: Callable[[V], Any] = lambda x: x
-    ) -> 'List[V]':
-
-        data = {}
-
+    def uniquified(self, func: Callable[[V], Any] = lambda x: x) -> 'List[V]':
+        data: dict[Any, V] = {}
         for item in self.read():
             data[func(item)] = item
-
         return List(data.values())
     
-    def uniquify(self,
-        func: Callable[[V], Any] = lambda x: x             
-    ) -> None:
+    def uniquify(self, func: Callable[[V], Any] = lambda x: x) -> None:
         self.save(self.uniquified(func))
 
     #=======================================
 
-    def flattened(self) -> 'List[V]':
+    def flattened(self) -> 'List[Any]':
         from itertools import chain
-
-        data: chain[V] = chain.from_iterable(self.read())
-
-        return List(data)
+        return List(chain.from_iterable(self.read()))
     
     def flatten(self) -> None:
-        self.save(self.flattened())
+        self.save(cast(list[V], self.flattened().read()))
 
     #=======================================

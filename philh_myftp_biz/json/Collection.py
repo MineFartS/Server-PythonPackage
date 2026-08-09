@@ -1,17 +1,18 @@
+from typing import Self, Any, cast, Generator, Iterator
+from contextlib import contextmanager
 from ..file import _Template as File
-from typing import Self
 from json import dumps
 
 class Collection[T, STRUCT]:
 
-    _default: T
+    _default: STRUCT
 
-    _cache: None|STRUCT
+    _cache: STRUCT
 
     var: File
 
     def __init__(self,
-        t: STRUCT | File = None
+        t: STRUCT | File | 'Collection[T, STRUCT]' | Any = None
     ) -> None:
         from types import GeneratorType
 
@@ -25,20 +26,29 @@ class Collection[T, STRUCT]:
             self._cache = t.read()
 
         elif isinstance(t, (tuple, filter, GeneratorType)):
-            self._cache = list(t)
+            self._cache = cast(STRUCT, list(t))
         
         elif t is None:
             self._cache = self._default
         
         else:
-            self._cache = t
+            self._cache = cast(STRUCT, t)
         
-        self.__backup = self._cache.copy()
+        self.__backup = self.read()
 
     def read(self) -> STRUCT:
-        return self._cache # pyright: ignore[reportReturnType]
+        from copy import deepcopy
+        return deepcopy(self._cache)
     
-    def save(self, data:'STRUCT|Collection') -> None:
+    @contextmanager
+    def handle(self) -> Generator[STRUCT, None, None]:
+        data = self.read()
+        try:
+            yield data
+        finally:
+            self.save(data)
+    
+    def save(self, data: STRUCT | 'Collection[T, STRUCT]') -> None:
 
         if isinstance(data, Collection):
             data = data.read()
@@ -49,37 +59,21 @@ class Collection[T, STRUCT]:
             self.var.save(data)
     
     def copy(self) -> Self:
-        from copy import deepcopy
-        data = deepcopy(self.read())
-        return self.__class__(data)
+        return self.__class__(self.read())
 
     def __len__(self) -> int:
-        return len(self.read())
+        return len(self.read())  # type: ignore
         
-    def __setitem__(self, key, value:T) -> None:
+    def __setitem__(self, key: Any, value: T) -> None:
+        with self.handle() as data:
+            data[key] = value  # type: ignore
 
-        # Get the raw dictionary
-        data: STRUCT = self.read()
+    def __delitem__(self, key: Any) -> None:
+        with self.handle() as data:
+            del data[key]  # type: ignore
 
-        # Update the key with the value
-        data[key] = value
-
-        # Save the raw dictionary
-        self.save(data)
-
-    def __delitem__(self, key) -> None:
-        
-        # Get the raw dictionary
-        data: STRUCT = self.read()
-        
-        # Remove the key
-        del data[key]
-        
-        # Save the dictionary
-        self.save(data)
-
-    def __contains__(self, key) -> bool:
-        return (key in self.read())
+    def __contains__(self, key: Any) -> bool:
+        return (key in self.read())  # type: ignore
     
     def __str__(self) -> str:
         return dumps(
@@ -89,18 +83,8 @@ class Collection[T, STRUCT]:
     
     __repr__ = __str__
 
-    def reset(self):
-        """
-        Reset data to original input
-        
-        EXAMPLE: 
-        ```
-        l = List([1, 2, 3])
-        l += 4
-        l.read() -> [1, 2, 3, 4]
-        l.reset()
-        l.read() -> [1, 2, 3]
-        ```
-        """
-        self.save(self.__backup)
+    def __iter__(self) -> Iterator[T]:
+        return iter(self.read())
 
+    def reset(self) -> None:
+        self.save(self.__backup)
