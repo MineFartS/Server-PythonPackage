@@ -125,7 +125,7 @@ class Driver:
 
     def element(self,
         by: Literal['class', 'id', 'xpath', 'name', 'attr'],
-        name: str | list[str]
+        name: str
     ) -> list[Element]:
         """Get List of Elements by query"""
         from selenium.webdriver.common.by import By
@@ -137,28 +137,23 @@ class Driver:
 
             case 'class':
 
-                if is_iterable(name, list):
-                    name = '.'.join(name)
-
-                BY = By.CLASS_NAME
-
-            case 'id':
-                BY = By.ID
-
-            case 'xpath':
-                BY = By.XPATH
-
-            case 'name':
-                BY = By.NAME
+                classes = name.split()
+                name = ""
+                
+                for c in classes: # Escape characters that break CSS paths (like =, +, :, @, etc.)
+                    name += '.' + "".join([f"\\{char}" if not char.isalnum() and char not in "-_" else char for char in c])
+                
+                BY = By.CSS_SELECTOR
 
             case 'attr':
-                name = f"a[{name}']"
+                name = f"a[{name}]"
                 BY = By.CSS_SELECTOR
 
             case _:
-                raise TypeError(f'"{by}" is an invalid method')
+                BY = getattr(By, by.upper())
 
         elements = self._drvr.find_elements(by=BY, value=name)
+
         return [Element(e) for e in elements]
 
     @force_in_types
