@@ -1,15 +1,14 @@
 from ...functools.cache.prop import cached_property
-from qbittorrentapi import TorrentDictionary
 from typing import TYPE_CHECKING, Literal
 from .qbit import qBitTorrent as qbit
 from dataclasses import dataclass
 from .file import TorrentFile
 from ...terminal import Log
-from ...pc.Path import Path
-from ...json import List
 
 if TYPE_CHECKING:
+    from qbittorrentapi import TorrentDictionary
     from ...time import from_stamp
+    from ...pc.Path import Path
 
 class TorrentNotFoundError(Exception): ...
 
@@ -40,16 +39,19 @@ class Torrent:
 
     @property
     def raw(self) -> TorrentDictionary:
+        from ...text import similarity
+
         for torr in qbit.torrents_info():
-            if torr.hash == self.hash:
+            if similarity(self.hash, torr.hash) > .95:
                 return torr
+
         raise TorrentNotFoundError(self)
 
     #===================================================
 
     @cached_property
     @Log.on_call
-    def files(self) -> tuple[TorrentFile]:
+    def files(self) -> tuple[TorrentFile, ...]:
 
         to = qbit._timeout()
 
@@ -62,15 +64,18 @@ class Torrent:
 
             return tuple(TorrentFile(self, f.id) for f in self.raw.files)
         
-        except TimeoutError:
+        except TimeoutError, TorrentNotFoundError:
             return ()
 
         finally: 
-            self.raw.setForceStart(False)
+            if self.exists: self.raw.setForceStart(False)
 
     @property
-    def enabled_files(self) -> List[TorrentFile]:
-        return self.files.filtered(lambda f: f.enabled)
+    def enabled_files(self) -> tuple[TorrentFile, ...]:
+        return tuple(filter(
+            lambda f: f.enabled, 
+            self.files
+        ))
 
     #===================================================
 
@@ -103,7 +108,7 @@ class Torrent:
             return False
     
     @cached_property
-    def path(self) -> Path:
+    def path(self) -> 'Path':
         from ...pc import Path
         return Path(self.raw.save_path)
 
