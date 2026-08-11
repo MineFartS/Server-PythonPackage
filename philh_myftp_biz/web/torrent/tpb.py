@@ -21,7 +21,6 @@ def search(*queries:str) -> Generator[Torrent]:
 
 def _search(query:str) -> Generator[Torrent]:
     """Search thePirateBay for magnets"""
-    from urllib.parse import urlparse, parse_qs
     from ...time import from_string
     from .name import NameParser
     from .torrent import Torrent
@@ -47,7 +46,7 @@ def _search(query:str) -> Generator[Torrent]:
 
         try:
 
-            t = Torrent(hash=None)
+            t = Torrent()
 
             t.url = _run("[3].children[0].children[0].href")
             t.size = Size.to_bytes(_run("[4].textContent"))
@@ -67,12 +66,6 @@ def _search(query:str) -> Generator[Torrent]:
                 t.type = 'Episode'
             elif 'show' in _type:
                 t.type = 'Show'
-            
-            XT: str = parse_qs(urlparse(t.url).query)['xt'][0]
-            if XT.startswith('urn:btih:'): # v1
-                t.hash = XT[len('urn:btih:'):].lower()
-            elif XT.startswith('urn:btmh:'): # v2
-                t.hash = XT[len('urn:btmh:'):].lower()
 
             yield t
 

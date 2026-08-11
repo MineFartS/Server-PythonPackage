@@ -1,7 +1,6 @@
 from ...functools.cache.prop import cached_property
 from typing import TYPE_CHECKING, Literal
 from .qbit import qBitTorrent as qbit
-from dataclasses import dataclass
 from .file import TorrentFile
 from ...terminal import Log
 
@@ -12,10 +11,10 @@ if TYPE_CHECKING:
 
 class TorrentNotFoundError(Exception): ...
 
-@dataclass
 class Torrent:
 
-    hash: str
+    def __init__(self, **kwargs):
+        self.__dict__ |= kwargs
 
     size: str = ""
     url : str = ""
@@ -36,6 +35,17 @@ class Torrent:
         return str(self).__format__(spec)
     
     #===================================================
+
+    @cached_property
+    def hash(self) -> str:
+        from urllib.parse import urlparse, parse_qs
+
+        XT: str = parse_qs(urlparse(self.url).query)['xt'][0]
+
+        if XT.startswith('urn:btih:'): # v1
+            return XT[len('urn:btih:'):].lower()
+        elif XT.startswith('urn:btmh:'): # v2
+            return XT[len('urn:btmh:'):].lower()
 
     @property
     def raw(self) -> TorrentDictionary:
