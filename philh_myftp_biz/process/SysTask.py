@@ -1,15 +1,20 @@
 from psutil import process_iter, NoSuchProcess, AccessDenied
 from psutil import Process as _Process
+from functools import cached_property
 from cpulimiter import CpuLimiter
 from typing import Iterator
 
-def rscan(writeable:bool=False):
+AccessErrors = (AccessDenied, NoSuchProcess)
+
+def rscan(
+    mutable: bool = False
+):
     for proc in process_iter():
         try:
-            cpu = proc.cpu_affinity()
-            if writeable: proc.cpu_affinity(cpu)
-            yield Process(proc.pid)
-        except (AccessDenied, NoSuchProcess):
+            p = Process(proc.pid)
+            if (not mutable) or p.is_mutable:
+                yield p
+        except AccessErrors:
             pass
 
 cpu_limiter = CpuLimiter()
@@ -19,13 +24,46 @@ class Process(_Process):
     _cpu_limit = 100
 
     @property
-    def is_writeable(self) -> bool:
+    def is_mutable(self) -> bool:
         try:
             cpu = self.cpu_affinity()
             self.cpu_affinity(cpu)
             return True
-        except (AccessDenied, NoSuchProcess):
+        except AccessErrors:
             return False
+
+    @property
+    def is_readable(self) -> bool:
+        return (None not in [self.cwd, self.cmdline])
+
+    @cached_property
+    def cwd(self):
+        from ..pc import Path
+        try:
+            return Path(super().cwd())
+        except AccessErrors:
+            pass
+
+    @cached_property
+    def cmdline(self):
+        try:
+            return super().cmdline()
+        except AccessErrors:
+            pass
+
+    @property
+    def children(self):
+        try:
+            return super().children()
+        except AccessErrors:
+            return []
+
+    @property
+    def descendants(self):
+        try:
+            return super().children(recursive=True)
+        except AccessErrors:
+            return []
 
     def cpu_limit(self, percent:int=None):
         
@@ -76,72 +114,46 @@ class SysTask:
             self.name = id.lower()
 
     @property
-    def _main(self) -> _Process|None:
-        from ..text import like
+    def _main(self) -> Process|None:
+        from fnmatch import fnmatch
 
         if self.pid:
-
             try:
                 return Process(self.pid)
-            except NoSuchProcess:
+            except AccessErrors:
                 pass
 
         else:
-
-            for proc in process_iter():
+            for proc in rscan():
 
                 pname = proc.name().lower()
 
                 if self.name and (self.name == pname):
                     return Process(proc.pid)
-                
-                elif self.pat and like(pname, self.pat):
+                elif self.pat and fnmatch(pname, self.pat):
                     return Process(proc.pid)
 
-    def __iter__(self) -> Iterator[_Process]:
+    def __iter__(self) -> Iterator[Process]:
         
         main = self._main
 
-        # IF main process found
         if main:
-
-            processes = [main]
-
-            try:
-                processes += main.children(recursive=True)
-
-            except NoSuchProcess:
-                pass
-
             return iter(filter(
                 lambda p: p.is_running(),    
-                reversed(processes)
-            )) # pyright: ignore[reportReturnType]
+                reversed([main, *main.descendants])
+            ))
         
         else:
-
             return iter([])
 
     def stop(self) -> None:
-        """Stop Process and all of it's children"""
-        from ..terminal import Log
-
-        Log.VERB(f'Stopping Process: {self.id}')
-
         for p in self:
-            
             p.terminate()
 
     @property
     def exists(self) -> bool:
-        """Check if the process is running"""
-
         return len(list(self)) > 0
     
     @property
     def PIDs(self):
-        
-        for process in self:
-
-            yield process.pid
-
+        yield from (p.pid for p in self)

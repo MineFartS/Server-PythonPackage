@@ -26,6 +26,10 @@ def copy(
     else:
         return list(array[:])
 
+def is_sublist(sub:list, main:list):
+    n = len(sub)
+    return any(main[i : i + n] == sub for i in range(len(main) - n + 1))
+
 def stringify(array:list) -> list[str]:
 
     array = copy(array)

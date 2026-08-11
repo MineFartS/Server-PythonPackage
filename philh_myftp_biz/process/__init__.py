@@ -3,7 +3,9 @@ from .SubProcess import SubProcess, Run, RunHidden, Start, StartHidden, Terminal
 
 from .Thread import Thread, MProcess, Sleeper, Watcher, Looper, Alive # pyright: ignore[reportUnusedImport]
 
-from .SysTask import SysTask  # pyright: ignore[reportUnusedImport]
+from .SysTask import rscan, Process, SysTask # pyright: ignore[reportUnusedImport]
+
+from .pymod import PyModule, modscan # pyright: ignore[reportUnusedImport]
 
 from .Venv import SubVenv  # pyright: ignore[reportUnusedImport]
 
