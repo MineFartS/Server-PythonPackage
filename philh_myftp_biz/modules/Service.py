@@ -88,11 +88,19 @@ class Service(Path):
         """Service is running"""
         from json.decoder import JSONDecodeError
 
+        if self.pymod.exists:
+            return True
+
         try:
             return self._run(name='Running').output(format='json') # pyright: ignore[reportReturnType]
         
         except (JSONDecodeError, AttributeError, FileNotFoundError, PermissionError):
             return False
+
+    @cached_property
+    def pymod(self):
+        from ..process.pymod import PyModule
+        return PyModule(self.path)
     
     def stop(self) -> None:
         """Stop the Service"""
@@ -100,6 +108,7 @@ class Service(Path):
 
         Log.VERB(f"Stopping Service: {self.path}")
 
+        self.pymod.stop()
         self._run('Stop')
 
     @property
