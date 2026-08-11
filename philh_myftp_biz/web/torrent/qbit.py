@@ -40,11 +40,18 @@ class qBitTorrent(
         from ...time import Timeout
         from random import randint
 
+        infretry = RetryStrat(
+            total = None,
+            connect = None,
+            read = None,
+            status = None,
+            status_forcelist = None
+        )
+
         super().__init__(
             host, port, username, password,
             VERIFY_WEBUI_CERTIFICATE = False,
-            REQUESTS_ARGS = {'timeout': (timeout, timeout)},
-            HTTPADAPTER_ARGS = {'max_retries': RetryStrat(3)},
+            HTTPADAPTER_ARGS = {'max_retries': infretry}
         )
 
         self._timeout = lambda: Timeout(timeout)
