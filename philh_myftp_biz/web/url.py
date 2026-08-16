@@ -12,7 +12,7 @@ class URL:
         *,
         params: dict[str, str] = {},
         headers: dict[str, str] = {},
-        max_tries: int | None = 1,
+        max_tries: int = 1,
         max_age: int = 0,
         timeout: None|int = 30
     ) -> None:
@@ -23,7 +23,8 @@ class URL:
         self.params  = params.copy()
         self.headers = headers.copy()
         self.timeout = timeout
-        self.addr = urlparse(url).netloc or url
+        self._parsed = urlparse(url)
+        self.addr = (self._parsed.netloc or url)
 
         if '?' in url:
             self.params |= parse_qsl(url.split('?', 1)[1])
@@ -31,7 +32,7 @@ class URL:
         self._session = Session(
             name = 'URL', 
             max_age = max_age, 
-            adapter = Adapter(RetryStrat(max_tries))
+            adapter = Adapter(RetryStrat(total=max_tries))
         )
 
         self.kwargs = {
@@ -52,6 +53,9 @@ class URL:
 
     __repr__ = __str__
     furl: str = property(__str__)
+
+    def __getattr__(self, name:str):
+        return getattr(self._parsed, name)
 
     def copy(self, **kwargs):
         return URL(**(self.kwargs | kwargs))

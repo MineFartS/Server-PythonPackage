@@ -5,13 +5,16 @@ from urllib3.util import Retry as _Retry
 class RetryStrat(_Retry):
 
     def __init__(self,
-        max_tries: int = 0,
+        total: int = 0,
+        backoff_factor: int = 1,
+        status_forcelist = range(400, 600),
+        allowed_methods = ["GET", "POST"],
         **kwargs
     ): super().__init__(
-        total = kwargs.pop("total", max_tries),
-        backoff_factor = kwargs.pop("backoff_factor", 1),
-        status_forcelist = kwargs.pop("status_forcelist", range(400, 600)),
-        allowed_methods = kwargs.pop("allowed_methods", ["GET", "POST"]),
+        total = total,
+        backoff_factor = backoff_factor, 
+        status_forcelist = status_forcelist, 
+        allowed_methods = allowed_methods, 
         **kwargs
     )
 
