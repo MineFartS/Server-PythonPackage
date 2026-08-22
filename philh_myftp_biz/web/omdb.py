@@ -102,7 +102,7 @@ class Omdb:
         ) ['tv_results'] [0] ['id']
         
         # Iter through all seasons by #
-        for s in range(1, int(r1['totalSeasons'])+1):
+        for s in range(0, int(r1['totalSeasons'])+1):
 
             r2: dict = Tmdb.get(f'/tv/{tmdb_id}/season/{s}')
 
