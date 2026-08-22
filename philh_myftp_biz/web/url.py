@@ -66,6 +66,11 @@ class URL:
             **kwargs
         )
 
+    def format(self, *args, **kwargs):
+        return self.copy(
+            url = self.url.format(*args, **kwargs)
+        )
+
     @property
     def stream(self):
         return self.get(stream=True)

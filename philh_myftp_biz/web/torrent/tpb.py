@@ -6,7 +6,7 @@ from ..url import URL
 if TYPE_CHECKING:
     from ..driver import Driver
 
-url = URL("https://thepiratebay11.com/search/")
+url = URL("https://thepiratebay11.com/search/{}/1/99/200")
 
 driver: Driver = None
 
@@ -31,7 +31,7 @@ def _search(query:str) -> Generator[Torrent]:
     if driver is None:
         driver = Driver()
 
-    driver.open(url.child(query))
+    driver.open( url.format(query) )
 
     # Set driver var 'lines' to a list of lines
     try:
